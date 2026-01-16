@@ -9,19 +9,14 @@ public partial class Booking
 
     public int CustomerId { get; set; }
 
-    public DateTime BookingTime { get; set; }
+    public DateTime? BookingTime { get; set; }
 
     public decimal TotalPrice { get; set; }
-
+    
     public BookingStatus Status { get; set; }
 
     public virtual Customer Customer { get; set; } = null!;
 
     public virtual ICollection<Ticket> Tickets { get; set; } = new List<Ticket>();
 }
-public enum BookingStatus
-{
-    InProgress,
-    Paid,
-    Cancelled
-}
+public enum BookingStatus { Inprogress, Paid, Cancelled }

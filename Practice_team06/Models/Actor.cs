@@ -3,7 +3,7 @@ using System.Collections.Generic;
 
 namespace Practice_team06.Models;
 
-public partial class Employee
+public partial class Actor
 {
     public int Id { get; set; }
 
@@ -11,9 +11,7 @@ public partial class Employee
 
     public string LastName { get; set; } = null!;
 
-    public string? Role { get; set; }
+    public string? PhotoUrl { get; set; }
 
-    public string Email { get; set; } = null!;
-
-    public string Password { get; set; } = null!;
+    public virtual ICollection<MovieActor> MovieActors { get; set; } = new List<MovieActor>();
 }

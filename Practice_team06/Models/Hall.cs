@@ -11,7 +11,7 @@ public partial class Hall
 
     public decimal PriceModifier { get; set; }
 
-    public string Description { get; set; } = null!;
+    public string? Description { get; set; }
 
     public virtual ICollection<Seat> Seats { get; set; } = new List<Seat>();
 

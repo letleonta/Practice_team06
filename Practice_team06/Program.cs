@@ -1,11 +1,10 @@
+using System.Text.Json.Serialization;
 using Microsoft.EntityFrameworkCore;
-using Practice_team06.Models; 
+using Practice_team06.Models;
 
 var builder = WebApplication.CreateBuilder(args);
 
-
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
-
 builder.Services.AddDbContext<PostgresContext>(options =>
     options.UseNpgsql(connectionString));
 
