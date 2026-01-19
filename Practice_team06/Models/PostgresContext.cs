@@ -19,10 +19,8 @@ public partial class PostgresContext : DbContext
 
     public virtual DbSet<Booking> Bookings { get; set; }
 
-    public virtual DbSet<Customer> Customers { get; set; }
-
-    public virtual DbSet<Employee> Employees { get; set; }
-
+    public virtual DbSet<User> User { get; set; }
+    
     public virtual DbSet<Genre> Genres { get; set; }
 
     public virtual DbSet<Hall> Halls { get; set; }
@@ -49,7 +47,8 @@ public partial class PostgresContext : DbContext
             .HasPostgresEnum("age_restriction_level", new[] { "0+", "12+", "16+", "18+" })
             .HasPostgresEnum("booking_status_enum", new[] { "Inprogress", "Paid", "Cancelled" })
             .HasPostgresEnum("seat_status_enum", new[] { "Free", "Reserved", "Sold" })
-            .HasPostgresEnum("seat_type_enum", new[] { "Standard", "VIP" });
+            .HasPostgresEnum("seat_type_enum", new[] { "Standard", "VIP" })
+            .HasPostgresEnum("role_enum", new[] { "Client", "Admin" });
 
         modelBuilder.Entity<Actor>(entity =>
         {
@@ -64,9 +63,9 @@ public partial class PostgresContext : DbContext
             entity.Property(e => e.LastName)
                 .HasMaxLength(50)
                 .HasColumnName("last_name");
-            entity.Property(e => e.PhotoUrl)
+            entity.Property(e => e.PhotoUri)
                 .HasMaxLength(255)
-                .HasColumnName("photo_url");
+                .HasColumnName("photo_uri");
         });
 
         modelBuilder.Entity<Booking>(entity =>
@@ -78,37 +77,33 @@ public partial class PostgresContext : DbContext
             entity.Property(e => e.Id).HasColumnName("id");
             entity.Property(e => e.BookingTime)
                 .HasDefaultValueSql("CURRENT_TIMESTAMP")
-                .HasColumnType("timestamp without time zone")
+                .HasColumnType("timestamp(0) without time zone")
                 .HasColumnName("booking_time");
-            entity.Property(e => e.CustomerId).HasColumnName("customer_id");
-            entity.Property(e => e.TotalPrice)
-                .HasPrecision(10, 2)
-                .HasColumnName("total_price");
-
-            entity.HasOne(d => d.Customer).WithMany(p => p.Bookings)
-                .HasForeignKey(d => d.CustomerId)
-                .HasConstraintName("bookings_customer_id_fkey");
+            entity.Property(e => e.UserId).HasColumnName("user_id");
+            entity.HasOne(d => d.User).WithMany(p => p.Bookings)
+                .HasForeignKey(d => d.UserId)
+                .HasConstraintName("bookings_user_id_fkey");
         });
 
-        modelBuilder.Entity<Customer>(entity =>
+        modelBuilder.Entity<User>(entity =>
         {
-            entity.HasKey(e => e.Id).HasName("customers_pkey");
+            entity.HasKey(e => e.Id).HasName("users_pkey");
 
-            entity.ToTable("customers");
+            entity.ToTable("users");
 
-            entity.HasIndex(e => e.Email, "customers_email_key").IsUnique();
+            entity.HasIndex(e => e.Email, "users_email_key").IsUnique();
 
-            entity.HasIndex(e => e.Phone, "customers_phone_key").IsUnique();
+            entity.HasIndex(e => e.Phone, "users_phone_key").IsUnique();
 
             entity.Property(e => e.Id).HasColumnName("id");
             entity.Property(e => e.BirthDate)
-                .HasColumnType("timestamp without time zone")
+                .HasColumnType("date")
                 .HasColumnName("birth_date");
             entity.Property(e => e.Email)
-                .HasMaxLength(50)
+                .HasMaxLength(320)
                 .HasColumnName("email");
             entity.Property(e => e.FirstName)
-                .HasMaxLength(20)
+                .HasMaxLength(50)
                 .HasColumnName("first_name");
             entity.Property(e => e.LastName)
                 .HasMaxLength(50)
@@ -120,33 +115,7 @@ public partial class PostgresContext : DbContext
                 .HasMaxLength(20)
                 .HasColumnName("phone");
         });
-
-        modelBuilder.Entity<Employee>(entity =>
-        {
-            entity.HasKey(e => e.Id).HasName("employees_pkey");
-
-            entity.ToTable("employees");
-
-            entity.HasIndex(e => e.Email, "employees_email_key").IsUnique();
-
-            entity.Property(e => e.Id).HasColumnName("id");
-            entity.Property(e => e.Email)
-                .HasMaxLength(50)
-                .HasColumnName("email");
-            entity.Property(e => e.FirstName)
-                .HasMaxLength(20)
-                .HasColumnName("first_name");
-            entity.Property(e => e.LastName)
-                .HasMaxLength(50)
-                .HasColumnName("last_name");
-            entity.Property(e => e.Password)
-                .HasMaxLength(255)
-                .HasColumnName("password");
-            entity.Property(e => e.Role)
-                .HasMaxLength(50)
-                .HasColumnName("role");
-        });
-
+        
         modelBuilder.Entity<Genre>(entity =>
         {
             entity.HasKey(e => e.Id).HasName("genres_pkey");
@@ -157,7 +126,7 @@ public partial class PostgresContext : DbContext
 
             entity.Property(e => e.Id).HasColumnName("id");
             entity.Property(e => e.Name)
-                .HasMaxLength(20)
+                .HasMaxLength(50)
                 .HasColumnName("name");
         });
 
@@ -168,14 +137,12 @@ public partial class PostgresContext : DbContext
             entity.ToTable("halls");
 
             entity.Property(e => e.Id).HasColumnName("id");
-            entity.Property(e => e.Description)
-                .HasMaxLength(100)
-                .HasColumnName("description");
+            entity.Property(e => e.Description).HasColumnName("description");
             entity.Property(e => e.Name)
                 .HasMaxLength(30)
                 .HasColumnName("name");
             entity.Property(e => e.PriceModifier)
-                .HasPrecision(10, 2)
+                .HasPrecision(3, 2)
                 .HasDefaultValue(1.0m)
                 .HasColumnName("price_modifier");
         });
@@ -190,7 +157,7 @@ public partial class PostgresContext : DbContext
 
             entity.Property(e => e.Id).HasColumnName("id");
             entity.Property(e => e.Name)
-                .HasMaxLength(20)
+                .HasMaxLength(50)
                 .HasColumnName("name");
         });
 
@@ -202,17 +169,17 @@ public partial class PostgresContext : DbContext
 
             entity.Property(e => e.Id).HasColumnName("id");
             entity.Property(e => e.BasePrice)
-                .HasPrecision(10, 2)
+                .HasPrecision(6, 2)
                 .HasColumnName("base_price");
             entity.Property(e => e.Description).HasColumnName("description");
             entity.Property(e => e.DurationMin).HasColumnName("duration_min");
             entity.Property(e => e.EndDate).HasColumnName("end_date");
-            entity.Property(e => e.PosterUrl)
+            entity.Property(e => e.PosterUri)
                 .HasMaxLength(255)
-                .HasColumnName("main_poster_url");
-            entity.Property(e => e.TrailerUrl)
+                .HasColumnName("main_poster_uri");
+            entity.Property(e => e.TrailerUri)
                 .HasMaxLength(255)
-                .HasColumnName("main_trailer_url");
+                .HasColumnName("main_trailer_uri");
             entity.Property(e => e.Rating)
                 .HasPrecision(3, 1)
                 .HasColumnName("rating");
@@ -270,11 +237,11 @@ public partial class PostgresContext : DbContext
             entity.Property(e => e.Id).HasColumnName("id");
             entity.Property(e => e.HallId).HasColumnName("hall_id");
             entity.Property(e => e.PriceModifier)
-                .HasPrecision(10, 2)
+                .HasPrecision(4, 2)
                 .HasDefaultValue(1.0m)
                 .HasColumnName("price_modifier");
-            entity.Property(e => e.RowNumber).HasColumnName("row_number");
-            entity.Property(e => e.SeatNumber).HasColumnName("seat_number");
+            entity.Property(e => e.RowNumber).HasColumnName("row_number").HasColumnType("smallint");
+            entity.Property(e => e.SeatNumber).HasColumnName("seat_number").HasColumnType("smallint");
 
             entity.HasOne(d => d.Hall).WithMany(p => p.Seats)
                 .HasForeignKey(d => d.HallId)
@@ -292,7 +259,7 @@ public partial class PostgresContext : DbContext
             entity.Property(e => e.LanguageId).HasColumnName("language_id");
             entity.Property(e => e.MovieId).HasColumnName("movie_id");
             entity.Property(e => e.StartTime)
-                .HasColumnType("timestamp without time zone")
+                .HasColumnType("timestamp(0) without time zone")
                 .HasColumnName("start_time");
 
             entity.HasOne(d => d.Hall).WithMany(p => p.Sessions)
@@ -321,7 +288,7 @@ public partial class PostgresContext : DbContext
 
             entity.Property(e => e.Id).HasColumnName("id");
             entity.Property(e => e.ActualPrice)
-                .HasPrecision(10, 2)
+                .HasPrecision(6, 2)
                 .HasColumnName("actual_price");
             entity.Property(e => e.BookingId).HasColumnName("booking_id");
             entity.Property(e => e.IsActive)

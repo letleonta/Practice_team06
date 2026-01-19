@@ -24,9 +24,9 @@ public partial class Movie
 
     public decimal? Rating { get; set; }
 
-    public string? PosterUrl { get; set; }
+    public string? PosterUri { get; set; }
 
-    public string? TrailerUrl { get; set; }
+    public string? TrailerUri { get; set; }
     
     public AgeRestriction AgeRestriction { get; set; }
     
