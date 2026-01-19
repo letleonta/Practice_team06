@@ -48,10 +48,6 @@ public partial class PostgresContext : DbContext
         modelBuilder
             .HasPostgresEnum("age_restriction_level", new[] { "0+", "12+", "16+", "18+" })
             .HasPostgresEnum("booking_status_enum", new[] { "Inprogress", "Paid", "Cancelled" })
-            .HasPostgresEnum("public", "age_restriction_level", new[] { "0+", "12+", "16+", "18+" })
-            .HasPostgresEnum("public", "booking_status_enum", new[] { "Inprogress", "Paid", "Cancelled" })
-            .HasPostgresEnum("public", "seat_status_enum", new[] { "Free", "Reserved", "Sold" })
-            .HasPostgresEnum("public", "seat_type_enum", new[] { "Standard", "VIP" })
             .HasPostgresEnum("seat_status_enum", new[] { "Free", "Reserved", "Sold" })
             .HasPostgresEnum("seat_type_enum", new[] { "Standard", "VIP" });
 
