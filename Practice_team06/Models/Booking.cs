@@ -7,15 +7,13 @@ public partial class Booking
 {
     public int Id { get; set; }
 
-    public int CustomerId { get; set; }
+    public int UserId { get; set; }
 
     public DateTime? BookingTime { get; set; }
-
-    public decimal TotalPrice { get; set; }
     
     public BookingStatus Status { get; set; }
 
-    public virtual Customer Customer { get; set; } = null!;
+    public virtual User User { get; set; } = null!;
 
     public virtual ICollection<Ticket> Tickets { get; set; } = new List<Ticket>();
 }
