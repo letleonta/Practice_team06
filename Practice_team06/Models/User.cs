@@ -1,18 +1,17 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.ComponentModel.DataAnnotations;
+using Microsoft.AspNetCore.Identity;
+using Practice_team06.Models;
 
-namespace Practice_team06.Models;
-
-public class User
+public class User : IdentityUser<int>
 {
-    public int Id { get; set; }
+    [Required(ErrorMessage = "Ім'я є обов'язковим")]
+    [StringLength(50, MinimumLength = 2)]
     public string FirstName { get; set; } = null!;
+    [Required(ErrorMessage = "Прізвище є обов'язковим")]
+    [StringLength(50, MinimumLength = 2)]
     public string LastName { get; set; } = null!;
-    public string Email { get; set; } = null!;
-    public string? Phone { get; set; }
-    public string Password { get; set; } = null!;
+    [DataType(DataType.Date)]
     public DateTime? BirthDate { get; set; }
-    public UserRole Role { get; set; }
+    
     public List<Booking> Bookings { get; set; } = new();
 }
-public enum UserRole { Client, Admin }

@@ -7,7 +7,7 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace Practice_team06.Migrations
 {
     /// <inheritdoc />
-    public partial class InitialCreate : Migration
+    public partial class InitialWithIdentity : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
@@ -26,7 +26,7 @@ namespace Practice_team06.Migrations
                         .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
                     first_name = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: false),
                     last_name = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: false),
-                    photo_url = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: true)
+                    photo_uri = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: true)
                 },
                 constraints: table =>
                 {
@@ -34,38 +34,47 @@ namespace Practice_team06.Migrations
                 });
 
             migrationBuilder.CreateTable(
-                name: "customers",
+                name: "AspNetRoles",
                 columns: table => new
                 {
-                    id = table.Column<int>(type: "integer", nullable: false)
+                    Id = table.Column<int>(type: "integer", nullable: false)
                         .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
-                    first_name = table.Column<string>(type: "character varying(20)", maxLength: 20, nullable: false),
-                    last_name = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: false),
-                    email = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: false),
-                    phone = table.Column<string>(type: "character varying(20)", maxLength: 20, nullable: true),
-                    password = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: false),
-                    birth_date = table.Column<DateTime>(type: "timestamp without time zone", nullable: true)
+                    Name = table.Column<string>(type: "character varying(256)", maxLength: 256, nullable: true),
+                    NormalizedName = table.Column<string>(type: "character varying(256)", maxLength: 256, nullable: true),
+                    ConcurrencyStamp = table.Column<string>(type: "text", nullable: true)
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("customers_pkey", x => x.id);
+                    table.PrimaryKey("PK_AspNetRoles", x => x.Id);
                 });
 
             migrationBuilder.CreateTable(
-                name: "employees",
+                name: "AspNetUsers",
                 columns: table => new
                 {
-                    id = table.Column<int>(type: "integer", nullable: false)
+                    Id = table.Column<int>(type: "integer", nullable: false)
                         .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
-                    first_name = table.Column<string>(type: "character varying(20)", maxLength: 20, nullable: false),
+                    first_name = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: false),
                     last_name = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: false),
-                    role = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: true),
-                    email = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: false),
-                    password = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: false)
+                    birth_date = table.Column<DateTime>(type: "date", nullable: true),
+                    UserName = table.Column<string>(type: "character varying(256)", maxLength: 256, nullable: true),
+                    NormalizedUserName = table.Column<string>(type: "character varying(256)", maxLength: 256, nullable: true),
+                    Email = table.Column<string>(type: "character varying(256)", maxLength: 256, nullable: true),
+                    NormalizedEmail = table.Column<string>(type: "character varying(256)", maxLength: 256, nullable: true),
+                    EmailConfirmed = table.Column<bool>(type: "boolean", nullable: false),
+                    PasswordHash = table.Column<string>(type: "text", nullable: true),
+                    SecurityStamp = table.Column<string>(type: "text", nullable: true),
+                    ConcurrencyStamp = table.Column<string>(type: "text", nullable: true),
+                    PhoneNumber = table.Column<string>(type: "text", nullable: true),
+                    PhoneNumberConfirmed = table.Column<bool>(type: "boolean", nullable: false),
+                    TwoFactorEnabled = table.Column<bool>(type: "boolean", nullable: false),
+                    LockoutEnd = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
+                    LockoutEnabled = table.Column<bool>(type: "boolean", nullable: false),
+                    AccessFailedCount = table.Column<int>(type: "integer", nullable: false)
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("employees_pkey", x => x.id);
+                    table.PrimaryKey("PK_AspNetUsers", x => x.Id);
                 });
 
             migrationBuilder.CreateTable(
@@ -74,7 +83,7 @@ namespace Practice_team06.Migrations
                 {
                     id = table.Column<int>(type: "integer", nullable: false)
                         .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
-                    name = table.Column<string>(type: "character varying(20)", maxLength: 20, nullable: false)
+                    name = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: false)
                 },
                 constraints: table =>
                 {
@@ -88,7 +97,7 @@ namespace Practice_team06.Migrations
                     id = table.Column<int>(type: "integer", nullable: false)
                         .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
                     name = table.Column<string>(type: "character varying(30)", maxLength: 30, nullable: false),
-                    price_modifier = table.Column<decimal>(type: "numeric(10,2)", precision: 10, scale: 2, nullable: false, defaultValue: 1.0m),
+                    price_modifier = table.Column<decimal>(type: "numeric(3,2)", precision: 3, scale: 2, nullable: false, defaultValue: 1.0m),
                     description = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: true)
                 },
                 constraints: table =>
@@ -102,7 +111,7 @@ namespace Practice_team06.Migrations
                 {
                     id = table.Column<int>(type: "integer", nullable: false)
                         .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
-                    name = table.Column<string>(type: "character varying(20)", maxLength: 20, nullable: false)
+                    name = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: false)
                 },
                 constraints: table =>
                 {
@@ -116,15 +125,15 @@ namespace Practice_team06.Migrations
                     id = table.Column<int>(type: "integer", nullable: false)
                         .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
                     title = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: false),
-                    description = table.Column<string>(type: "text", nullable: true),
-                    duration_min = table.Column<int>(type: "integer", nullable: true),
-                    release_date = table.Column<DateOnly>(type: "date", nullable: true),
-                    base_price = table.Column<decimal>(type: "numeric(10,2)", precision: 10, scale: 2, nullable: false),
-                    start_date = table.Column<DateOnly>(type: "date", nullable: true),
-                    end_date = table.Column<DateOnly>(type: "date", nullable: true),
+                    Description = table.Column<string>(type: "text", nullable: true),
+                    DurationMin = table.Column<int>(type: "integer", nullable: true),
+                    ReleaseDate = table.Column<DateOnly>(type: "date", nullable: true),
+                    base_price = table.Column<decimal>(type: "numeric(6,2)", precision: 6, scale: 2, nullable: false),
+                    StartDate = table.Column<DateOnly>(type: "date", nullable: true),
+                    EndDate = table.Column<DateOnly>(type: "date", nullable: true),
                     rating = table.Column<decimal>(type: "numeric(3,1)", precision: 3, scale: 1, nullable: true),
-                    main_poster_url = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: true),
-                    main_trailer_url = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: true),
+                    main_poster_uri = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: true),
+                    main_trailer_uri = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: true),
                     AgeRestriction = table.Column<int>(type: "integer", nullable: false)
                 },
                 constraints: table =>
@@ -133,24 +142,129 @@ namespace Practice_team06.Migrations
                 });
 
             migrationBuilder.CreateTable(
+                name: "AspNetRoleClaims",
+                columns: table => new
+                {
+                    Id = table.Column<int>(type: "integer", nullable: false)
+                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
+                    RoleId = table.Column<int>(type: "integer", nullable: false),
+                    ClaimType = table.Column<string>(type: "text", nullable: true),
+                    ClaimValue = table.Column<string>(type: "text", nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_AspNetRoleClaims", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_AspNetRoleClaims_AspNetRoles_RoleId",
+                        column: x => x.RoleId,
+                        principalTable: "AspNetRoles",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "AspNetUserClaims",
+                columns: table => new
+                {
+                    Id = table.Column<int>(type: "integer", nullable: false)
+                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
+                    UserId = table.Column<int>(type: "integer", nullable: false),
+                    ClaimType = table.Column<string>(type: "text", nullable: true),
+                    ClaimValue = table.Column<string>(type: "text", nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_AspNetUserClaims", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_AspNetUserClaims_AspNetUsers_UserId",
+                        column: x => x.UserId,
+                        principalTable: "AspNetUsers",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "AspNetUserLogins",
+                columns: table => new
+                {
+                    LoginProvider = table.Column<string>(type: "text", nullable: false),
+                    ProviderKey = table.Column<string>(type: "text", nullable: false),
+                    ProviderDisplayName = table.Column<string>(type: "text", nullable: true),
+                    UserId = table.Column<int>(type: "integer", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_AspNetUserLogins", x => new { x.LoginProvider, x.ProviderKey });
+                    table.ForeignKey(
+                        name: "FK_AspNetUserLogins_AspNetUsers_UserId",
+                        column: x => x.UserId,
+                        principalTable: "AspNetUsers",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "AspNetUserRoles",
+                columns: table => new
+                {
+                    UserId = table.Column<int>(type: "integer", nullable: false),
+                    RoleId = table.Column<int>(type: "integer", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_AspNetUserRoles", x => new { x.UserId, x.RoleId });
+                    table.ForeignKey(
+                        name: "FK_AspNetUserRoles_AspNetRoles_RoleId",
+                        column: x => x.RoleId,
+                        principalTable: "AspNetRoles",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                    table.ForeignKey(
+                        name: "FK_AspNetUserRoles_AspNetUsers_UserId",
+                        column: x => x.UserId,
+                        principalTable: "AspNetUsers",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "AspNetUserTokens",
+                columns: table => new
+                {
+                    UserId = table.Column<int>(type: "integer", nullable: false),
+                    LoginProvider = table.Column<string>(type: "text", nullable: false),
+                    Name = table.Column<string>(type: "text", nullable: false),
+                    Value = table.Column<string>(type: "text", nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_AspNetUserTokens", x => new { x.UserId, x.LoginProvider, x.Name });
+                    table.ForeignKey(
+                        name: "FK_AspNetUserTokens_AspNetUsers_UserId",
+                        column: x => x.UserId,
+                        principalTable: "AspNetUsers",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
                 name: "bookings",
                 columns: table => new
                 {
                     id = table.Column<int>(type: "integer", nullable: false)
                         .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
-                    customer_id = table.Column<int>(type: "integer", nullable: false),
-                    booking_time = table.Column<DateTime>(type: "timestamp without time zone", nullable: true, defaultValueSql: "CURRENT_TIMESTAMP"),
-                    total_price = table.Column<decimal>(type: "numeric(10,2)", precision: 10, scale: 2, nullable: false),
+                    user_id = table.Column<int>(type: "integer", nullable: false),
+                    booking_time = table.Column<DateTime>(type: "timestamp(0) without time zone", nullable: true, defaultValueSql: "CURRENT_TIMESTAMP"),
                     Status = table.Column<int>(type: "integer", nullable: false)
                 },
                 constraints: table =>
                 {
                     table.PrimaryKey("bookings_pkey", x => x.id);
                     table.ForeignKey(
-                        name: "bookings_customer_id_fkey",
-                        column: x => x.customer_id,
-                        principalTable: "customers",
-                        principalColumn: "id",
+                        name: "bookings_user_id_fkey",
+                        column: x => x.user_id,
+                        principalTable: "AspNetUsers",
+                        principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
                 });
 
@@ -161,9 +275,9 @@ namespace Practice_team06.Migrations
                     id = table.Column<int>(type: "integer", nullable: false)
                         .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
                     hall_id = table.Column<int>(type: "integer", nullable: false),
-                    row_number = table.Column<int>(type: "integer", nullable: false),
-                    seat_number = table.Column<int>(type: "integer", nullable: false),
-                    price_modifier = table.Column<decimal>(type: "numeric(10,2)", precision: 10, scale: 2, nullable: true, defaultValue: 1.0m),
+                    row_number = table.Column<short>(type: "smallint", nullable: false),
+                    seat_number = table.Column<short>(type: "smallint", nullable: false),
+                    price_modifier = table.Column<decimal>(type: "numeric(4,2)", precision: 4, scale: 2, nullable: true, defaultValue: 1.0m),
                     SeatType = table.Column<int>(type: "integer", nullable: false),
                     SeatStatus = table.Column<int>(type: "integer", nullable: false)
                 },
@@ -233,28 +347,28 @@ namespace Practice_team06.Migrations
                 {
                     id = table.Column<int>(type: "integer", nullable: false)
                         .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
-                    movie_id = table.Column<int>(type: "integer", nullable: false),
-                    hall_id = table.Column<int>(type: "integer", nullable: false),
-                    language_id = table.Column<int>(type: "integer", nullable: false),
-                    start_time = table.Column<DateTime>(type: "timestamp without time zone", nullable: false)
+                    MovieId = table.Column<int>(type: "integer", nullable: false),
+                    HallId = table.Column<int>(type: "integer", nullable: false),
+                    LanguageId = table.Column<int>(type: "integer", nullable: false),
+                    start_time = table.Column<DateTime>(type: "timestamp(0) without time zone", nullable: false)
                 },
                 constraints: table =>
                 {
                     table.PrimaryKey("sessions_pkey", x => x.id);
                     table.ForeignKey(
                         name: "sessions_hall_id_fkey",
-                        column: x => x.hall_id,
+                        column: x => x.HallId,
                         principalTable: "halls",
                         principalColumn: "id",
                         onDelete: ReferentialAction.Cascade);
                     table.ForeignKey(
                         name: "sessions_language_id_fkey",
-                        column: x => x.language_id,
+                        column: x => x.LanguageId,
                         principalTable: "languages",
                         principalColumn: "id");
                     table.ForeignKey(
                         name: "sessions_movie_id_fkey",
-                        column: x => x.movie_id,
+                        column: x => x.MovieId,
                         principalTable: "movies",
                         principalColumn: "id",
                         onDelete: ReferentialAction.Cascade);
@@ -266,10 +380,10 @@ namespace Practice_team06.Migrations
                 {
                     id = table.Column<int>(type: "integer", nullable: false)
                         .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
-                    booking_id = table.Column<int>(type: "integer", nullable: false),
-                    session_id = table.Column<int>(type: "integer", nullable: false),
-                    seat_id = table.Column<int>(type: "integer", nullable: false),
-                    actual_price = table.Column<decimal>(type: "numeric(10,2)", precision: 10, scale: 2, nullable: false),
+                    BookingId = table.Column<int>(type: "integer", nullable: false),
+                    SessionId = table.Column<int>(type: "integer", nullable: false),
+                    SeatId = table.Column<int>(type: "integer", nullable: false),
+                    actual_price = table.Column<decimal>(type: "numeric(6,2)", precision: 6, scale: 2, nullable: false),
                     is_active = table.Column<bool>(type: "boolean", nullable: true, defaultValue: true)
                 },
                 constraints: table =>
@@ -277,44 +391,63 @@ namespace Practice_team06.Migrations
                     table.PrimaryKey("tickets_pkey", x => x.id);
                     table.ForeignKey(
                         name: "tickets_booking_id_fkey",
-                        column: x => x.booking_id,
+                        column: x => x.BookingId,
                         principalTable: "bookings",
                         principalColumn: "id",
                         onDelete: ReferentialAction.Cascade);
                     table.ForeignKey(
                         name: "tickets_seat_id_fkey",
-                        column: x => x.seat_id,
+                        column: x => x.SeatId,
                         principalTable: "seats",
                         principalColumn: "id");
                     table.ForeignKey(
                         name: "tickets_session_id_fkey",
-                        column: x => x.session_id,
+                        column: x => x.SessionId,
                         principalTable: "sessions",
                         principalColumn: "id");
                 });
 
             migrationBuilder.CreateIndex(
-                name: "IX_bookings_customer_id",
+                name: "IX_AspNetRoleClaims_RoleId",
+                table: "AspNetRoleClaims",
+                column: "RoleId");
+
+            migrationBuilder.CreateIndex(
+                name: "RoleNameIndex",
+                table: "AspNetRoles",
+                column: "NormalizedName",
+                unique: true);
+
+            migrationBuilder.CreateIndex(
+                name: "IX_AspNetUserClaims_UserId",
+                table: "AspNetUserClaims",
+                column: "UserId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_AspNetUserLogins_UserId",
+                table: "AspNetUserLogins",
+                column: "UserId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_AspNetUserRoles_RoleId",
+                table: "AspNetUserRoles",
+                column: "RoleId");
+
+            migrationBuilder.CreateIndex(
+                name: "EmailIndex",
+                table: "AspNetUsers",
+                column: "NormalizedEmail");
+
+            migrationBuilder.CreateIndex(
+                name: "UserNameIndex",
+                table: "AspNetUsers",
+                column: "NormalizedUserName",
+                unique: true);
+
+            migrationBuilder.CreateIndex(
+                name: "IX_bookings_user_id",
                 table: "bookings",
-                column: "customer_id");
-
-            migrationBuilder.CreateIndex(
-                name: "customers_email_key",
-                table: "customers",
-                column: "email",
-                unique: true);
-
-            migrationBuilder.CreateIndex(
-                name: "customers_phone_key",
-                table: "customers",
-                column: "phone",
-                unique: true);
-
-            migrationBuilder.CreateIndex(
-                name: "employees_email_key",
-                table: "employees",
-                column: "email",
-                unique: true);
+                column: "user_id");
 
             migrationBuilder.CreateIndex(
                 name: "genres_name_key",
@@ -344,43 +477,55 @@ namespace Practice_team06.Migrations
                 column: "hall_id");
 
             migrationBuilder.CreateIndex(
-                name: "IX_sessions_hall_id",
+                name: "IX_sessions_HallId",
                 table: "sessions",
-                column: "hall_id");
+                column: "HallId");
 
             migrationBuilder.CreateIndex(
-                name: "IX_sessions_language_id",
+                name: "IX_sessions_LanguageId",
                 table: "sessions",
-                column: "language_id");
+                column: "LanguageId");
 
             migrationBuilder.CreateIndex(
-                name: "IX_sessions_movie_id",
+                name: "IX_sessions_MovieId",
                 table: "sessions",
-                column: "movie_id");
+                column: "MovieId");
 
             migrationBuilder.CreateIndex(
                 name: "idx_unique_active_seat",
                 table: "tickets",
-                columns: new[] { "session_id", "seat_id" },
+                columns: new[] { "SessionId", "SeatId" },
                 unique: true,
                 filter: "(is_active = true)");
 
             migrationBuilder.CreateIndex(
-                name: "IX_tickets_booking_id",
+                name: "IX_tickets_BookingId",
                 table: "tickets",
-                column: "booking_id");
+                column: "BookingId");
 
             migrationBuilder.CreateIndex(
-                name: "IX_tickets_seat_id",
+                name: "IX_tickets_SeatId",
                 table: "tickets",
-                column: "seat_id");
+                column: "SeatId");
         }
 
         /// <inheritdoc />
         protected override void Down(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.DropTable(
-                name: "employees");
+                name: "AspNetRoleClaims");
+
+            migrationBuilder.DropTable(
+                name: "AspNetUserClaims");
+
+            migrationBuilder.DropTable(
+                name: "AspNetUserLogins");
+
+            migrationBuilder.DropTable(
+                name: "AspNetUserRoles");
+
+            migrationBuilder.DropTable(
+                name: "AspNetUserTokens");
 
             migrationBuilder.DropTable(
                 name: "movie_actors");
@@ -390,6 +535,9 @@ namespace Practice_team06.Migrations
 
             migrationBuilder.DropTable(
                 name: "tickets");
+
+            migrationBuilder.DropTable(
+                name: "AspNetRoles");
 
             migrationBuilder.DropTable(
                 name: "actors");
@@ -407,7 +555,7 @@ namespace Practice_team06.Migrations
                 name: "sessions");
 
             migrationBuilder.DropTable(
-                name: "customers");
+                name: "AspNetUsers");
 
             migrationBuilder.DropTable(
                 name: "halls");
