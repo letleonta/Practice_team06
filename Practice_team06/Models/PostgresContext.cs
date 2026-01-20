@@ -3,9 +3,7 @@ using System.Collections.Generic;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
-
 namespace Practice_team06.Models;
-
 
 public partial class PostgresContext : IdentityDbContext<User, IdentityRole<int>, int>
 {
@@ -37,149 +35,171 @@ public partial class PostgresContext : IdentityDbContext<User, IdentityRole<int>
         base.OnModelCreating(modelBuilder);
 
         modelBuilder
-            .HasPostgresEnum("age_restriction_level", new[] { "0+", "12+", "16+", "18+" })
-            .HasPostgresEnum("booking_status_enum", new[] { "Inprogress", "Paid", "Cancelled" })
-            .HasPostgresEnum("seat_status_enum", new[] { "Free", "Reserved", "Sold" })
-            .HasPostgresEnum("seat_type_enum", new[] { "Standard", "VIP" });
-            
+            .HasPostgresEnum("AgeRestrictionLevel", new[] { "0+", "12+", "16+", "18+" })
+            .HasPostgresEnum("BookingStatusEnum", new[] { "Inprogress", "Paid", "Cancelled" })
+            .HasPostgresEnum("SeatStatusEnum", new[] { "Free", "Reserved", "Sold" })
+            .HasPostgresEnum("SeatTypeEnum", new[] { "Standard", "VIP" });
+
         modelBuilder.Entity<User>(entity =>
         {
             entity.ToTable("AspNetUsers");
-            entity.Property(e => e.FirstName).HasMaxLength(50).HasColumnName("first_name");
-            entity.Property(e => e.LastName).HasMaxLength(50).HasColumnName("last_name");
-            entity.Property(e => e.BirthDate).HasColumnType("date").HasColumnName("birth_date");
-            
+            entity.Property(e => e.FirstName).HasMaxLength(50).HasColumnName("FirstName");
+            entity.Property(e => e.LastName).HasMaxLength(50).HasColumnName("LastName");
+            entity.Property(e => e.BirthDate).HasColumnType("date").HasColumnName("BirthDate");
+
         });
-        
-        
+
+
         modelBuilder.Entity<Actor>(entity =>
         {
-            entity.HasKey(e => e.Id).HasName("actors_pkey");
-            entity.ToTable("actors");
-            entity.Property(e => e.Id).HasColumnName("id");
-            entity.Property(e => e.FirstName).HasMaxLength(50).HasColumnName("first_name");
-            entity.Property(e => e.LastName).HasMaxLength(50).HasColumnName("last_name");
-            entity.Property(e => e.PhotoUri).HasMaxLength(255).HasColumnName("photo_uri");
+            entity.HasKey(e => e.Id).HasName("PK_Actors");
+            entity.ToTable("Actors");
+            entity.Property(e => e.Id).HasColumnName("Id");
+            entity.Property(e => e.FirstName).HasMaxLength(50).HasColumnName("FirstName");
+            entity.Property(e => e.LastName).HasMaxLength(50).HasColumnName("LastName");
+            entity.Property(e => e.PhotoUri).HasMaxLength(255).HasColumnName("PhotoUri");
         });
 
         modelBuilder.Entity<Booking>(entity =>
         {
-            entity.HasKey(e => e.Id).HasName("bookings_pkey");
-            entity.ToTable("bookings");
-            entity.Property(e => e.Id).HasColumnName("id");
+            entity.HasKey(e => e.Id).HasName("PK_Bookings");
+            entity.ToTable("Bookings");
+            entity.Property(e => e.Id).HasColumnName("Id");
             entity.Property(e => e.BookingTime)
                 .HasDefaultValueSql("CURRENT_TIMESTAMP")
                 .HasColumnType("timestamp(0) without time zone")
-                .HasColumnName("booking_time");
-            
-            entity.Property(e => e.UserId).HasColumnName("user_id");
+                .HasColumnName("BookingTime");
+
+            entity.Property(e => e.UserId).HasColumnName("UserId");
             entity.HasOne(d => d.User).WithMany(p => p.Bookings)
                 .HasForeignKey(d => d.UserId)
-                .HasConstraintName("bookings_user_id_fkey");
+                .HasConstraintName("FK_BookingsUserId");
         });
 
         modelBuilder.Entity<Genre>(entity =>
         {
-            entity.HasKey(e => e.Id).HasName("genres_pkey");
-            entity.ToTable("genres");
-            entity.HasIndex(e => e.Name, "genres_name_key").IsUnique();
-            entity.Property(e => e.Id).HasColumnName("id");
-            entity.Property(e => e.Name).HasMaxLength(50).HasColumnName("name");
+            entity.HasKey(e => e.Id).HasName("PK_Genres");
+            entity.ToTable("Genres");
+            entity.HasIndex(e => e.Name, "GenresNameKey").IsUnique();
+            entity.Property(e => e.Id).HasColumnName("Id");
+            entity.Property(e => e.Name).HasMaxLength(50).HasColumnName("Name");
         });
 
         modelBuilder.Entity<Hall>(entity =>
         {
-            entity.HasKey(e => e.Id).HasName("halls_pkey");
-            entity.ToTable("halls");
-            entity.Property(e => e.Id).HasColumnName("id");
-            entity.Property(e => e.Description).HasColumnName("description");
-            entity.Property(e => e.Name).HasMaxLength(30).HasColumnName("name");
-            entity.Property(e => e.PriceModifier).HasPrecision(3, 2).HasDefaultValue(1.0m).HasColumnName("price_modifier");
+            entity.HasKey(e => e.Id).HasName("PK_Halls");
+            entity.ToTable("Halls");
+            entity.Property(e => e.Id).HasColumnName("Id");
+            entity.Property(e => e.Description).HasColumnName("Description");
+            entity.Property(e => e.Name).HasMaxLength(30).HasColumnName("Name");
+            entity.Property(e => e.PriceModifier).HasPrecision(3, 2).HasDefaultValue(1.0m)
+                .HasColumnName("PriceModifier");
         });
 
         modelBuilder.Entity<Language>(entity =>
         {
-            entity.HasKey(e => e.Id).HasName("languages_pkey");
-            entity.ToTable("languages");
-            entity.HasIndex(e => e.Name, "languages_name_key").IsUnique();
-            entity.Property(e => e.Id).HasColumnName("id");
-            entity.Property(e => e.Name).HasMaxLength(50).HasColumnName("name");
+            entity.HasKey(e => e.Id).HasName("PK_Languages");
+            entity.ToTable("Languages");
+            entity.HasIndex(e => e.Name, "LanguagesNameKey").IsUnique();
+            entity.Property(e => e.Id).HasColumnName("Id");
+            entity.Property(e => e.Name).HasMaxLength(50).HasColumnName("Name");
         });
 
         modelBuilder.Entity<Movie>(entity =>
         {
-            entity.HasKey(e => e.Id).HasName("movies_pkey");
-            entity.ToTable("movies");
-            entity.Property(e => e.Id).HasColumnName("id");
-            entity.Property(e => e.BasePrice).HasPrecision(6, 2).HasColumnName("base_price");
-            entity.Property(e => e.PosterUri).HasMaxLength(255).HasColumnName("main_poster_uri");
-            entity.Property(e => e.TrailerUri).HasMaxLength(255).HasColumnName("main_trailer_uri");
-            entity.Property(e => e.Rating).HasPrecision(3, 1).HasColumnName("rating");
-            entity.Property(e => e.Title).HasMaxLength(255).HasColumnName("title");
+            entity.HasKey(e => e.Id).HasName("PK_Movies");
+            entity.ToTable("Movies");
+            entity.Property(e => e.Id).HasColumnName("Id");
+            entity.Property(e => e.BasePrice).HasPrecision(6, 2).HasColumnName("BasePrice");
+            entity.Property(e => e.PosterUri).HasMaxLength(255).HasColumnName("PosterUri");
+            entity.Property(e => e.TrailerUri).HasMaxLength(255).HasColumnName("TrailerUri");
+            entity.Property(e => e.Rating).HasPrecision(3, 1).HasColumnName("Rating");
+            entity.Property(e => e.Title).HasMaxLength(255).HasColumnName("Title");
 
             entity.HasMany(d => d.Genres).WithMany(p => p.Movies)
                 .UsingEntity<Dictionary<string, object>>(
                     "MovieGenre",
-                    r => r.HasOne<Genre>().WithMany().HasForeignKey("GenreId").HasConstraintName("movie_genres_genre_id_fkey"),
-                    l => l.HasOne<Movie>().WithMany().HasForeignKey("MovieId").HasConstraintName("movie_genres_movie_id_fkey"),
+                    r => r.HasOne<Genre>().WithMany().HasForeignKey("GenreId")
+                        .HasConstraintName("movie_genres_genre_id_fkey"),
+                    l => l.HasOne<Movie>().WithMany().HasForeignKey("MovieId")
+                        .HasConstraintName("movie_genres_movie_id_fkey"),
                     j =>
                     {
-                        j.HasKey("MovieId", "GenreId").HasName("movie_genres_pkey");
-                        j.ToTable("movie_genres");
-                        j.IndexerProperty<int>("MovieId").HasColumnName("movie_id");
-                        j.IndexerProperty<int>("GenreId").HasColumnName("genre_id");
+                        j.HasKey("MovieId", "GenreId").HasName("MovieGenresPkey");
+                        j.ToTable("MovieGenres");
+                        j.IndexerProperty<int>("MovieId").HasColumnName("MovieId");
+                        j.IndexerProperty<int>("GenreId").HasColumnName("GenreId");
                     });
         });
 
         modelBuilder.Entity<MovieActor>(entity =>
         {
-            entity.HasKey(e => new { e.MovieId, e.ActorId }).HasName("movie_actors_pkey");
-            entity.ToTable("movie_actors");
-            entity.Property(e => e.MovieId).HasColumnName("movie_id");
-            entity.Property(e => e.ActorId).HasColumnName("actor_id");
-            entity.Property(e => e.RoleName).HasMaxLength(100).HasColumnName("role_name");
+            entity.HasKey(e => new { e.MovieId, e.ActorId }).HasName("PK_MovieActors");
+            entity.ToTable("MovieActors");
+            entity.Property(e => e.MovieId).HasColumnName("MovieId");
+            entity.Property(e => e.ActorId).HasColumnName("ActorId");
+            entity.Property(e => e.RoleName).HasMaxLength(100).HasColumnName("RoleName");
 
-            entity.HasOne(d => d.Actor).WithMany(p => p.MovieActors).HasForeignKey(d => d.ActorId).HasConstraintName("movie_actors_actor_id_fkey");
-            entity.HasOne(d => d.Movie).WithMany(p => p.MovieActors).HasForeignKey(d => d.MovieId).HasConstraintName("movie_actors_movie_id_fkey");
+            entity.HasOne(d => d.Actor).WithMany(p => p.MovieActors)
+                .HasForeignKey(d => d.ActorId)
+                .HasConstraintName("FK_MovieActorsActorId");
+            entity.HasOne(d => d.Movie).WithMany(p => p.MovieActors)
+                .HasForeignKey(d => d.MovieId)
+                .HasConstraintName("FK_MovieActorsMovieId");
         });
 
         modelBuilder.Entity<Seat>(entity =>
         {
-            entity.HasKey(e => e.Id).HasName("seats_pkey");
-            entity.ToTable("seats");
-            entity.Property(e => e.Id).HasColumnName("id");
-            entity.Property(e => e.HallId).HasColumnName("hall_id");
-            entity.Property(e => e.PriceModifier).HasPrecision(4, 2).HasDefaultValue(1.0m).HasColumnName("price_modifier");
-            entity.Property(e => e.RowNumber).HasColumnName("row_number").HasColumnType("smallint");
-            entity.Property(e => e.SeatNumber).HasColumnName("seat_number").HasColumnType("smallint");
+            entity.HasKey(e => e.Id).HasName("PK_Seats");
+            entity.ToTable("Seats");
+            entity.Property(e => e.Id).HasColumnName("Id");
+            entity.Property(e => e.HallId).HasColumnName("HallId");
+            entity.Property(e => e.PriceModifier).HasPrecision(4, 2)
+                .HasDefaultValue(1.0m).HasColumnName("PriceModifier");
+            entity.Property(e => e.RowNumber).HasColumnName("RowNumber").HasColumnType("smallint");
+            entity.Property(e => e.SeatNumber).HasColumnName("SeatNumber").HasColumnType("smallint");
 
-            entity.HasOne(d => d.Hall).WithMany(p => p.Seats).HasForeignKey(d => d.HallId).HasConstraintName("seats_hall_id_fkey");
+            entity.HasOne(d => d.Hall).WithMany(p => p.Seats)
+                .HasForeignKey(d => d.HallId).HasConstraintName("FK_SeatsHallId");
         });
 
         modelBuilder.Entity<Session>(entity =>
         {
-            entity.HasKey(e => e.Id).HasName("sessions_pkey");
-            entity.ToTable("sessions");
-            entity.Property(e => e.Id).HasColumnName("id");
-            entity.Property(e => e.StartTime).HasColumnType("timestamp(0) without time zone").HasColumnName("start_time");
+            entity.HasKey(e => e.Id).HasName("PK_Sessions");
+            entity.ToTable("Sessions");
+            entity.Property(e => e.Id).HasColumnName("Id");
+            entity.Property(e => e.StartTime)
+                .HasColumnType("timestamp(0) without time zone").HasColumnName("StartTime");
 
-            entity.HasOne(d => d.Hall).WithMany(p => p.Sessions).HasForeignKey(d => d.HallId).HasConstraintName("sessions_hall_id_fkey");
-            entity.HasOne(d => d.Language).WithMany(p => p.Sessions).HasForeignKey(d => d.LanguageId).OnDelete(DeleteBehavior.ClientSetNull).HasConstraintName("sessions_language_id_fkey");
-            entity.HasOne(d => d.Movie).WithMany(p => p.Sessions).HasForeignKey(d => d.MovieId).HasConstraintName("sessions_movie_id_fkey");
+            entity.HasOne(d => d.Hall).WithMany(p => p.Sessions)
+                .HasForeignKey(d => d.HallId).HasConstraintName("FK_SessionsHallId");
+            entity.HasOne(d => d.Language).WithMany(p => p.Sessions)
+                .HasForeignKey(d => d.LanguageId)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK_SessionsLanguageId");
+            entity.HasOne(d => d.Movie).WithMany(p => p.Sessions)
+                .HasForeignKey(d => d.MovieId)
+                .HasConstraintName("FK_SessionsMovieId");
         });
 
         modelBuilder.Entity<Ticket>(entity =>
         {
-            entity.HasKey(e => e.Id).HasName("tickets_pkey");
-            entity.ToTable("tickets");
-            entity.HasIndex(e => new { e.SessionId, e.SeatId }, "idx_unique_active_seat").IsUnique().HasFilter("(is_active = true)");
-            entity.Property(e => e.Id).HasColumnName("id");
-            entity.Property(e => e.ActualPrice).HasPrecision(6, 2).HasColumnName("actual_price");
-            entity.Property(e => e.IsActive).HasDefaultValue(true).HasColumnName("is_active");
+            entity.HasKey(e => e.Id).HasName("PK_Tickets");
+            entity.ToTable("Tickets");
+            entity.HasIndex(e => new { e.SessionId, e.SeatId }, "IdxUniqueActiveSeat").IsUnique()
+                .HasFilter("(\"IsActive\" = true)");
+            entity.Property(e => e.Id).HasColumnName("Id");
+            entity.Property(e => e.ActualPrice).HasPrecision(6, 2).HasColumnName("ActualPrice");
+            entity.Property(e => e.IsActive).HasDefaultValue(true).HasColumnName("IsActive");
 
-            entity.HasOne(d => d.Booking).WithMany(p => p.Tickets).HasForeignKey(d => d.BookingId).HasConstraintName("tickets_booking_id_fkey");
-            entity.HasOne(d => d.Seat).WithMany(p => p.Tickets).HasForeignKey(d => d.SeatId).OnDelete(DeleteBehavior.ClientSetNull).HasConstraintName("tickets_seat_id_fkey");
-            entity.HasOne(d => d.Session).WithMany(p => p.Tickets).HasForeignKey(d => d.SessionId).OnDelete(DeleteBehavior.ClientSetNull).HasConstraintName("tickets_session_id_fkey");
+            entity.HasOne(d => d.Booking).WithMany(p => p.Tickets).HasForeignKey(d => d.BookingId)
+                .HasConstraintName("FK_TicketsBookingId");
+            entity.HasOne(d => d.Seat).WithMany(p => p.Tickets)
+                .HasForeignKey(d => d.SeatId).OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK_TicketsSeatId");
+            entity.HasOne(d => d.Session).WithMany(p => p.Tickets)
+                .HasForeignKey(d => d.SessionId).OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK_TicketsSessionId");
         });
 
         OnModelCreatingPartial(modelBuilder);
