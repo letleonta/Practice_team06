@@ -1,18 +1,21 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
 
 namespace Practice_team06.Models;
 
 public partial class Seat
 {
     public int Id { get; set; }
-
+    [Required]
     public int HallId { get; set; }
-
+    [Required]
+    [Range(1, 200)]
     public short RowNumber { get; set; }
-
+    [Required]
+    [Range(1, 200)]
     public short SeatNumber { get; set; }
-
+    [Range(0.1, 5.0)]
     public decimal? PriceModifier { get; set; }
     
     public SeatType SeatType { get; set; }

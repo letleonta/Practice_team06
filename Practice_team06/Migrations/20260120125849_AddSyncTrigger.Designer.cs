@@ -12,8 +12,8 @@ using Practice_team06.Models;
 namespace Practice_team06.Migrations
 {
     [DbContext(typeof(PostgresContext))]
-    [Migration("20260119131727_UpdateUserSchemaAndTypes")]
-    partial class UpdateUserSchemaAndTypes
+    [Migration("20260120125849_AddSyncTrigger")]
+    partial class AddSyncTrigger
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -23,29 +23,160 @@ namespace Practice_team06.Migrations
                 .HasAnnotation("ProductVersion", "10.0.2")
                 .HasAnnotation("Relational:MaxIdentifierLength", 63);
 
-            NpgsqlModelBuilderExtensions.HasPostgresEnum(modelBuilder, "age_restriction_level", new[] { "0+", "12+", "16+", "18+" });
-            NpgsqlModelBuilderExtensions.HasPostgresEnum(modelBuilder, "booking_status_enum", new[] { "Inprogress", "Paid", "Cancelled" });
-            NpgsqlModelBuilderExtensions.HasPostgresEnum(modelBuilder, "role_enum", new[] { "Client", "Admin" });
-            NpgsqlModelBuilderExtensions.HasPostgresEnum(modelBuilder, "seat_status_enum", new[] { "Free", "Reserved", "Sold" });
-            NpgsqlModelBuilderExtensions.HasPostgresEnum(modelBuilder, "seat_type_enum", new[] { "Standard", "VIP" });
+            NpgsqlModelBuilderExtensions.HasPostgresEnum(modelBuilder, "AgeRestrictionLevel", new[] { "0+", "12+", "16+", "18+" });
+            NpgsqlModelBuilderExtensions.HasPostgresEnum(modelBuilder, "BookingStatusEnum", new[] { "Inprogress", "Paid", "Cancelled" });
+            NpgsqlModelBuilderExtensions.HasPostgresEnum(modelBuilder, "SeatStatusEnum", new[] { "Free", "Reserved", "Sold" });
+            NpgsqlModelBuilderExtensions.HasPostgresEnum(modelBuilder, "SeatTypeEnum", new[] { "Standard", "VIP" });
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
+
+            modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRole<int>", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("ConcurrencyStamp")
+                        .IsConcurrencyToken()
+                        .HasColumnType("text");
+
+                    b.Property<string>("Name")
+                        .HasMaxLength(256)
+                        .HasColumnType("character varying(256)");
+
+                    b.Property<string>("NormalizedName")
+                        .HasMaxLength(256)
+                        .HasColumnType("character varying(256)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("NormalizedName")
+                        .IsUnique()
+                        .HasDatabaseName("RoleNameIndex");
+
+                    b.ToTable("AspNetRoles", (string)null);
+                });
+
+            modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRoleClaim<int>", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("ClaimType")
+                        .HasColumnType("text");
+
+                    b.Property<string>("ClaimValue")
+                        .HasColumnType("text");
+
+                    b.Property<int>("RoleId")
+                        .HasColumnType("integer");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("RoleId");
+
+                    b.ToTable("AspNetRoleClaims", (string)null);
+                });
+
+            modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityUserClaim<int>", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("ClaimType")
+                        .HasColumnType("text");
+
+                    b.Property<string>("ClaimValue")
+                        .HasColumnType("text");
+
+                    b.Property<int>("UserId")
+                        .HasColumnType("integer");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("AspNetUserClaims", (string)null);
+                });
+
+            modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityUserLogin<int>", b =>
+                {
+                    b.Property<string>("LoginProvider")
+                        .HasColumnType("text");
+
+                    b.Property<string>("ProviderKey")
+                        .HasColumnType("text");
+
+                    b.Property<string>("ProviderDisplayName")
+                        .HasColumnType("text");
+
+                    b.Property<int>("UserId")
+                        .HasColumnType("integer");
+
+                    b.HasKey("LoginProvider", "ProviderKey");
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("AspNetUserLogins", (string)null);
+                });
+
+            modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityUserRole<int>", b =>
+                {
+                    b.Property<int>("UserId")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("RoleId")
+                        .HasColumnType("integer");
+
+                    b.HasKey("UserId", "RoleId");
+
+                    b.HasIndex("RoleId");
+
+                    b.ToTable("AspNetUserRoles", (string)null);
+                });
+
+            modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityUserToken<int>", b =>
+                {
+                    b.Property<int>("UserId")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("LoginProvider")
+                        .HasColumnType("text");
+
+                    b.Property<string>("Name")
+                        .HasColumnType("text");
+
+                    b.Property<string>("Value")
+                        .HasColumnType("text");
+
+                    b.HasKey("UserId", "LoginProvider", "Name");
+
+                    b.ToTable("AspNetUserTokens", (string)null);
+                });
 
             modelBuilder.Entity("MovieGenre", b =>
                 {
                     b.Property<int>("MovieId")
                         .HasColumnType("integer")
-                        .HasColumnName("movie_id");
+                        .HasColumnName("MovieId");
 
                     b.Property<int>("GenreId")
                         .HasColumnType("integer")
-                        .HasColumnName("genre_id");
+                        .HasColumnName("GenreId");
 
                     b.HasKey("MovieId", "GenreId")
-                        .HasName("movie_genres_pkey");
+                        .HasName("MovieGenresPkey");
 
                     b.HasIndex("GenreId");
 
-                    b.ToTable("movie_genres", (string)null);
+                    b.ToTable("MovieGenres", (string)null);
                 });
 
             modelBuilder.Entity("Practice_team06.Models.Actor", b =>
@@ -53,7 +184,7 @@ namespace Practice_team06.Migrations
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("integer")
-                        .HasColumnName("id");
+                        .HasColumnName("Id");
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
 
@@ -61,23 +192,23 @@ namespace Practice_team06.Migrations
                         .IsRequired()
                         .HasMaxLength(50)
                         .HasColumnType("character varying(50)")
-                        .HasColumnName("first_name");
+                        .HasColumnName("FirstName");
 
                     b.Property<string>("LastName")
                         .IsRequired()
                         .HasMaxLength(50)
                         .HasColumnType("character varying(50)")
-                        .HasColumnName("last_name");
+                        .HasColumnName("LastName");
 
                     b.Property<string>("PhotoUri")
                         .HasMaxLength(255)
                         .HasColumnType("character varying(255)")
-                        .HasColumnName("photo_uri");
+                        .HasColumnName("PhotoUri");
 
                     b.HasKey("Id")
-                        .HasName("actors_pkey");
+                        .HasName("PK_Actors");
 
-                    b.ToTable("actors", (string)null);
+                    b.ToTable("Actors", (string)null);
                 });
 
             modelBuilder.Entity("Practice_team06.Models.Booking", b =>
@@ -85,14 +216,14 @@ namespace Practice_team06.Migrations
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("integer")
-                        .HasColumnName("id");
+                        .HasColumnName("Id");
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
 
                     b.Property<DateTime?>("BookingTime")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("timestamp(0) without time zone")
-                        .HasColumnName("booking_time")
+                        .HasColumnName("BookingTime")
                         .HasDefaultValueSql("CURRENT_TIMESTAMP");
 
                     b.Property<int>("Status")
@@ -100,14 +231,14 @@ namespace Practice_team06.Migrations
 
                     b.Property<int>("UserId")
                         .HasColumnType("integer")
-                        .HasColumnName("user_id");
+                        .HasColumnName("UserId");
 
                     b.HasKey("Id")
-                        .HasName("bookings_pkey");
+                        .HasName("PK_Bookings");
 
                     b.HasIndex("UserId");
 
-                    b.ToTable("bookings", (string)null);
+                    b.ToTable("Bookings", (string)null);
                 });
 
             modelBuilder.Entity("Practice_team06.Models.Genre", b =>
@@ -115,7 +246,7 @@ namespace Practice_team06.Migrations
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("integer")
-                        .HasColumnName("id");
+                        .HasColumnName("Id");
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
 
@@ -123,15 +254,15 @@ namespace Practice_team06.Migrations
                         .IsRequired()
                         .HasMaxLength(50)
                         .HasColumnType("character varying(50)")
-                        .HasColumnName("name");
+                        .HasColumnName("Name");
 
                     b.HasKey("Id")
-                        .HasName("genres_pkey");
+                        .HasName("PK_Genres");
 
-                    b.HasIndex(new[] { "Name" }, "genres_name_key")
+                    b.HasIndex(new[] { "Name" }, "GenresNameKey")
                         .IsUnique();
 
-                    b.ToTable("genres", (string)null);
+                    b.ToTable("Genres", (string)null);
                 });
 
             modelBuilder.Entity("Practice_team06.Models.Hall", b =>
@@ -139,31 +270,32 @@ namespace Practice_team06.Migrations
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("integer")
-                        .HasColumnName("id");
+                        .HasColumnName("Id");
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
 
                     b.Property<string>("Description")
-                        .HasColumnType("text")
-                        .HasColumnName("description");
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("Description");
 
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasMaxLength(30)
                         .HasColumnType("character varying(30)")
-                        .HasColumnName("name");
+                        .HasColumnName("Name");
 
                     b.Property<decimal>("PriceModifier")
                         .ValueGeneratedOnAdd()
                         .HasPrecision(3, 2)
                         .HasColumnType("numeric(3,2)")
                         .HasDefaultValue(1.0m)
-                        .HasColumnName("price_modifier");
+                        .HasColumnName("PriceModifier");
 
                     b.HasKey("Id")
-                        .HasName("halls_pkey");
+                        .HasName("PK_Halls");
 
-                    b.ToTable("halls", (string)null);
+                    b.ToTable("Halls", (string)null);
                 });
 
             modelBuilder.Entity("Practice_team06.Models.Language", b =>
@@ -171,7 +303,7 @@ namespace Practice_team06.Migrations
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("integer")
-                        .HasColumnName("id");
+                        .HasColumnName("Id");
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
 
@@ -179,15 +311,15 @@ namespace Practice_team06.Migrations
                         .IsRequired()
                         .HasMaxLength(50)
                         .HasColumnType("character varying(50)")
-                        .HasColumnName("name");
+                        .HasColumnName("Name");
 
                     b.HasKey("Id")
-                        .HasName("languages_pkey");
+                        .HasName("PK_Languages");
 
-                    b.HasIndex(new[] { "Name" }, "languages_name_key")
+                    b.HasIndex(new[] { "Name" }, "LanguagesNameKey")
                         .IsUnique();
 
-                    b.ToTable("languages", (string)null);
+                    b.ToTable("Languages", (string)null);
                 });
 
             modelBuilder.Entity("Practice_team06.Models.Movie", b =>
@@ -195,7 +327,7 @@ namespace Practice_team06.Migrations
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("integer")
-                        .HasColumnName("id");
+                        .HasColumnName("Id");
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
 
@@ -205,76 +337,71 @@ namespace Practice_team06.Migrations
                     b.Property<decimal>("BasePrice")
                         .HasPrecision(6, 2)
                         .HasColumnType("numeric(6,2)")
-                        .HasColumnName("base_price");
+                        .HasColumnName("BasePrice");
 
                     b.Property<string>("Description")
-                        .HasColumnType("text")
-                        .HasColumnName("description");
+                        .HasColumnType("text");
 
                     b.Property<int?>("DurationMin")
-                        .HasColumnType("integer")
-                        .HasColumnName("duration_min");
+                        .HasColumnType("integer");
 
                     b.Property<DateOnly?>("EndDate")
-                        .HasColumnType("date")
-                        .HasColumnName("end_date");
+                        .HasColumnType("date");
 
                     b.Property<string>("PosterUri")
                         .HasMaxLength(255)
                         .HasColumnType("character varying(255)")
-                        .HasColumnName("main_poster_uri");
+                        .HasColumnName("PosterUri");
 
                     b.Property<decimal?>("Rating")
                         .HasPrecision(3, 1)
                         .HasColumnType("numeric(3,1)")
-                        .HasColumnName("rating");
+                        .HasColumnName("Rating");
 
                     b.Property<DateOnly?>("ReleaseDate")
-                        .HasColumnType("date")
-                        .HasColumnName("release_date");
+                        .HasColumnType("date");
 
                     b.Property<DateOnly?>("StartDate")
-                        .HasColumnType("date")
-                        .HasColumnName("start_date");
+                        .HasColumnType("date");
 
                     b.Property<string>("Title")
                         .IsRequired()
                         .HasMaxLength(255)
                         .HasColumnType("character varying(255)")
-                        .HasColumnName("title");
+                        .HasColumnName("Title");
 
                     b.Property<string>("TrailerUri")
                         .HasMaxLength(255)
                         .HasColumnType("character varying(255)")
-                        .HasColumnName("main_trailer_uri");
+                        .HasColumnName("TrailerUri");
 
                     b.HasKey("Id")
-                        .HasName("movies_pkey");
+                        .HasName("PK_Movies");
 
-                    b.ToTable("movies", (string)null);
+                    b.ToTable("Movies", (string)null);
                 });
 
             modelBuilder.Entity("Practice_team06.Models.MovieActor", b =>
                 {
                     b.Property<int>("MovieId")
                         .HasColumnType("integer")
-                        .HasColumnName("movie_id");
+                        .HasColumnName("MovieId");
 
                     b.Property<int>("ActorId")
                         .HasColumnType("integer")
-                        .HasColumnName("actor_id");
+                        .HasColumnName("ActorId");
 
                     b.Property<string>("RoleName")
                         .HasMaxLength(100)
                         .HasColumnType("character varying(100)")
-                        .HasColumnName("role_name");
+                        .HasColumnName("RoleName");
 
                     b.HasKey("MovieId", "ActorId")
-                        .HasName("movie_actors_pkey");
+                        .HasName("PK_MovieActors");
 
                     b.HasIndex("ActorId");
 
-                    b.ToTable("movie_actors", (string)null);
+                    b.ToTable("MovieActors", (string)null);
                 });
 
             modelBuilder.Entity("Practice_team06.Models.Seat", b =>
@@ -282,28 +409,28 @@ namespace Practice_team06.Migrations
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("integer")
-                        .HasColumnName("id");
+                        .HasColumnName("Id");
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
 
                     b.Property<int>("HallId")
                         .HasColumnType("integer")
-                        .HasColumnName("hall_id");
+                        .HasColumnName("HallId");
 
                     b.Property<decimal?>("PriceModifier")
                         .ValueGeneratedOnAdd()
                         .HasPrecision(4, 2)
                         .HasColumnType("numeric(4,2)")
                         .HasDefaultValue(1.0m)
-                        .HasColumnName("price_modifier");
+                        .HasColumnName("PriceModifier");
 
                     b.Property<short>("RowNumber")
                         .HasColumnType("smallint")
-                        .HasColumnName("row_number");
+                        .HasColumnName("RowNumber");
 
                     b.Property<short>("SeatNumber")
                         .HasColumnType("smallint")
-                        .HasColumnName("seat_number");
+                        .HasColumnName("SeatNumber");
 
                     b.Property<int>("SeatStatus")
                         .HasColumnType("integer");
@@ -312,11 +439,11 @@ namespace Practice_team06.Migrations
                         .HasColumnType("integer");
 
                     b.HasKey("Id")
-                        .HasName("seats_pkey");
+                        .HasName("PK_Seats");
 
                     b.HasIndex("HallId");
 
-                    b.ToTable("seats", (string)null);
+                    b.ToTable("Seats", (string)null);
                 });
 
             modelBuilder.Entity("Practice_team06.Models.Session", b =>
@@ -324,28 +451,25 @@ namespace Practice_team06.Migrations
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("integer")
-                        .HasColumnName("id");
+                        .HasColumnName("Id");
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
 
                     b.Property<int>("HallId")
-                        .HasColumnType("integer")
-                        .HasColumnName("hall_id");
+                        .HasColumnType("integer");
 
                     b.Property<int>("LanguageId")
-                        .HasColumnType("integer")
-                        .HasColumnName("language_id");
+                        .HasColumnType("integer");
 
                     b.Property<int>("MovieId")
-                        .HasColumnType("integer")
-                        .HasColumnName("movie_id");
+                        .HasColumnType("integer");
 
                     b.Property<DateTime>("StartTime")
                         .HasColumnType("timestamp(0) without time zone")
-                        .HasColumnName("start_time");
+                        .HasColumnName("StartTime");
 
                     b.HasKey("Id")
-                        .HasName("sessions_pkey");
+                        .HasName("PK_Sessions");
 
                     b.HasIndex("HallId");
 
@@ -353,7 +477,7 @@ namespace Practice_team06.Migrations
 
                     b.HasIndex("MovieId");
 
-                    b.ToTable("sessions", (string)null);
+                    b.ToTable("Sessions", (string)null);
                 });
 
             modelBuilder.Entity("Practice_team06.Models.Ticket", b =>
@@ -361,102 +485,176 @@ namespace Practice_team06.Migrations
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("integer")
-                        .HasColumnName("id");
+                        .HasColumnName("Id");
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
 
                     b.Property<decimal>("ActualPrice")
                         .HasPrecision(6, 2)
                         .HasColumnType("numeric(6,2)")
-                        .HasColumnName("actual_price");
+                        .HasColumnName("ActualPrice");
 
                     b.Property<int>("BookingId")
-                        .HasColumnType("integer")
-                        .HasColumnName("booking_id");
+                        .HasColumnType("integer");
 
                     b.Property<bool?>("IsActive")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("boolean")
                         .HasDefaultValue(true)
-                        .HasColumnName("is_active");
+                        .HasColumnName("IsActive");
 
                     b.Property<int>("SeatId")
-                        .HasColumnType("integer")
-                        .HasColumnName("seat_id");
+                        .HasColumnType("integer");
 
                     b.Property<int>("SessionId")
-                        .HasColumnType("integer")
-                        .HasColumnName("session_id");
+                        .HasColumnType("integer");
 
                     b.HasKey("Id")
-                        .HasName("tickets_pkey");
+                        .HasName("PK_Tickets");
 
                     b.HasIndex("BookingId");
 
                     b.HasIndex("SeatId");
 
-                    b.HasIndex(new[] { "SessionId", "SeatId" }, "idx_unique_active_seat")
+                    b.HasIndex(new[] { "SessionId", "SeatId" }, "IdxUniqueActiveSeat")
                         .IsUnique()
-                        .HasFilter("(is_active = true)");
+                        .HasFilter("(\"IsActive\" = true)");
 
-                    b.ToTable("tickets", (string)null);
+                    b.ToTable("Tickets", (string)null);
                 });
 
-            modelBuilder.Entity("Practice_team06.Models.User", b =>
+            modelBuilder.Entity("User", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("integer")
-                        .HasColumnName("id");
+                        .HasColumnType("integer");
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
 
+                    b.Property<int>("AccessFailedCount")
+                        .HasColumnType("integer");
+
                     b.Property<DateTime?>("BirthDate")
                         .HasColumnType("date")
-                        .HasColumnName("birth_date");
+                        .HasColumnName("BirthDate");
+
+                    b.Property<string>("ConcurrencyStamp")
+                        .IsConcurrencyToken()
+                        .HasColumnType("text");
 
                     b.Property<string>("Email")
-                        .IsRequired()
-                        .HasMaxLength(320)
-                        .HasColumnType("character varying(320)")
-                        .HasColumnName("email");
+                        .HasMaxLength(256)
+                        .HasColumnType("character varying(256)");
+
+                    b.Property<bool>("EmailConfirmed")
+                        .HasColumnType("boolean");
 
                     b.Property<string>("FirstName")
                         .IsRequired()
                         .HasMaxLength(50)
                         .HasColumnType("character varying(50)")
-                        .HasColumnName("first_name");
+                        .HasColumnName("FirstName");
 
                     b.Property<string>("LastName")
                         .IsRequired()
                         .HasMaxLength(50)
                         .HasColumnType("character varying(50)")
-                        .HasColumnName("last_name");
+                        .HasColumnName("LastName");
 
-                    b.Property<string>("Password")
-                        .IsRequired()
-                        .HasMaxLength(255)
-                        .HasColumnType("character varying(255)")
-                        .HasColumnName("password");
+                    b.Property<bool>("LockoutEnabled")
+                        .HasColumnType("boolean");
 
-                    b.Property<string>("Phone")
-                        .HasMaxLength(20)
-                        .HasColumnType("character varying(20)")
-                        .HasColumnName("phone");
+                    b.Property<DateTimeOffset?>("LockoutEnd")
+                        .HasColumnType("timestamp with time zone");
 
-                    b.Property<int>("Role")
-                        .HasColumnType("integer");
+                    b.Property<string>("NormalizedEmail")
+                        .HasMaxLength(256)
+                        .HasColumnType("character varying(256)");
 
-                    b.HasKey("Id")
-                        .HasName("users_pkey");
+                    b.Property<string>("NormalizedUserName")
+                        .HasMaxLength(256)
+                        .HasColumnType("character varying(256)");
 
-                    b.HasIndex(new[] { "Email" }, "users_email_key")
-                        .IsUnique();
+                    b.Property<string>("PasswordHash")
+                        .HasColumnType("text");
 
-                    b.HasIndex(new[] { "Phone" }, "users_phone_key")
-                        .IsUnique();
+                    b.Property<string>("PhoneNumber")
+                        .HasColumnType("text");
 
-                    b.ToTable("users", (string)null);
+                    b.Property<bool>("PhoneNumberConfirmed")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("SecurityStamp")
+                        .HasColumnType("text");
+
+                    b.Property<bool>("TwoFactorEnabled")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("UserName")
+                        .HasMaxLength(256)
+                        .HasColumnType("character varying(256)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("NormalizedEmail")
+                        .HasDatabaseName("EmailIndex");
+
+                    b.HasIndex("NormalizedUserName")
+                        .IsUnique()
+                        .HasDatabaseName("UserNameIndex");
+
+                    b.ToTable("AspNetUsers", (string)null);
+                });
+
+            modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRoleClaim<int>", b =>
+                {
+                    b.HasOne("Microsoft.AspNetCore.Identity.IdentityRole<int>", null)
+                        .WithMany()
+                        .HasForeignKey("RoleId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityUserClaim<int>", b =>
+                {
+                    b.HasOne("User", null)
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityUserLogin<int>", b =>
+                {
+                    b.HasOne("User", null)
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityUserRole<int>", b =>
+                {
+                    b.HasOne("Microsoft.AspNetCore.Identity.IdentityRole<int>", null)
+                        .WithMany()
+                        .HasForeignKey("RoleId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("User", null)
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityUserToken<int>", b =>
+                {
+                    b.HasOne("User", null)
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
                 });
 
             modelBuilder.Entity("MovieGenre", b =>
@@ -478,12 +676,12 @@ namespace Practice_team06.Migrations
 
             modelBuilder.Entity("Practice_team06.Models.Booking", b =>
                 {
-                    b.HasOne("Practice_team06.Models.User", "User")
+                    b.HasOne("User", "User")
                         .WithMany("Bookings")
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired()
-                        .HasConstraintName("bookings_user_id_fkey");
+                        .HasConstraintName("FK_BookingsUserId");
 
                     b.Navigation("User");
                 });
@@ -495,14 +693,14 @@ namespace Practice_team06.Migrations
                         .HasForeignKey("ActorId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired()
-                        .HasConstraintName("movie_actors_actor_id_fkey");
+                        .HasConstraintName("FK_MovieActorsActorId");
 
                     b.HasOne("Practice_team06.Models.Movie", "Movie")
                         .WithMany("MovieActors")
                         .HasForeignKey("MovieId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired()
-                        .HasConstraintName("movie_actors_movie_id_fkey");
+                        .HasConstraintName("FK_MovieActorsMovieId");
 
                     b.Navigation("Actor");
 
@@ -516,7 +714,7 @@ namespace Practice_team06.Migrations
                         .HasForeignKey("HallId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired()
-                        .HasConstraintName("seats_hall_id_fkey");
+                        .HasConstraintName("FK_SeatsHallId");
 
                     b.Navigation("Hall");
                 });
@@ -528,20 +726,20 @@ namespace Practice_team06.Migrations
                         .HasForeignKey("HallId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired()
-                        .HasConstraintName("sessions_hall_id_fkey");
+                        .HasConstraintName("FK_SessionsHallId");
 
                     b.HasOne("Practice_team06.Models.Language", "Language")
                         .WithMany("Sessions")
                         .HasForeignKey("LanguageId")
                         .IsRequired()
-                        .HasConstraintName("sessions_language_id_fkey");
+                        .HasConstraintName("FK_SessionsLanguageId");
 
                     b.HasOne("Practice_team06.Models.Movie", "Movie")
                         .WithMany("Sessions")
                         .HasForeignKey("MovieId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired()
-                        .HasConstraintName("sessions_movie_id_fkey");
+                        .HasConstraintName("FK_SessionsMovieId");
 
                     b.Navigation("Hall");
 
@@ -557,19 +755,19 @@ namespace Practice_team06.Migrations
                         .HasForeignKey("BookingId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired()
-                        .HasConstraintName("tickets_booking_id_fkey");
+                        .HasConstraintName("FK_TicketsBookingId");
 
                     b.HasOne("Practice_team06.Models.Seat", "Seat")
                         .WithMany("Tickets")
                         .HasForeignKey("SeatId")
                         .IsRequired()
-                        .HasConstraintName("tickets_seat_id_fkey");
+                        .HasConstraintName("FK_TicketsSeatId");
 
                     b.HasOne("Practice_team06.Models.Session", "Session")
                         .WithMany("Tickets")
                         .HasForeignKey("SessionId")
                         .IsRequired()
-                        .HasConstraintName("tickets_session_id_fkey");
+                        .HasConstraintName("FK_TicketsSessionId");
 
                     b.Navigation("Booking");
 
@@ -617,7 +815,7 @@ namespace Practice_team06.Migrations
                     b.Navigation("Tickets");
                 });
 
-            modelBuilder.Entity("Practice_team06.Models.User", b =>
+            modelBuilder.Entity("User", b =>
                 {
                     b.Navigation("Bookings");
                 });

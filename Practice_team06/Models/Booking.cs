@@ -1,12 +1,13 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
 
 namespace Practice_team06.Models;
 
 public partial class Booking
 {
     public int Id { get; set; }
-
+    [Required]
     public int UserId { get; set; }
 
     public DateTime? BookingTime { get; set; }
