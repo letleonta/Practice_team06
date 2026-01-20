@@ -18,7 +18,7 @@ public partial class Movie
     [DataType(DataType.Date)]
     public DateOnly? ReleaseDate { get; set; }
     [Required]
-    [Range(0, 1000000)]
+    [Range(0, 10000)]
     public decimal BasePrice { get; set; }
     
     public DateOnly? StartDate { get; set; }
