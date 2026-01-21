@@ -2,6 +2,7 @@ using System.Text.Json.Serialization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Practice_team06.Models;
+using Practice_team06.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -27,11 +28,48 @@ builder.Services.AddControllers()
         options.JsonSerializerOptions.Converters.Add(new System.Text.Json.Serialization.JsonStringEnumConverter());
     });
 
+builder.Services.AddScoped<BookingService>();
+
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
 var app = builder.Build();
 
+using (var scope = app.Services.CreateScope())
+{
+    var userManager = scope.ServiceProvider.GetRequiredService<UserManager<User>>();
+
+    var user1 = new User
+    {
+        UserName = "alice",
+        NormalizedUserName = "ALICE",
+        Email = "alice@example.com",
+        NormalizedEmail = "ALICE@EXAMPLE.COM",
+        EmailConfirmed = true,
+        FirstName = "Alice",
+        LastName = "Smith",
+        BirthDate = new DateTime(1995, 5, 1),
+        PhoneNumber = "1234567890",
+        PhoneNumberConfirmed = true
+    };
+
+    var user2 = new User
+    {
+        UserName = "bob",
+        NormalizedUserName = "BOB",
+        Email = "bob@example.com",
+        NormalizedEmail = "BOB@EXAMPLE.COM",
+        EmailConfirmed = true,
+        FirstName = "Bob",
+        LastName = "Johnson",
+        BirthDate = new DateTime(1990, 3, 15),
+        PhoneNumber = "0987654321",
+        PhoneNumberConfirmed = true
+    };
+
+    await userManager.CreateAsync(user1, "Password123!");
+    await userManager.CreateAsync(user2, "Password123!");
+}
 
 if (app.Environment.IsDevelopment())
 {
