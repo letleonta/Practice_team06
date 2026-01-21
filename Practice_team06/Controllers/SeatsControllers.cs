@@ -38,4 +38,14 @@ public class SeatsController : ControllerBase
     {
         return await _seatService.DeleteAsync(id) ? NoContent() : NotFound();
     }
+    
+    // GET: api/Seats/available/5
+    [HttpGet("available/{sessionId}")]
+    public async Task<IActionResult> GetAvailableSeats(int sessionId)
+    {
+        var seats = await _seatService.GetSeatsForSessionAsync(sessionId);
+        if (!seats.Any()) return NotFound("Сеанс не знайдено або в залі немає місць");
+    
+        return Ok(seats);
+    }
 }

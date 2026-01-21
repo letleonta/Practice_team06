@@ -65,4 +65,36 @@ public class SeatService : ISeatService
         await _context.SaveChangesAsync();
         return true;
     }
+    
+    public async Task<IEnumerable<SessionSeatDto>> GetSeatsForSessionAsync(int sessionId)
+    {
+        
+        var session = await _context.Sessions
+            .Include(s => s.Movie)
+            .Include(s => s.Hall)
+            .FirstOrDefaultAsync(s => s.Id == sessionId);
+
+        if (session == null) return Enumerable.Empty<SessionSeatDto>();
+        
+        var occupiedSeatIds = await _context.Tickets
+            .Where(t => t.SessionId == sessionId && t.IsActive)
+            .Select(t => t.SeatId)
+            .ToListAsync();
+        
+        var allSeats = await _context.Seats
+            .Where(s => s.HallId == session.HallId)
+            .OrderBy(s => s.RowNumber)
+            .ThenBy(s => s.SeatNumber)
+            .ToListAsync();
+        
+        return allSeats.Select(seat => new SessionSeatDto
+        {
+            SeatId = seat.Id,
+            RowNumber = seat.RowNumber,
+            SeatNumber = seat.SeatNumber,
+            Type = seat.SeatType,
+            IsAvailable = !occupiedSeatIds.Contains(seat.Id),
+            Price = session.Movie.BasePrice * session.Hall.PriceModifier * seat.PriceModifier
+        });
+    }
 }
