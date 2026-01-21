@@ -2,6 +2,7 @@ using System.Text.Json.Serialization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Practice_team06.Models;
+using Practice_team06.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -19,6 +20,8 @@ builder.Services.AddIdentity<User, IdentityRole<int>>(options =>
     })
     .AddEntityFrameworkStores<PostgresContext>()
     .AddDefaultTokenProviders();
+
+builder.Services.AddScoped<IActorService, ActorService>();
 
 builder.Services.AddControllers()
     .AddJsonOptions(options =>
