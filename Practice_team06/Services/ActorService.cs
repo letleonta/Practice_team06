@@ -16,18 +16,46 @@ public class ActorService : IActorService
         _context = context;
     }
 
-    public async Task<IEnumerable<ActorDto>> GetAllAsync()
+    public async Task<IEnumerable<ActorDto>> GetAllAsync(string? search = null, string? sortBy = null, bool isDescending = false)
     {
-        return await _context.Actors
+        // 1. Починаємо формувати запит до таблиці Actors
+        var query = _context.Actors.AsQueryable();
+
+        // 2. Пошук (Filtering)
+        if (!string.IsNullOrWhiteSpace(search))
+        {
+            var s = search.Trim().ToLower();
+            query = query.Where(a => a.FirstName.ToLower().Contains(s) 
+                                  || a.LastName.ToLower().Contains(s));
+        }
+
+        // 3. Сортування (Sorting)
+        if (!string.IsNullOrWhiteSpace(sortBy))
+        {
+            query = sortBy.ToLower() switch
+            {
+                "firstname" => isDescending ? query.OrderByDescending(a => a.FirstName) : query.OrderBy(a => a.FirstName),
+                "lastname"  => isDescending ? query.OrderByDescending(a => a.LastName) : query.OrderBy(a => a.LastName),
+                "id"        => isDescending ? query.OrderByDescending(a => a.Id) : query.OrderBy(a => a.Id),
+                _           => query.OrderBy(a => a.Id) // за замовчуванням
+            };
+        }
+        else
+        {
+            query = query.OrderBy(a => a.Id);
+        }
+
+        // 4. Перетворення в DTO та виконання запиту
+        return await query
             .Select(a => new ActorDto
             {
                 Id = a.Id,
                 FirstName = a.FirstName,
                 LastName = a.LastName,
                 PhotoUri = a.PhotoUri
-            }).ToListAsync();
+            })
+            .ToListAsync();
     }
-
     public async Task<ActorDto?> GetByIdAsync(int id)
     {
         var actor = await _context.Actors.FindAsync(id);
@@ -62,7 +90,29 @@ public class ActorService : IActorService
             PhotoUri = actor.PhotoUri
         };
     }
+    public async Task<IEnumerable<ActorDto>> CreateRangeAsync(IEnumerable<CreateActorDto> actorsDto)
+    {
+        // 1. Перетворюємо список DTO у список моделей Actor
+        var actors = actorsDto.Select(dto => new Actor
+        {
+            FirstName = dto.FirstName,
+            LastName = dto.LastName,
+            PhotoUri = dto.PhotoUri
+        }).ToList();
 
+        // 2. Додаємо весь список одним махом
+        await _context.Actors.AddRangeAsync(actors);
+        await _context.SaveChangesAsync();
+
+        // 3. Повертаємо список створених акторів з їхніми новими ID
+        return actors.Select(a => new ActorDto
+        {
+            Id = a.Id,
+            FirstName = a.FirstName,
+            LastName = a.LastName,
+            PhotoUri = a.PhotoUri
+        });
+    }
     public async Task<bool> UpdateAsync(int id, CreateActorDto actorDto)
     {
         var actor = await _context.Actors.FindAsync(id);
@@ -75,7 +125,7 @@ public class ActorService : IActorService
         await _context.SaveChangesAsync();
         return true;
     }
-
+    
     public async Task<bool> DeleteAsync(int id)
     {
         var actor = await _context.Actors.FindAsync(id);
