@@ -28,7 +28,7 @@ public class ActorsController : ControllerBase
         return Ok(actors);
     }
 
-    [HttpGet("{id}")] 
+    [HttpGet("{id}")] //Client
     public async Task<ActionResult<ActorDto>> GetActor(int id) 
     {
         var actor = await _actorService.GetByIdAsync(id);
