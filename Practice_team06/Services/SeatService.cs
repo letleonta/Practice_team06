@@ -22,7 +22,6 @@ public class SeatService : ISeatService
                 SeatNumber = s.SeatNumber,
                 PriceModifier = s.PriceModifier,
                 SeatType = s.SeatType,
-                SeatStatus = s.SeatStatus
             }).ToListAsync();
     }
 
@@ -34,7 +33,7 @@ public class SeatService : ISeatService
         return new SeatDto {
             Id = s.Id, HallId = s.HallId, RowNumber = s.RowNumber,
             SeatNumber = s.SeatNumber, PriceModifier = s.PriceModifier,
-            SeatType = s.SeatType, SeatStatus = s.SeatStatus
+            SeatType = s.SeatType,
         };
     }
 
@@ -44,7 +43,6 @@ public class SeatService : ISeatService
         if (seat == null) return null;
 
         seat.SeatType = dto.SeatType;
-        seat.SeatStatus = dto.SeatStatus;
         seat.PriceModifier = dto.PriceModifier;
 
         await _context.SaveChangesAsync();
@@ -52,7 +50,7 @@ public class SeatService : ISeatService
         return new SeatDto {
             Id = seat.Id, HallId = seat.HallId, RowNumber = seat.RowNumber,
             SeatNumber = seat.SeatNumber, PriceModifier = seat.PriceModifier,
-            SeatType = seat.SeatType, SeatStatus = seat.SeatStatus
+            SeatType = seat.SeatType,
         };
     }
 

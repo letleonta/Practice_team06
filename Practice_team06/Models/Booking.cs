@@ -9,9 +9,10 @@ public partial class Booking
     public int Id { get; set; }
     [Required]
     public int UserId { get; set; }
-
-    public DateTime? BookingTime { get; set; }
-    
+    [Required]
+    [DataType(DataType.DateTime)]
+    public DateTime BookingTime { get; set; }
+    [Required]
     public BookingStatus Status { get; set; }
 
     public virtual User User { get; set; } = null!;
