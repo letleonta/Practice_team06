@@ -69,7 +69,6 @@ public class HallService : IHallService
                     SeatNumber = s,
                     PriceModifier = dto.Type == SeatType.VIP ? 1.5m : 1.0m,
                     SeatType = dto.Type,
-                    SeatStatus = SeatStatus.Free
                 });
             }
         }
@@ -100,7 +99,6 @@ public class HallService : IHallService
                     SeatNumber = s,
                     PriceModifier = rowConfig.Type == SeatType.VIP ? 1.5m : 1.0m,
                     SeatType = rowConfig.Type,
-                    SeatStatus = SeatStatus.Free
                 });
             }
         }
