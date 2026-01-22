@@ -24,7 +24,6 @@ public class CreateHallDto
     public string? Description { get; set; }
 }
 
-
 public class RowConfigDto
 {
     [Range(1, 200, ErrorMessage = "Номер ряду має бути від 1 до 200")]
