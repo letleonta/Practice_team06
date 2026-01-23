@@ -14,6 +14,7 @@ public partial class PostgresContext : IdentityDbContext<User, IdentityRole<int>
 
     public virtual DbSet<Actor> Actors { get; set; }
     public virtual DbSet<Booking> Bookings { get; set; }
+    public virtual DbSet<Director> Directors { get; set; }
     public virtual DbSet<Genre> Genres { get; set; }
     public virtual DbSet<Hall> Halls { get; set; }
     public virtual DbSet<Language> Languages { get; set; }
@@ -71,6 +72,15 @@ public partial class PostgresContext : IdentityDbContext<User, IdentityRole<int>
                 .HasConstraintName("FK_BookingsUserId");
         });
         
+        modelBuilder.Entity<Director>(entity =>
+        {
+            entity.HasKey(e => e.Id).HasName("PK_Directors");
+            entity.ToTable("Directors");
+            entity.Property(e => e.FirstName).HasMaxLength(50).HasColumnName("FirstName");
+            entity.Property(e => e.LastName).HasMaxLength(50).HasColumnName("LastName");
+            entity.Property(e => e.PhotoUri).HasMaxLength(255).HasColumnName("PhotoUri");
+        });
+        
         modelBuilder.Entity<Genre>(entity =>
         {
             entity.HasKey(e => e.Id).HasName("PK_Genres");
@@ -97,6 +107,8 @@ public partial class PostgresContext : IdentityDbContext<User, IdentityRole<int>
 
         modelBuilder.Entity<Seat>(entity =>
         {
+            entity.HasIndex(s => new { s.HallId, s.RowNumber, s.SeatNumber })
+                .IsUnique();
             entity.HasKey(e => e.Id).HasName("PK_Seats");
             entity.ToTable("Seats");
             entity.Property(e => e.PriceModifier).HasPrecision(4, 2).HasDefaultValue(1.0m).HasColumnName("PriceModifier");
@@ -117,6 +129,11 @@ public partial class PostgresContext : IdentityDbContext<User, IdentityRole<int>
             entity.Property(e => e.BasePrice).HasPrecision(6, 2).HasColumnName("BasePrice"); 
             entity.Property(e => e.Rating).HasPrecision(3, 1).HasColumnName("Rating");
 
+            entity.HasOne(d => d.Director).WithMany(p => p.Movies)
+                .HasForeignKey(d => d.DirectorId)
+                .OnDelete(DeleteBehavior.Cascade)
+                .HasConstraintName("FK_MoviesDirectorId");
+            
             entity.HasMany(d => d.Genres).WithMany(p => p.Movies)
                 .UsingEntity<Dictionary<string, object>>(
                     "MovieGenre",

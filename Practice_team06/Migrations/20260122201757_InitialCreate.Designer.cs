@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using Practice_team06.Models;
@@ -11,9 +12,11 @@ using Practice_team06.Models;
 namespace Practice_team06.Migrations
 {
     [DbContext(typeof(PostgresContext))]
-    partial class PostgresContextModelSnapshot : ModelSnapshot
+    [Migration("20260122201757_InitialCreate")]
+    partial class InitialCreate
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -22,6 +25,7 @@ namespace Practice_team06.Migrations
 
             NpgsqlModelBuilderExtensions.HasPostgresEnum(modelBuilder, "AgeRestrictionLevel", new[] { "0+", "12+", "16+", "18+" });
             NpgsqlModelBuilderExtensions.HasPostgresEnum(modelBuilder, "BookingStatusEnum", new[] { "Inprogress", "Paid", "Cancelled" });
+            NpgsqlModelBuilderExtensions.HasPostgresEnum(modelBuilder, "SeatStatusEnum", new[] { "Free", "Reserved", "Sold" });
             NpgsqlModelBuilderExtensions.HasPostgresEnum(modelBuilder, "SeatTypeEnum", new[] { "Standard", "VIP" });
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
 
@@ -212,7 +216,7 @@ namespace Practice_team06.Migrations
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
 
-                    b.Property<DateTime>("BookingTime")
+                    b.Property<DateTime?>("BookingTime")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("timestamp(0) without time zone")
                         .HasColumnName("BookingTime")
@@ -430,7 +434,7 @@ namespace Practice_team06.Migrations
                     b.Property<int>("HallId")
                         .HasColumnType("integer");
 
-                    b.Property<decimal>("PriceModifier")
+                    b.Property<decimal?>("PriceModifier")
                         .ValueGeneratedOnAdd()
                         .HasPrecision(4, 2)
                         .HasColumnType("numeric(4,2)")
@@ -442,6 +446,9 @@ namespace Practice_team06.Migrations
 
                     b.Property<short>("SeatNumber")
                         .HasColumnType("smallint");
+
+                    b.Property<int>("SeatStatus")
+                        .HasColumnType("integer");
 
                     b.Property<int>("SeatType")
                         .HasColumnType("integer");
@@ -503,11 +510,8 @@ namespace Practice_team06.Migrations
                     b.Property<int>("BookingId")
                         .HasColumnType("integer");
 
-                    b.Property<bool>("IsActive")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("boolean")
-                        .HasDefaultValue(true)
-                        .HasColumnName("IsActive");
+                    b.Property<bool?>("IsActive")
+                        .HasColumnType("boolean");
 
                     b.Property<int>("SeatId")
                         .HasColumnType("integer");
@@ -540,7 +544,7 @@ namespace Practice_team06.Migrations
                     b.Property<int>("AccessFailedCount")
                         .HasColumnType("integer");
 
-                    b.Property<DateTime>("BirthDate")
+                    b.Property<DateTime?>("BirthDate")
                         .HasColumnType("date")
                         .HasColumnName("BirthDate");
 

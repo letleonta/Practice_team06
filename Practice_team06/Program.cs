@@ -1,6 +1,10 @@
 using System.Text.Json.Serialization;
+using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
 using Practice_team06.Models;
 using Practice_team06.Services;
 
@@ -20,6 +24,9 @@ builder.Services.AddIdentity<User, IdentityRole<int>>(options =>
     })
     .AddEntityFrameworkStores<PostgresContext>()
     .AddDefaultTokenProviders();
+
+builder.Services.AddScoped<IActorService, ActorService>();
+builder.Services.AddScoped<IDirectorService, DirectorService>();
 
 builder.Services.AddControllers()
     .AddJsonOptions(options =>
