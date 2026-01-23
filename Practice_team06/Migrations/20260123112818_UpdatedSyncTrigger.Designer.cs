@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using Practice_team06.Models;
@@ -11,9 +12,11 @@ using Practice_team06.Models;
 namespace Practice_team06.Migrations
 {
     [DbContext(typeof(PostgresContext))]
-    partial class PostgresContextModelSnapshot : ModelSnapshot
+    [Migration("20260123112818_UpdatedSyncTrigger")]
+    partial class UpdatedSyncTrigger
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -22,6 +25,7 @@ namespace Practice_team06.Migrations
 
             NpgsqlModelBuilderExtensions.HasPostgresEnum(modelBuilder, "AgeRestrictionLevel", new[] { "0+", "12+", "16+", "18+" });
             NpgsqlModelBuilderExtensions.HasPostgresEnum(modelBuilder, "BookingStatusEnum", new[] { "Inprogress", "Paid", "Cancelled" });
+            NpgsqlModelBuilderExtensions.HasPostgresEnum(modelBuilder, "SeatStatusEnum", new[] { "Free", "Reserved", "Sold" });
             NpgsqlModelBuilderExtensions.HasPostgresEnum(modelBuilder, "SeatTypeEnum", new[] { "Standard", "VIP" });
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
 
@@ -407,6 +411,9 @@ namespace Practice_team06.Migrations
                     b.Property<short>("SeatNumber")
                         .HasColumnType("smallint");
 
+                    b.Property<int>("SeatStatus")
+                        .HasColumnType("integer");
+
                     b.Property<int>("SeatType")
                         .HasColumnType("integer");
 
@@ -504,7 +511,7 @@ namespace Practice_team06.Migrations
                     b.Property<int>("AccessFailedCount")
                         .HasColumnType("integer");
 
-                    b.Property<DateTime>("BirthDate")
+                    b.Property<DateTime?>("BirthDate")
                         .HasColumnType("date")
                         .HasColumnName("BirthDate");
 

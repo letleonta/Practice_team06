@@ -17,7 +17,7 @@ public partial class Ticket
     [Range(0, 10000)]
     public decimal ActualPrice { get; set; }
     [Required]
-    public bool IsActive { get; set; }
+    public bool IsActive { get; set; } = true;
 
     public virtual Booking Booking { get; set; } = null!;
 
