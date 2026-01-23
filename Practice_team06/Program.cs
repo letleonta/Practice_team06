@@ -28,6 +28,8 @@ builder.Services.AddControllers()
         options.JsonSerializerOptions.Converters.Add(new System.Text.Json.Serialization.JsonStringEnumConverter());
     });
 
+builder.Services.AddScoped<IHallService, HallService>();
+
 builder.Services.AddScoped<BookingService>();
 builder.Services.AddScoped<TicketService>();
 
