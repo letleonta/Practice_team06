@@ -1,8 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.ComponentModel;
 using System.ComponentModel.DataAnnotations;
-using System.Runtime.InteropServices;
 
 namespace Practice_team06.Models;
 
@@ -16,9 +14,9 @@ public partial class Ticket
     [Required]
     public int SeatId { get; set; }
     [Required]
-    [Range(0, 1000000)]
+    [Range(0, 10000)]
     public decimal ActualPrice { get; set; }
-
+    [Required]
     public bool IsActive { get; set; } = true;
 
     public virtual Booking Booking { get; set; } = null!;

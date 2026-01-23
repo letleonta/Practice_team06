@@ -20,12 +20,8 @@ public partial class Seat
     
     public SeatType SeatType { get; set; }
     
-    public SeatStatus SeatStatus { get; set; }
-
     public virtual Hall Hall { get; set; } = null!;
 
     public virtual ICollection<Ticket> Tickets { get; set; } = new List<Ticket>();
 }
 public enum SeatType { Standard, VIP }
-
-public enum SeatStatus { Free, Reserved, Sold }
