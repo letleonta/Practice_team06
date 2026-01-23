@@ -10,6 +10,7 @@ public class User : IdentityUser<int>
     [Required(ErrorMessage = "Прізвище є обов'язковим")]
     [StringLength(50, MinimumLength = 2)]
     public string LastName { get; set; } = null!;
+    [Required]
     [DataType(DataType.Date)]
     public DateTime? BirthDate { get; set; }
     

@@ -14,10 +14,10 @@ public partial class Ticket
     [Required]
     public int SeatId { get; set; }
     [Required]
-    [Range(0, 1000000)]
+    [Range(0, 10000)]
     public decimal ActualPrice { get; set; }
-
-    public bool? IsActive { get; set; }
+    [Required]
+    public bool IsActive { get; set; } = true;
 
     public virtual Booking Booking { get; set; } = null!;
 

@@ -34,7 +34,6 @@ public partial class PostgresContext : IdentityDbContext<User, IdentityRole<int>
         modelBuilder
             .HasPostgresEnum("AgeRestrictionLevel", new[] { "0+", "12+", "16+", "18+" })
             .HasPostgresEnum("BookingStatusEnum", new[] { "Inprogress", "Paid", "Cancelled" })
-            .HasPostgresEnum("SeatStatusEnum", new[] { "Free", "Reserved", "Sold" })
             .HasPostgresEnum("SeatTypeEnum", new[] { "Standard", "VIP" });
 
         
@@ -183,7 +182,7 @@ public partial class PostgresContext : IdentityDbContext<User, IdentityRole<int>
                 .HasFilter("(\"IsActive\" = true)");
             
             entity.Property(e => e.ActualPrice).HasPrecision(6, 2).HasColumnName("ActualPrice");
-
+            entity.Property(e => e.IsActive).HasDefaultValue(true).HasColumnName("IsActive");
             
             entity.HasOne(d => d.Booking).WithMany(p => p.Tickets)
                 .HasForeignKey(d => d.BookingId)

@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using Practice_team06.Models;
@@ -11,9 +12,11 @@ using Practice_team06.Models;
 namespace Practice_team06.Migrations
 {
     [DbContext(typeof(PostgresContext))]
-    partial class PostgresContextModelSnapshot : ModelSnapshot
+    [Migration("20260122213946_Updatedticket")]
+    partial class Updatedticket
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -22,6 +25,7 @@ namespace Practice_team06.Migrations
 
             NpgsqlModelBuilderExtensions.HasPostgresEnum(modelBuilder, "AgeRestrictionLevel", new[] { "0+", "12+", "16+", "18+" });
             NpgsqlModelBuilderExtensions.HasPostgresEnum(modelBuilder, "BookingStatusEnum", new[] { "Inprogress", "Paid", "Cancelled" });
+            NpgsqlModelBuilderExtensions.HasPostgresEnum(modelBuilder, "SeatStatusEnum", new[] { "Free", "Reserved", "Sold" });
             NpgsqlModelBuilderExtensions.HasPostgresEnum(modelBuilder, "SeatTypeEnum", new[] { "Standard", "VIP" });
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
 
@@ -233,37 +237,6 @@ namespace Practice_team06.Migrations
                     b.ToTable("Bookings", (string)null);
                 });
 
-            modelBuilder.Entity("Practice_team06.Models.Director", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("integer");
-
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
-
-                    b.Property<string>("FirstName")
-                        .IsRequired()
-                        .HasMaxLength(50)
-                        .HasColumnType("character varying(50)")
-                        .HasColumnName("FirstName");
-
-                    b.Property<string>("LastName")
-                        .IsRequired()
-                        .HasMaxLength(50)
-                        .HasColumnType("character varying(50)")
-                        .HasColumnName("LastName");
-
-                    b.Property<string>("PhotoUri")
-                        .HasMaxLength(255)
-                        .HasColumnType("character varying(255)")
-                        .HasColumnName("PhotoUri");
-
-                    b.HasKey("Id")
-                        .HasName("PK_Directors");
-
-                    b.ToTable("Directors", (string)null);
-                });
-
             modelBuilder.Entity("Practice_team06.Models.Genre", b =>
                 {
                     b.Property<int>("Id")
@@ -360,9 +333,6 @@ namespace Practice_team06.Migrations
                     b.Property<string>("Description")
                         .HasColumnType("text");
 
-                    b.Property<int>("DirectorId")
-                        .HasColumnType("integer");
-
                     b.Property<int?>("DurationMin")
                         .HasColumnType("integer");
 
@@ -393,8 +363,6 @@ namespace Practice_team06.Migrations
 
                     b.HasKey("Id")
                         .HasName("PK_Movies");
-
-                    b.HasIndex("DirectorId");
 
                     b.ToTable("Movies", (string)null);
                 });
@@ -430,7 +398,7 @@ namespace Practice_team06.Migrations
                     b.Property<int>("HallId")
                         .HasColumnType("integer");
 
-                    b.Property<decimal>("PriceModifier")
+                    b.Property<decimal?>("PriceModifier")
                         .ValueGeneratedOnAdd()
                         .HasPrecision(4, 2)
                         .HasColumnType("numeric(4,2)")
@@ -442,6 +410,9 @@ namespace Practice_team06.Migrations
 
                     b.Property<short>("SeatNumber")
                         .HasColumnType("smallint");
+
+                    b.Property<int>("SeatStatus")
+                        .HasColumnType("integer");
 
                     b.Property<int>("SeatType")
                         .HasColumnType("integer");
@@ -540,7 +511,7 @@ namespace Practice_team06.Migrations
                     b.Property<int>("AccessFailedCount")
                         .HasColumnType("integer");
 
-                    b.Property<DateTime>("BirthDate")
+                    b.Property<DateTime?>("BirthDate")
                         .HasColumnType("date")
                         .HasColumnName("BirthDate");
 
@@ -690,18 +661,6 @@ namespace Practice_team06.Migrations
                     b.Navigation("User");
                 });
 
-            modelBuilder.Entity("Practice_team06.Models.Movie", b =>
-                {
-                    b.HasOne("Practice_team06.Models.Director", "Director")
-                        .WithMany("Movies")
-                        .HasForeignKey("DirectorId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired()
-                        .HasConstraintName("FK_MoviesDirectorId");
-
-                    b.Navigation("Director");
-                });
-
             modelBuilder.Entity("Practice_team06.Models.MovieActor", b =>
                 {
                     b.HasOne("Practice_team06.Models.Actor", "Actor")
@@ -795,11 +754,6 @@ namespace Practice_team06.Migrations
             modelBuilder.Entity("Practice_team06.Models.Booking", b =>
                 {
                     b.Navigation("Tickets");
-                });
-
-            modelBuilder.Entity("Practice_team06.Models.Director", b =>
-                {
-                    b.Navigation("Movies");
                 });
 
             modelBuilder.Entity("Practice_team06.Models.Hall", b =>

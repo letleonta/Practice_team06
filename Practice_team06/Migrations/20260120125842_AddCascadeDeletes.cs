@@ -565,6 +565,12 @@ namespace Practice_team06.Migrations
 
             migrationBuilder.DropTable(
                 name: "Movies");
+            
+            migrationBuilder.AlterDatabase()
+                .OldAnnotation("Npgsql:Enum:AgeRestrictionLevel", "0+,12+,16+,18+")
+                .OldAnnotation("Npgsql:Enum:BookingStatusEnum", "Inprogress,Paid,Cancelled")
+                .OldAnnotation("Npgsql:Enum:SeatStatusEnum", "Free,Reserved,Sold")
+                .OldAnnotation("Npgsql:Enum:SeatTypeEnum", "Standard,VIP");
         }
     }
 }
