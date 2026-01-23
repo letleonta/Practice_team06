@@ -10,7 +10,7 @@ public partial class Booking
     [Required]
     public int UserId { get; set; }
 
-    public DateTime? BookingTime { get; set; }
+    public DateTime BookingTime { get; set; }
     
     public BookingStatus Status { get; set; }
 
