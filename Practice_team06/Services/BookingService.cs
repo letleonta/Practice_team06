@@ -22,21 +22,24 @@ public class BookingService : IBookingService
     
     public async Task<List<AdminBookingDto>> GetAllBookingsAsync(BookingFilterDto filter)
     {
-        IQueryable<AdminBookingDto> query = _context.Bookings
-            .Select(b => new AdminBookingDto
-            {
-                Id = b.Id,
-                UserId =  b.UserId,
-                BookingTime = b.BookingTime,
-                Status = b.Status
-            });
-        
-        query = ApplySorting(ApplyFilter(query, filter), filter);
+        var bookingsQuery = _context.Bookings
+            .Include(b => b.Tickets) // отримуємо всі квитки одним JOIN
+            .AsQueryable();
 
-        var bookings = await query.ToListAsync();
+        bookingsQuery = ApplySorting(ApplyFilter(bookingsQuery, filter), filter);
 
-        return bookings;
+        var bookings = await bookingsQuery.ToListAsync();
+
+        return bookings.Select(b => new AdminBookingDto
+        {
+            Id = b.Id,
+            UserId = b.UserId,
+            BookingTime = b.BookingTime,
+            Status = b.Status,
+            Tickets = b.Tickets.Select(TicketBookingDto.TicketToTicketBookingDto).ToList()
+        }).ToList();
     }
+
     
     public async Task<List<BookingDto>> GetBookingsForUserAsync(int userId)
     {
@@ -49,7 +52,8 @@ public class BookingService : IBookingService
             {
                 Id = b.Id,
                 BookingTime = b.BookingTime,
-                Status = b.Status
+                Status = b.Status,
+                Tickets = b.Tickets.Select(TicketBookingDto.TicketToTicketBookingDto).ToList()
             })
             .ToListAsync();
 
@@ -59,8 +63,9 @@ public class BookingService : IBookingService
     public async Task<BookingDto> GetBookingByIdAsync(int userId, int bookingId)
     {
         var booking = await _context.Bookings
+            .Include(b => b.Tickets)
             .FirstOrDefaultAsync(b => b.Id == bookingId && b.UserId == userId);
-
+        
         if (booking == null)
             throw new KeyNotFoundException($"Booking with ID {bookingId} for user {userId} not found.");
 
@@ -68,13 +73,18 @@ public class BookingService : IBookingService
         {
             Id = booking.Id,
             BookingTime = booking.BookingTime,
-            Status = booking.Status
+            Status = booking.Status,
+            Tickets = booking.Tickets
+                .Select(TicketBookingDto.TicketToTicketBookingDto)
+                .ToList()
         };
     }
+
     
     public async Task<AdminBookingDto> GetBookingByIdAsync(int bookingId)
     {
         var booking = await _context.Bookings
+            .Include(b => b.Tickets)
             .FirstOrDefaultAsync(b => b.Id == bookingId);
 
         if (booking == null)
@@ -85,7 +95,10 @@ public class BookingService : IBookingService
             Id = booking.Id,
             UserId =  booking.UserId,
             BookingTime = booking.BookingTime,
-            Status = booking.Status
+            Status = booking.Status,
+            Tickets = booking.Tickets
+                .Select(TicketBookingDto.TicketToTicketBookingDto)
+                .ToList()
         };
     }
     
@@ -147,7 +160,7 @@ public class BookingService : IBookingService
         await _context.SaveChangesAsync();
     }
 
-    private static IQueryable<AdminBookingDto> ApplyFilter(IQueryable<AdminBookingDto> query, BookingFilterDto filter)
+    private static IQueryable<Booking> ApplyFilter(IQueryable<Booking> query, BookingFilterDto filter)
     {
         if (filter.Status != null)
             query = query.Where(b => b.Status == filter.Status);
@@ -167,7 +180,7 @@ public class BookingService : IBookingService
         return query;
     }
     
-    private static IQueryable<AdminBookingDto> ApplySorting(IQueryable<AdminBookingDto> query, BookingFilterDto filter)
+    private static IQueryable<Booking> ApplySorting(IQueryable<Booking> query, BookingFilterDto filter)
     {
         var sortBy = filter.SortBy?.ToLower();
         var sortOrder = filter.SortOrder?.ToLower() == "asc";

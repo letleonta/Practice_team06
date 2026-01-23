@@ -29,6 +29,7 @@ builder.Services.AddControllers()
     });
 
 builder.Services.AddScoped<BookingService>();
+builder.Services.AddScoped<TicketService>();
 
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();

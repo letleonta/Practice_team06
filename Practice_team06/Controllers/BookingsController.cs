@@ -111,6 +111,10 @@ namespace Practice_team06.Controllers
             {
                 return BadRequest(invalidOperationException.Message);
             }
+            catch (DbUpdateException dbUpdateException)
+            {
+                return BadRequest(dbUpdateException.Message);
+            }
         }
         
         // PUT: api/Bookings/5/confirm
@@ -133,6 +137,10 @@ namespace Practice_team06.Controllers
             catch (InvalidOperationException invalidOperationException)
             {
                 return BadRequest(invalidOperationException.Message);
+            }
+            catch (DbUpdateException dbUpdateException)
+            {
+                return BadRequest(dbUpdateException.Message);
             }
         }
 
