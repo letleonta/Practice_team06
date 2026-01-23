@@ -31,9 +31,12 @@ builder.Services.AddControllers()
 builder.Services.AddScoped<BookingService>();
 builder.Services.AddScoped<TicketService>();
 
+builder.Services.AddScoped<IGenreService, GenreService>();
+builder.Services.AddScoped<ILanguageService, LanguageService>();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
-
+builder.Services.AddScoped<ISessionService, SessionService>();
+builder.Services.AddScoped<IMovieService, MovieService>();
 var app = builder.Build();
 
 using (var scope = app.Services.CreateScope())
