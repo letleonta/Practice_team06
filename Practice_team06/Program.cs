@@ -31,7 +31,7 @@ builder.Services.AddScoped<IGenreService, GenreService>();
 builder.Services.AddScoped<ILanguageService, LanguageService>();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
-
+builder.Services.AddScoped<IMovieService, MovieService>();
 var app = builder.Build();
 
 
