@@ -1,7 +1,6 @@
 ﻿using System.ComponentModel.DataAnnotations;
-using Practice_team06.Models;
 
-namespace Practice_team06.DTOs;
+namespace Practice_team06.DTOs.Ticket;
 
 public class TicketBookingDto
 {
@@ -14,10 +13,10 @@ public class TicketBookingDto
     [Required]
     [Range(0, 1000000)]
     public decimal ActualPrice { get; set; }
-
+    [Required]
     public bool IsActive { get; set; } = true;
 
-    public static TicketBookingDto TicketToTicketBookingDto(Ticket ticket)
+    public static TicketBookingDto TicketToTicketBookingDto(Models.Ticket ticket)
     {
         return new TicketBookingDto()
         {

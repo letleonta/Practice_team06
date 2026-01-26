@@ -1,11 +1,5 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using Practice_team06.DTOs;
 using Practice_team06.Models;
 using Practice_team06.Services;
 
@@ -143,27 +137,5 @@ namespace Practice_team06.Controllers
                 return BadRequest(dbUpdateException.Message);
             }
         }
-
-/*
-        // DELETE: api/Bookings/5
-        [HttpDelete("{id}")]
-        public async Task<IActionResult> DeleteBooking(int id)
-        {
-            var booking = await _context.Bookings.FindAsync(id);
-            if (booking == null)
-            {
-                return NotFound();
-            }
-
-            _context.Bookings.Remove(booking);
-            await _context.SaveChangesAsync();
-
-            return NoContent();
-        }
-
-        private bool BookingExists(int id)
-        {
-            return _context.Bookings.Any(e => e.Id == id);
-        }*/
     }
 }
