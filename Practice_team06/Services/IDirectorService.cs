@@ -15,4 +15,6 @@ public interface IDirectorService
     Task<bool> UpdateAsync(int id, CreateDirectorDto directorDto);
     
     Task<bool> DeleteAsync(int id);
+    
+    Task<IEnumerable<DirectorMovieDto>> GetDirectorMoviesAsync(int directorId);
 }

@@ -54,6 +54,13 @@ public class ActorsController : ControllerBase
         var createdActors = await _actorService.CreateRangeAsync(actorsDto);
         return Ok(createdActors);
     }
+    
+    [HttpGet("{id}/movies")]
+    public async Task<ActionResult<IEnumerable<ActorMovieDto>>> GetActorMovies(int id)
+    {
+        var movies = await _actorService.GetActorMoviesAsync(id);
+        return Ok(movies);
+    }
 
     [HttpPut("{id}")] //Admin
     public async Task<IActionResult> UpdateActor(int id, CreateActorDto actorDto)

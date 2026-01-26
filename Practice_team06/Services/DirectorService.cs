@@ -132,4 +132,17 @@ public class DirectorService : IDirectorService
         await _context.SaveChangesAsync();
         return true;
     }
+    
+    public async Task<IEnumerable<DirectorMovieDto>> GetDirectorMoviesAsync(int directorId)
+    {
+        return await _context.Movies
+            .Where(m => m.DirectorId == directorId)
+            .Select(m => new DirectorMovieDto
+            {
+                MovieId = m.Id,
+                Title = m.Title,
+                ReleaseDate = m.ReleaseDate
+            })
+            .ToListAsync();
+    }
 }

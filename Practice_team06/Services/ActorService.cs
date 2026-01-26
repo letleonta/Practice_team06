@@ -135,4 +135,19 @@ public class ActorService : IActorService
         await _context.SaveChangesAsync();
         return true;
     }
+    
+    public async Task<IEnumerable<ActorMovieDto>> GetActorMoviesAsync(int actorId)
+    {
+        return await _context.MovieActors
+            .Where(ma => ma.ActorId == actorId)
+            .Select(ma => new ActorMovieDto
+            {
+                MovieId = ma.MovieId,
+                Title = ma.Movie.Title,
+                RoleName = ma.RoleName,
+                // Пряме присвоєння, типи тепер збігаються (DateOnly? = DateOnly?)
+                ReleaseDate = ma.Movie.ReleaseDate 
+            })
+            .ToListAsync();
+    }
 }
