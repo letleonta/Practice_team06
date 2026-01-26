@@ -53,6 +53,13 @@ public class DirectorsController : ControllerBase
         return Ok(createdDirectors);
     }
 
+    [HttpGet("{id}/movies")]
+    public async Task<ActionResult<IEnumerable<DirectorMovieDto>>> GetDirectorMovies(int id)
+    {
+        var movies = await _directorService.GetDirectorMoviesAsync(id);
+        return Ok(movies);
+    }
+    
     [HttpPut("{id}")] //Admin
     public async Task<IActionResult> UpdateDirector(int id, CreateDirectorDto directorDto)
     {
