@@ -4,6 +4,7 @@ using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
 using Practice_team06.Models;
 using Practice_team06.DTOs;
+using Practice_team06.DTOs.Actor;
 
 namespace Practice_team06.Services;
 

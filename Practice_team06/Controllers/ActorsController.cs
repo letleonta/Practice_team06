@@ -3,6 +3,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
 using Practice_team06.DTOs;
+using Practice_team06.DTOs.Actor;
 using Practice_team06.Services;
 
 namespace Practice_team06.Controllers;
