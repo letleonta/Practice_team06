@@ -1,19 +1,25 @@
-﻿using Practice_team06.Models;
+﻿using System.ComponentModel.DataAnnotations;
 
-namespace Practice_team06.DTOs;
+namespace Practice_team06.DTOs.Ticket;
 
 public class AdminTicketDto
 {
     public int Id { get; set; }
+    [Required]
     public int UserId { get; set; }
-    public decimal ActualPrice { get; set; }
-    public bool IsActive { get; set; }
-
+    [Required]
     public int BookingId { get; set; }
+    [Required]
     public int SessionId { get; set; }
+    [Required]
     public int SeatId { get; set; }
+    [Required]
+    [Range(0, 10000)]
+    public decimal ActualPrice { get; set; }
+    [Required]
+    public bool IsActive { get; set; }
     
-    public static AdminTicketDto TicketToAdminTicketDto(Ticket ticket, int userId)
+    public static AdminTicketDto TicketToAdminTicketDto(Models.Ticket ticket, int userId)
     {
         return new AdminTicketDto
         {
