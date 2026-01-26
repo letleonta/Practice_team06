@@ -1,6 +1,6 @@
 ﻿using Practice_team06.Models;
 
-namespace Practice_team06.DTOs;
+namespace Practice_team06.DTOs.Booking;
 
 public class BookingFilterDto
 {
