@@ -157,22 +157,6 @@ namespace Practice_team06.Migrations
                     b.ToTable("AspNetUserTokens", (string)null);
                 });
 
-            modelBuilder.Entity("MovieGenre", b =>
-                {
-                    b.Property<int>("MovieId")
-                        .HasColumnType("integer");
-
-                    b.Property<int>("GenreId")
-                        .HasColumnType("integer");
-
-                    b.HasKey("MovieId", "GenreId")
-                        .HasName("MovieGenresPkey");
-
-                    b.HasIndex("GenreId");
-
-                    b.ToTable("MovieGenres", (string)null);
-                });
-
             modelBuilder.Entity("Practice_team06.Models.Actor", b =>
                 {
                     b.Property<int>("Id")
@@ -285,6 +269,23 @@ namespace Practice_team06.Migrations
                         .IsUnique();
 
                     b.ToTable("Genres", (string)null);
+
+                    b.HasData(
+                        new
+                        {
+                            Id = 1,
+                            Name = "Бойовик"
+                        },
+                        new
+                        {
+                            Id = 2,
+                            Name = "Комедія"
+                        },
+                        new
+                        {
+                            Id = 3,
+                            Name = "Жахи"
+                        });
                 });
 
             modelBuilder.Entity("Practice_team06.Models.Hall", b =>
@@ -419,6 +420,22 @@ namespace Practice_team06.Migrations
                     b.ToTable("MovieActors", (string)null);
                 });
 
+            modelBuilder.Entity("Practice_team06.Models.MovieGenre", b =>
+                {
+                    b.Property<int>("MovieId")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("GenreId")
+                        .HasColumnType("integer");
+
+                    b.HasKey("MovieId", "GenreId")
+                        .HasName("PK_MovieGenres");
+
+                    b.HasIndex("GenreId");
+
+                    b.ToTable("MovieGenres", (string)null);
+                });
+
             modelBuilder.Entity("Practice_team06.Models.Seat", b =>
                 {
                     b.Property<int>("Id")
@@ -530,7 +547,7 @@ namespace Practice_team06.Migrations
                     b.ToTable("Tickets", (string)null);
                 });
 
-            modelBuilder.Entity("User", b =>
+            modelBuilder.Entity("Practice_team06.Models.User", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -624,7 +641,7 @@ namespace Practice_team06.Migrations
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityUserClaim<int>", b =>
                 {
-                    b.HasOne("User", null)
+                    b.HasOne("Practice_team06.Models.User", null)
                         .WithMany()
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -633,7 +650,7 @@ namespace Practice_team06.Migrations
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityUserLogin<int>", b =>
                 {
-                    b.HasOne("User", null)
+                    b.HasOne("Practice_team06.Models.User", null)
                         .WithMany()
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -648,7 +665,7 @@ namespace Practice_team06.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.HasOne("User", null)
+                    b.HasOne("Practice_team06.Models.User", null)
                         .WithMany()
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -657,31 +674,16 @@ namespace Practice_team06.Migrations
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityUserToken<int>", b =>
                 {
-                    b.HasOne("User", null)
+                    b.HasOne("Practice_team06.Models.User", null)
                         .WithMany()
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
                 });
 
-            modelBuilder.Entity("MovieGenre", b =>
-                {
-                    b.HasOne("Practice_team06.Models.Genre", null)
-                        .WithMany()
-                        .HasForeignKey("GenreId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("Practice_team06.Models.Movie", null)
-                        .WithMany()
-                        .HasForeignKey("MovieId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-                });
-
             modelBuilder.Entity("Practice_team06.Models.Booking", b =>
                 {
-                    b.HasOne("User", "User")
+                    b.HasOne("Practice_team06.Models.User", "User")
                         .WithMany("Bookings")
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Restrict)
@@ -717,6 +719,25 @@ namespace Practice_team06.Migrations
                         .IsRequired();
 
                     b.Navigation("Actor");
+
+                    b.Navigation("Movie");
+                });
+
+            modelBuilder.Entity("Practice_team06.Models.MovieGenre", b =>
+                {
+                    b.HasOne("Practice_team06.Models.Genre", "Genre")
+                        .WithMany("MovieGenres")
+                        .HasForeignKey("GenreId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("Practice_team06.Models.Movie", "Movie")
+                        .WithMany("MovieGenres")
+                        .HasForeignKey("MovieId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Genre");
 
                     b.Navigation("Movie");
                 });
@@ -802,6 +823,11 @@ namespace Practice_team06.Migrations
                     b.Navigation("Movies");
                 });
 
+            modelBuilder.Entity("Practice_team06.Models.Genre", b =>
+                {
+                    b.Navigation("MovieGenres");
+                });
+
             modelBuilder.Entity("Practice_team06.Models.Hall", b =>
                 {
                     b.Navigation("Seats");
@@ -818,6 +844,8 @@ namespace Practice_team06.Migrations
                 {
                     b.Navigation("MovieActors");
 
+                    b.Navigation("MovieGenres");
+
                     b.Navigation("Sessions");
                 });
 
@@ -831,7 +859,7 @@ namespace Practice_team06.Migrations
                     b.Navigation("Tickets");
                 });
 
-            modelBuilder.Entity("User", b =>
+            modelBuilder.Entity("Practice_team06.Models.User", b =>
                 {
                     b.Navigation("Bookings");
                 });
