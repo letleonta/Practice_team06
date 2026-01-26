@@ -16,9 +16,9 @@ namespace Practice_team06.Controllers
     [ApiController]
     public class AdminBookingsController : ControllerBase
     {
-        private readonly BookingService _bookingService;
+        private readonly IBookingService _bookingService;
 
-        public AdminBookingsController(BookingService bookingService)
+        public AdminBookingsController(IBookingService bookingService)
         {
             _bookingService = bookingService;
         }

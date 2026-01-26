@@ -14,22 +14,23 @@ public class TicketService : ITicketService
         _context = context;
     }
 
-    private async Task<decimal> CalculatePriceAsync(int sessionId, int seatId)
+    public async Task<decimal> CalculatePriceAsync(int sessionId, int seatId)
     {
-        var session = await _context.Sessions.FirstOrDefaultAsync(s => s.Id == sessionId);
-        if (session == null)
-            throw new KeyNotFoundException($"Session with ID {sessionId} does not exist.");
-        var movie = await _context.Movies
-            .FirstOrDefaultAsync(m => m.Id == session.MovieId);
-        if  (movie == null)
-            throw new KeyNotFoundException($"Movie with ID {session.MovieId} does not exist.");
-        var seat = await _context.Seats.FirstOrDefaultAsync(s => s.Id == seatId);
-        if (seat == null)
-            throw new KeyNotFoundException($"Seat with ID {seatId} does not exist.");
-        var hall = await _context.Halls.FirstOrDefaultAsync(h => h.Id == seat.HallId);
-        if (hall == null)
-            throw new KeyNotFoundException($"Hall with ID {seat.HallId} does not exist.");
-        return movie.BasePrice * hall.PriceModifier * seat.PriceModifier;
+        var session = await _context.Sessions
+            .Include(s => s.Movie)
+            .FirstOrDefaultAsync(s => s.Id == sessionId);
+
+        if (session == null) throw new KeyNotFoundException($"Session {sessionId} not found.");
+        if (session.Movie == null) throw new KeyNotFoundException("Movie not found for this session.");
+
+        var seat = await _context.Seats
+            .Include(s => s.Hall)
+            .FirstOrDefaultAsync(s => s.Id == seatId);
+
+        if (seat == null) throw new KeyNotFoundException($"Seat {seatId} not found.");
+        if (seat.Hall == null) throw new KeyNotFoundException("Hall not found for this seat.");
+
+        return session.Movie.BasePrice * seat.Hall.PriceModifier * seat.PriceModifier;
     }
     
     public async Task<List<TicketBookingDto>> GetTicketsForUserAsync(int userId, int bookingId)
