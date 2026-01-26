@@ -33,8 +33,7 @@ public partial class Movie
     
     public AgeRestriction AgeRestriction { get; set; }
     
-    [Required]
-    public int DirectorId { get; set; }
+    public int? DirectorId { get; set; }
     
     public virtual ICollection<MovieActor> MovieActors { get; set; } = new List<MovieActor>();
 
@@ -42,7 +41,7 @@ public partial class Movie
 
     public virtual ICollection<Genre> Genres { get; set; } = new List<Genre>();
     
-    public virtual Director Director { get; set; } = null!; 
+    public virtual Director? Director { get; set; }  
 }
 public enum AgeRestriction { 
     [PgName("0+")] ZeroPlus, 

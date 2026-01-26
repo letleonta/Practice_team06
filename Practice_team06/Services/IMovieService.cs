@@ -6,6 +6,7 @@ public interface IMovieService
 {
     Task<List<MovieDto>> GetAllMoviesAsync();
     Task<List<MovieDto>> GetUpcomingMoviesAsync();
+    Task<List<MovieDto>> GetNowPlayingMoviesAsync();
     Task<MovieDto?> GetMovieByIdAsync(int id);
     Task<MovieDto> CreateMovieAsync(CreateMovieDto dto);
     Task DeleteMovieAsync(int id);

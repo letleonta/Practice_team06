@@ -1,6 +1,5 @@
 ﻿using System.ComponentModel.DataAnnotations;
 using Practice_team06.Models;
-
 namespace Practice_team06.DTOs.Movie;
 
 public class CreateMovieDto
@@ -25,6 +24,8 @@ public class CreateMovieDto
     public string? TrailerUri { get; set; }
     
     public AgeRestriction AgeRestriction { get; set; }
+    public int? DirectorId { get; set; }
 
     public List<int> GenreIds { get; set; } = new();
+    public List<int> ActorIds { get; set; } = new();
 }

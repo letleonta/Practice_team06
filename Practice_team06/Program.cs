@@ -35,8 +35,8 @@ builder.Services.AddScoped<IDirectorService, DirectorService>();
 builder.Services.AddScoped<ISeatService, SeatService>();
 builder.Services.AddScoped<IHallService, HallService>();
 
-builder.Services.AddScoped<BookingService>();
-builder.Services.AddScoped<TicketService>();
+builder.Services.AddScoped<IBookingService, BookingService>();
+builder.Services.AddScoped<ITicketService, TicketService>();
 
 builder.Services.AddScoped<IGenreService, GenreService>();
 builder.Services.AddScoped<ILanguageService, LanguageService>();
