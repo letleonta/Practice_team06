@@ -1,9 +1,8 @@
-﻿namespace Practice_team06.DTOs;
+﻿namespace Practice_team06.DTOs.Director;
 
-public class ActorMovieDto
+public class DirectorMovieDto
 {
     public int MovieId { get; set; }
     public string Title { get; set; } = null!;
-    public string? RoleName { get; set; }
     public DateOnly? ReleaseDate { get; set; }
 }
