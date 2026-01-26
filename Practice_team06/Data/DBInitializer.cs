@@ -45,142 +45,126 @@ public static class DbInitializer
             }
         }
     }
-    public static async Task SeedDataAsync(PostgresContext context)
+   public static async Task SeedDataAsync(PostgresContext context)
+{
+    // 0. Перевіряємо по ФІЛЬМАХ. Якщо фільмів нема - значить треба заповнювати.
+    // Це надійніше, бо фільми - це центр бази.
+    if (await context.Movies.AnyAsync()) return;
+
+    // 1. ЖАНРИ (Додаємо, якщо їх ще нема)
+    var genres = new List<Genre>();
+    if (!await context.Genres.AnyAsync())
     {
-        // 0. Перевірка, чи база вже має дані (щоб не дублювати)
-        if (await context.Genres.AnyAsync()) return;
-
-        // 1. ЖАНРИ
-        var action = new Genre { Name = "Бойовик" };
-        var sciFi = new Genre { Name = "Фантастика" };
-        var drama = new Genre { Name = "Драма" };
-        var horror = new Genre { Name = "Жахи" };
-        var comedy = new Genre { Name = "Комедія" };
-        
-        context.Genres.AddRange(action, sciFi, drama, horror, comedy);
-
-        // 2. МОВИ
-        var ukrDub = new Language { Name = "Український дубляж" };
-        var ukrSub = new Language { Name = "Українські субтитри" };
-        var original = new Language { Name = "Англійська (Оригінал)" };
-        
-        context.Languages.AddRange(ukrDub, ukrSub, original);
-
-        // 3. ЗАЛИ (Halls)
-        var hallImax = new Hall 
-        { 
-            Name = "Зал 1 (IMAX)", 
-            PriceModifier = 1.50m, 
-            Description = "Величезний екран з ефектом занурення" 
-        };
-        var hallVip = new Hall 
-        { 
-            Name = "Зал 2 (VIP)", 
-            PriceModifier = 2.00m, 
-            Description = "Шкіряні крісла-реклайнери та обслуговування" 
-        };
-        var hallClassic = new Hall 
-        { 
-            Name = "Зал 3 (Стандарт)", 
-            PriceModifier = 1.00m, 
-            Description = "Затишний класичний зал" 
-        };
-        
-        context.Halls.AddRange(hallImax, hallVip, hallClassic);
-        await context.SaveChangesAsync(); // Зберігаємо, щоб отримати Id для місць
-
-        // 4. МІСЦЯ (Seats)
-        // Генеруємо місця для IMAX (5 рядів по 8 місць)
-        for (short r = 1; r <= 5; r++)
-        {
-            for (short s = 1; s <= 8; s++)
-            {
-                context.Seats.Add(new Seat
-                {
-                    HallId = hallImax.Id,
-                    RowNumber = r,
-                    SeatNumber = s,
-                    PriceModifier = r >= 4 ? 1.20m : 1.00m, // Останні ряди трохи дорожчі
-                    SeatType = r >= 4 ? SeatType.VIP : SeatType.Standard 
-                });
-            }
-        }
-
-        // 5. РЕЖИСЕРИ (Directors)
-        var nolan = new Director { FirstName = "Крістофер", LastName = "Нолан", PhotoUri = "https://images.com/nolan.jpg" };
-        var villeneuve = new Director { FirstName = "Дені", LastName = "Вільньов", PhotoUri = "https://images.com/denis.jpg" };
-        
-        context.Directors.AddRange(nolan, villeneuve);
-        await context.SaveChangesAsync();
-
-        // 6. АКТОРИ (Actors)
-        var murphy = new Actor { FirstName = "Кілліан", LastName = "Мерфі" };
-        var chalamet = new Actor { FirstName = "Тімоті", LastName = "Шаламе" };
-        var downey = new Actor { FirstName = "Роберт", LastName = "Дауні-молодший" };
-        
-        context.Actors.AddRange(murphy, chalamet, downey);
-        await context.SaveChangesAsync();
-
-        // 7. ФІЛЬМИ (Movies)
-        var oppenheimer = new Movie
-        {
-            Title = "Оппенгеймер",
-            Description = "Історія створення атомної бомби фізиком Робертом Оппенгеймером.",
-            DurationMin = 180,
-            ReleaseDate = new DateOnly(2023, 7, 21),
-            BasePrice = 120.00m,
-            StartDate = new DateOnly(2026, 1, 1),
-            EndDate = new DateOnly(2026, 3, 1),
-            Rating = 8.6m,
-            AgeRestriction = AgeRestriction.SixteenPlus, 
-            DirectorId = nolan.Id
-        };
-
-        var dune = new Movie
-        {
-            Title = "Дюна: Частина друга",
-            Description = "Пол Атрід об'єднується з чані та фріменами, щоб помститися змовникам.",
-            DurationMin = 166,
-            ReleaseDate = new DateOnly(2024, 2, 28),
-            BasePrice = 140.00m,
-            StartDate = new DateOnly(2026, 1, 1),
-            EndDate = new DateOnly(2026, 4, 1),
-            Rating = 8.9m,
-            AgeRestriction = AgeRestriction.TwelvePlus, 
-            DirectorId = villeneuve.Id
-        };
-
-        context.Movies.AddRange(oppenheimer, dune);
-        await context.SaveChangesAsync();
-
-        // 8. ЗВ'ЯЗКИ Актори-Фільми (MovieActors)
-        context.MovieActors.Add(new MovieActor { MovieId = oppenheimer.Id, ActorId = murphy.Id, RoleName = "Роберт Оппенгеймер" });
-        context.MovieActors.Add(new MovieActor { MovieId = oppenheimer.Id, ActorId = downey.Id, RoleName = "Льюїс Штраус" });
-        context.MovieActors.Add(new MovieActor { MovieId = dune.Id, ActorId = chalamet.Id, RoleName = "Пол Атрід" });
-
-        // 9. ЗВ'ЯЗКИ Жанри-Фільми (MovieGenres)
-        context.MovieGenres.Add(new MovieGenre { MovieId = oppenheimer.Id, GenreId = drama.Id });
-        context.MovieGenres.Add(new MovieGenre { MovieId = dune.Id, GenreId = sciFi.Id });
-
-        // 10. СЕАНСИ (Sessions)
-        // Створюємо декілька сеансів на вечір
-        context.Sessions.AddRange(
-            new Session 
-            { 
-                MovieId = oppenheimer.Id, 
-                HallId = hallImax.Id, 
-                LanguageId = ukrDub.Id, 
-                StartTime = DateTime.SpecifyKind(new DateTime(2026, 2, 1, 19, 0, 0), DateTimeKind.Utc) 
-            },
-            new Session 
-            { 
-                MovieId = dune.Id, 
-                HallId = hallVip.Id, 
-                LanguageId = original.Id, 
-                StartTime = DateTime.SpecifyKind(new DateTime(2026, 2, 1, 21, 30, 0), DateTimeKind.Utc) 
-            }
-        );
-
+        genres.AddRange(new[] {
+            new Genre { Name = "Бойовик" },
+            new Genre { Name = "Фантастика" },
+            new Genre { Name = "Драма" },
+            new Genre { Name = "Жахи" },
+            new Genre { Name = "Комедія" }
+        });
+        context.Genres.AddRange(genres);
         await context.SaveChangesAsync();
     }
+    else
+    {
+        genres = await context.Genres.ToListAsync();
+    }
+
+    // 2. МОВИ
+    var languages = new List<Language>();
+    if (!await context.Languages.AnyAsync())
+    {
+        languages.AddRange(new[] {
+            new Language { Name = "Український дубляж" },
+            new Language { Name = "Українські субтитри" },
+            new Language { Name = "Англійська (Оригінал)" }
+        });
+        context.Languages.AddRange(languages);
+        await context.SaveChangesAsync();
+    }
+    else
+    {
+        languages = await context.Languages.ToListAsync();
+    }
+
+    // 3. ЗАЛИ ТА МІСЦЯ
+    var hallImax = new Hall { Name = "Зал 1 (IMAX)", PriceModifier = 1.50m, Description = "Величезний екран" };
+    var hallVip = new Hall { Name = "Зал 2 (VIP)", PriceModifier = 2.00m, Description = "Крісла-реклайнери" };
+    context.Halls.AddRange(hallImax, hallVip);
+    await context.SaveChangesAsync();
+
+    for (short r = 1; r <= 5; r++) {
+        for (short s = 1; s <= 8; s++) {
+            context.Seats.Add(new Seat {
+                HallId = hallImax.Id, RowNumber = r, SeatNumber = s,
+                PriceModifier = r >= 4 ? 1.20m : 1.00m,
+                SeatType = r >= 4 ? SeatType.VIP : SeatType.Standard
+            });
+        }
+    }
+
+    // 4. РЕЖИСЕРИ ТА АКТОРИ
+    var nolan = new Director { FirstName = "Крістофер", LastName = "Нолан" };
+    var villeneuve = new Director { FirstName = "Дені", LastName = "Вільньов" };
+    context.Directors.AddRange(nolan, villeneuve);
+
+    var murphy = new Actor { FirstName = "Кілліан", LastName = "Мерфі" };
+    var chalamet = new Actor { FirstName = "Тімоті", LastName = "Шаламе" };
+    context.Actors.AddRange(murphy, chalamet);
+    
+    await context.SaveChangesAsync(); // Зберігаємо, щоб отримати ID для фільмів
+
+    // 5. ФІЛЬМИ
+    var oppenheimer = new Movie {
+        Title = "Оппенгеймер",
+        Description = "Історія створення атомної бомби",
+        DurationMin = 180,
+        ReleaseDate = new DateOnly(2023, 7, 21),
+        BasePrice = 120.00m,
+        StartDate = new DateOnly(2026, 1, 1),
+        EndDate = new DateOnly(2026, 3, 1),
+        Rating = 8.6m,
+        AgeRestriction = AgeRestriction.SixteenPlus, 
+        DirectorId = nolan.Id
+    };
+
+    var dune = new Movie {
+        Title = "Дюна: Частина друга",
+        Description = "Пол Атрід об'єднується з фріменами",
+        DurationMin = 166,
+        ReleaseDate = new DateOnly(2024, 2, 28),
+        BasePrice = 140.00m,
+        StartDate = new DateOnly(2026, 1, 1),
+        EndDate = new DateOnly(2026, 4, 1),
+        Rating = 8.9m,
+        AgeRestriction = AgeRestriction.TwelvePlus, 
+        DirectorId = villeneuve.Id
+    };
+
+    context.Movies.AddRange(oppenheimer, dune);
+    await context.SaveChangesAsync(); // ВАЖЛИВО: Отримуємо ID фільмів перед створенням зв'язків
+
+    // 6. ЗВ'ЯЗКИ (MovieActors та MovieGenres)
+    // Використовуємо змінні об'єктів для надійності
+    context.MovieActors.AddRange(
+        new MovieActor { MovieId = oppenheimer.Id, ActorId = murphy.Id, RoleName = "Роберт Оппенгеймер" },
+        new MovieActor { MovieId = dune.Id, ActorId = chalamet.Id, RoleName = "Пол Атрід" }
+    );
+
+    var drama = genres.FirstOrDefault(g => g.Name == "Драма");
+    var sciFi = genres.FirstOrDefault(g => g.Name == "Фантастика");
+
+    if (drama != null) context.MovieGenres.Add(new MovieGenre { MovieId = oppenheimer.Id, GenreId = drama.Id });
+    if (sciFi != null) context.MovieGenres.Add(new MovieGenre { MovieId = dune.Id, GenreId = sciFi.Id });
+
+    // 7. СЕАНСИ
+    context.Sessions.AddRange(
+        new Session { MovieId = oppenheimer.Id, HallId = hallImax.Id, LanguageId = languages.First().Id, 
+            StartTime = new DateTime(2026, 2, 1, 19, 0, 0, DateTimeKind.Unspecified) },
+        new Session { MovieId = dune.Id, HallId = hallVip.Id, LanguageId = languages.First().Id, 
+            StartTime = new DateTime(2026, 2, 1, 21, 30, 0, DateTimeKind.Unspecified) }
+    );
+
+    await context.SaveChangesAsync(); // Фінальне збереження всього
+}
 }
