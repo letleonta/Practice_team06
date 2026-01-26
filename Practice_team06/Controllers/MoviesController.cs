@@ -38,7 +38,12 @@ public class MoviesController : ControllerBase
     {
         return Ok(await _movieService.GetUpcomingMoviesAsync());
     }
-
+    // Для ЮЗЕРІВ: "Зараз у кіно"
+    [HttpGet("now-playing")]
+    public async Task<ActionResult<List<MovieDto>>> GetNowPlaying()
+    {
+        return Ok(await _movieService.GetNowPlayingMoviesAsync());
+    }
     //АДМІН ЧАСТИНА
 
     // Тільки Адмін може створювати

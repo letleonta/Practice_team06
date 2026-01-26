@@ -22,6 +22,20 @@ public class SessionsController : ControllerBase
     {
         return Ok(await _sessionService.GetSessionsByMovieIdAsync(movieId));
     }
+    
+    // Для ЮЗЕРІВ: Отримати деталі конкретного сеансу
+    [HttpGet("{id}")]
+    public async Task<ActionResult<SessionDto>> GetById(int id)
+    {
+        var session = await _sessionService.GetSessionByIdAsync(id);
+    
+        if (session == null) 
+        {
+            return NotFound(new { message = "Session not found" });
+        }
+    
+        return Ok(session);
+    }
 
     //АДМІН ЧАСТИНА 
 
@@ -48,4 +62,25 @@ public class SessionsController : ControllerBase
         await _sessionService.DeleteSessionAsync(id);
         return NoContent();
     }
+    
+    // [Authorize(Roles = "Admin")]
+    [HttpPut("{id}")]
+    public async Task<ActionResult<SessionDto>> Update(int id, [FromBody] CreateSessionDto dto)
+    {
+        try
+        {
+            var updatedSession = await _sessionService.UpdateSessionAsync(id, dto);
+            return Ok(updatedSession);
+        }
+        catch (KeyNotFoundException)
+        {
+            return NotFound(new { message = "Сеанс не знайдено" });
+        }
+        catch (Exception ex)
+        {
+            // Помилка накладання часу або інша бізнес-помилка
+            return BadRequest(new { message = ex.Message });
+        }
+    }
+    
 }

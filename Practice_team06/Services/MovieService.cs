@@ -17,6 +17,8 @@ public class MovieService : IMovieService
     {
         var movies = await _context.Movies
             .Include(m => m.Genres) // Завантажуємо жанри
+            .Include(m => m.Director)
+            .Include(m => m.MovieActors).ThenInclude(ma => ma.Actor)
             .OrderByDescending(m => m.ReleaseDate)
             .ToListAsync();
 
@@ -28,6 +30,8 @@ public class MovieService : IMovieService
         var today = DateOnly.FromDateTime(DateTime.Now);
         var movies = await _context.Movies
             .Include(m => m.Genres)
+            .Include(m => m.Director)
+            .Include(m => m.MovieActors).ThenInclude(ma => ma.Actor)
             .Where(m => m.ReleaseDate > today) // Фільми, які ще не вийшли
             .ToListAsync();
 
@@ -38,9 +42,31 @@ public class MovieService : IMovieService
     {
         var movie = await _context.Movies
             .Include(m => m.Genres)
+            .Include(m => m.Director)
+            .Include(m => m.MovieActors).ThenInclude(ma => ma.Actor)
             .FirstOrDefaultAsync(m => m.Id == id);
 
         return movie == null ? null : MapToDto(movie);
+    }
+    public async Task<List<MovieDto>> GetNowPlayingMoviesAsync()
+    {
+        var today = DateOnly.FromDateTime(DateTime.Now);
+
+        var movies = await _context.Movies
+            .Include(m => m.Genres)
+            .Include(m => m.Director)
+            .Include(m => m.MovieActors).ThenInclude(ma => ma.Actor)
+            // (Початок <= Сьогодні) ТА (Кінець >= Сьогодні)
+            // Або (StartDate пустий) ТА (ReleaseDate <= Сьогодні) - як запасний варіант
+            .Where(m => 
+                    (m.StartDate != null && m.EndDate != null && m.StartDate <= today && m.EndDate >= today)
+                    || 
+                    (m.StartDate == null && m.ReleaseDate <= today) // Якщо дати прокату не задані, беремо всі, що вже вийшли
+            )
+            .OrderByDescending(m => m.ReleaseDate)
+            .ToListAsync();
+
+        return movies.Select(MapToDto).ToList();
     }
 
     public async Task<MovieDto> CreateMovieAsync(CreateMovieDto dto)
@@ -57,8 +83,20 @@ public class MovieService : IMovieService
             EndDate = dto.EndDate,
             PosterUri = dto.PosterUri,
             TrailerUri = dto.TrailerUri,
+            DirectorId = dto.DirectorId, 
             AgeRestriction = dto.AgeRestriction
         };
+        // 1. ЛОГІКА РЕЖИСЕРА
+        // Якщо ID передали, перевіряємо чи він існує
+        if (dto.DirectorId.HasValue)
+        {
+            var directorExists = await _context.Directors.AnyAsync(d => d.Id == dto.DirectorId.Value);
+            if (directorExists)
+            {
+                movie.DirectorId = dto.DirectorId.Value;
+            }
+            // Якщо не існує - просто ігноруємо, і DirectorId залишиться null
+        }
 
         // Додаємо жанри за їх ID
         if (dto.GenreIds.Any())
@@ -73,9 +111,25 @@ public class MovieService : IMovieService
             }
         }
 
+        if (dto.ActorIds.Any())
+        {
+            // Знаходимо існуючих акторів
+            var actors = await _context.Actors
+                .Where(a => dto.ActorIds.Contains(a.Id))
+                .ToListAsync();
+
+            foreach (var actor in actors)
+            {
+                // Для Many-to-Many через проміжну таблицю створюємо запис зв'язку
+                movie.MovieActors.Add(new MovieActor 
+                { 
+                    Actor = actor 
+                });
+            }
+        }
         _context.Movies.Add(movie);
         await _context.SaveChangesAsync();
-
+        await _context.Entry(movie).Reference(m => m.Director).LoadAsync();
         return MapToDto(movie);
     }
 
@@ -103,7 +157,15 @@ public class MovieService : IMovieService
             Rating = (double?)m.Rating,
             PosterUri = m.PosterUri,
             AgeRestriction = m.AgeRestriction.ToString(),
-            Genres = m.Genres.Select(g => g.Name).ToList()
+            // Якщо режисера немає - Unknown
+            DirectorName = m.Director != null 
+                ? $"{m.Director.FirstName} {m.Director.LastName}" 
+                : "Unknown",
+            Genres = m.Genres.Select(g => g.Name).ToList(),
+            // Виводимо список акторів
+            Actors = m.MovieActors
+                .Select(ma => $"{ma.Actor.FirstName} {ma.Actor.LastName}")
+                .ToList()
         };
     }
 }

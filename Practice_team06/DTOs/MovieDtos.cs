@@ -13,7 +13,9 @@ public class MovieDto
     public double? Rating { get; set; }
     public string? PosterUri { get; set; }
     public string AgeRestriction  { get; set; }
+    public string DirectorName { get; set; }
     public List<string> Genres { get; set; } = new();
+    public List<string> Actors { get; set; } = new(); 
 }
 public class CreateMovieDto
 {
@@ -37,6 +39,8 @@ public class CreateMovieDto
     public string? TrailerUri { get; set; }
     
     public AgeRestriction AgeRestriction { get; set; }
+    public int? DirectorId { get; set; }
 
     public List<int> GenreIds { get; set; } = new();
+    public List<int> ActorIds { get; set; } = new();
 }
