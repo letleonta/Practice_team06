@@ -7,9 +7,9 @@ namespace Practice_team06.Controllers
     [ApiController]
     public class AdminTicketsController : ControllerBase
     {
-        private readonly TicketService _ticketService;
+        private readonly ITicketService _ticketService;
 
-        public AdminTicketsController(TicketService ticketService)
+        public AdminTicketsController(ITicketService ticketService)
         {
             _ticketService = ticketService;
         }
