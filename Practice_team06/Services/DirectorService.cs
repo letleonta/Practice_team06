@@ -1,5 +1,6 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using Practice_team06.DTOs;
+using Practice_team06.DTOs.Director;
 using Practice_team06.Models;
 
 namespace Practice_team06.Services;
