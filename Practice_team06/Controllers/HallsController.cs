@@ -9,8 +9,29 @@ namespace Practice_team06.Controllers;
 public class HallsController : ControllerBase
 {
     private readonly IHallService _hallService;
+    private readonly ISeatService _seatService; 
+    
+    public HallsController(IHallService hallService, ISeatService seatService)
+    {
+        _hallService = hallService;
+        _seatService = seatService;
+    }
 
     public HallsController(IHallService hallService) => _hallService = hallService;
+    
+    [HttpGet("{id}/seats")]
+    public async Task<IActionResult> GetHallSeats(int id)
+    {
+        var hall = await _hallService.GetByIdAsync(id);
+        if (hall == null)
+        {
+            return NotFound(new { message = $"Зал з ID {id} не знайдено" });
+        }
+        
+        var seats = await _seatService.GetSeatsByHallAsync(id);
+        return Ok(seats);
+    }
+    
 
     [HttpGet]
     public async Task<IActionResult> GetAll() => Ok(await _hallService.GetAllAsync());

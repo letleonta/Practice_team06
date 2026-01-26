@@ -91,6 +91,7 @@ public partial class PostgresContext : IdentityDbContext<User, IdentityRole<int>
         {
             entity.HasKey(e => e.Id).HasName("PK_Halls");
             entity.ToTable("Halls");
+            entity.HasIndex(e => e.Name).IsUnique();
             entity.Property(e => e.Name).HasMaxLength(30).HasColumnName("Name");
             entity.Property(e => e.PriceModifier).HasPrecision(3, 2).HasDefaultValue(1.0m).HasColumnName("PriceModifier");
         });
