@@ -3,6 +3,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
 using Practice_team06.DTOs;
+using Practice_team06.DTOs.Actor;
 using Practice_team06.Services;
 
 namespace Practice_team06.Controllers;
@@ -53,6 +54,13 @@ public class ActorsController : ControllerBase
 
         var createdActors = await _actorService.CreateRangeAsync(actorsDto);
         return Ok(createdActors);
+    }
+    
+    [HttpGet("{id}/movies")]
+    public async Task<ActionResult<IEnumerable<ActorMovieDto>>> GetActorMovies(int id)
+    {
+        var movies = await _actorService.GetActorMoviesAsync(id);
+        return Ok(movies);
     }
 
     [HttpPut("{id}")] //Admin

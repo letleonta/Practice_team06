@@ -1,6 +1,7 @@
 ﻿using System.ComponentModel.DataAnnotations;
 using Microsoft.AspNetCore.Identity;
-using Practice_team06.Models;
+
+namespace Practice_team06.Models;
 
 public class User : IdentityUser<int>
 {

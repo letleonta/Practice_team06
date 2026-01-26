@@ -1,6 +1,7 @@
 ﻿using System.Collections.Generic;
 using System.Threading.Tasks;
 using Practice_team06.DTOs;
+using Practice_team06.DTOs.Actor;
 
 namespace Practice_team06.Services;
 
@@ -12,4 +13,5 @@ public interface IActorService
     Task<IEnumerable<ActorDto>> CreateRangeAsync(IEnumerable<CreateActorDto> actorsDto);
     Task<bool> UpdateAsync(int id, CreateActorDto actorDto);
     Task<bool> DeleteAsync(int id);
+    Task<IEnumerable<ActorMovieDto>> GetActorMoviesAsync(int actorId);
 }

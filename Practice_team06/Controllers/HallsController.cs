@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Practice_team06.DTOs;
+using Practice_team06.DTOs.Hall;
 using Practice_team06.Services;
 
 namespace Practice_team06.Controllers;

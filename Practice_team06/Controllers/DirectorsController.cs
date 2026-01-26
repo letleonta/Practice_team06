@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Practice_team06.DTOs;
+using Practice_team06.DTOs.Director;
 using Practice_team06.Services;
 
 namespace Practice_team06.Controllers;
@@ -52,6 +53,13 @@ public class DirectorsController : ControllerBase
         return Ok(createdDirectors);
     }
 
+    [HttpGet("{id}/movies")]
+    public async Task<ActionResult<IEnumerable<DirectorMovieDto>>> GetDirectorMovies(int id)
+    {
+        var movies = await _directorService.GetDirectorMoviesAsync(id);
+        return Ok(movies);
+    }
+    
     [HttpPut("{id}")] //Admin
     public async Task<IActionResult> UpdateDirector(int id, CreateDirectorDto directorDto)
     {

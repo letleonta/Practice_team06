@@ -1,4 +1,5 @@
 ﻿using Practice_team06.DTOs;
+using Practice_team06.DTOs.Director;
 
 namespace Practice_team06.Services;
 
@@ -15,4 +16,6 @@ public interface IDirectorService
     Task<bool> UpdateAsync(int id, CreateDirectorDto directorDto);
     
     Task<bool> DeleteAsync(int id);
+    
+    Task<IEnumerable<DirectorMovieDto>> GetDirectorMoviesAsync(int directorId);
 }

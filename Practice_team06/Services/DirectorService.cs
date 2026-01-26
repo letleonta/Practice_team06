@@ -1,5 +1,6 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using Practice_team06.DTOs;
+using Practice_team06.DTOs.Director;
 using Practice_team06.Models;
 
 namespace Practice_team06.Services;
@@ -131,5 +132,18 @@ public class DirectorService : IDirectorService
         _context.Directors.Remove(director);
         await _context.SaveChangesAsync();
         return true;
+    }
+    
+    public async Task<IEnumerable<DirectorMovieDto>> GetDirectorMoviesAsync(int directorId)
+    {
+        return await _context.Movies
+            .Where(m => m.DirectorId == directorId)
+            .Select(m => new DirectorMovieDto
+            {
+                MovieId = m.Id,
+                Title = m.Title,
+                ReleaseDate = m.ReleaseDate
+            })
+            .ToListAsync();
     }
 }
