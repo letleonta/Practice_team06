@@ -170,7 +170,7 @@ namespace Practice_team06.Controllers
             }
         }
         
-        // DELETE: api/AdminBookings/5
+        // DELETE: api/Bookings/5
         // Delete booking
         [HttpDelete("{bookingId}")]
         [Authorize(Roles = "Admin")]
