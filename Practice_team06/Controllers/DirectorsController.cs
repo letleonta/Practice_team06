@@ -37,18 +37,25 @@ public class DirectorsController : ControllerBase
     public async Task<ActionResult<DirectorDto>> CreateDirector(CreateDirectorDto directorDto)
     {
         var createdDirector = await _directorService.CreateAsync(directorDto);
+        
+        if (createdDirector == null)
+        {
+            return BadRequest("Не вдалося створити режисера."); 
+        }
+        
         return CreatedAtAction(nameof(GetDirector), new { id = createdDirector.Id }, createdDirector);
     }
-    //для масиву акторів 
+    
     [HttpPost("bulk")] //Admin
-    public async Task<ActionResult<IEnumerable<DirectorDto>>> CreateDirectors(IEnumerable<CreateDirectorDto> directorsDto)
+    public async Task<ActionResult<IEnumerable<DirectorDto>>> CreateDirectors(IEnumerable<CreateDirectorDto>? directorsDto)
     {
-        if (directorsDto == null || !directorsDto.Any())
+        var directorsList = directorsDto?.ToList();
+        if (directorsList == null || directorsList.Count == 0)
         {
             return BadRequest("Список акторів не може бути порожнім.");
         }
 
-        var createdDirectors = await _directorService.CreateRangeAsync(directorsDto);
+        var createdDirectors = await _directorService.CreateRangeAsync(directorsList);
         return Ok(createdDirectors);
     }
 

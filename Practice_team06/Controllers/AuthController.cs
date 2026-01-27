@@ -2,7 +2,6 @@
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using Practice_team06.DTOs;
 using Practice_team06.DTOs.Auth;
 using Practice_team06.Models;
 
