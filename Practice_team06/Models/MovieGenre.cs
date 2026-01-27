@@ -2,16 +2,14 @@
 
 namespace Practice_team06.Models;
 
-public partial class MovieActor
+public class MovieGenre
 {
     [Required]
     public int MovieId { get; set; }
     [Required]
-    public int ActorId { get; set; }
-    [StringLength(100)]
-    public string? RoleName { get; set; }
-
-    public virtual Actor Actor { get; set; } = null!;
+    public int GenreId { get; set; }
+    
+    public virtual Genre Genre { get; set; } = null!;
 
     public virtual Movie Movie { get; set; } = null!;
 }

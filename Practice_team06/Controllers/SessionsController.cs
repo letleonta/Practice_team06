@@ -1,6 +1,4 @@
-﻿using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Mvc;
-using Practice_team06.DTOs;
+﻿using Microsoft.AspNetCore.Mvc;
 using Practice_team06.DTOs.Session;
 using Practice_team06.Services;
 

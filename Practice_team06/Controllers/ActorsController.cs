@@ -1,8 +1,4 @@
-﻿using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-using Microsoft.AspNetCore.Mvc;
-using Practice_team06.DTOs;
+﻿using Microsoft.AspNetCore.Mvc;
 using Practice_team06.DTOs.Actor;
 using Practice_team06.Services;
 
@@ -45,14 +41,15 @@ public class ActorsController : ControllerBase
     }
     //для масиву акторів 
     [HttpPost("bulk")] //Admin
-    public async Task<ActionResult<IEnumerable<ActorDto>>> CreateActors(IEnumerable<CreateActorDto> actorsDto)
+    public async Task<ActionResult<IEnumerable<ActorDto>>> CreateActors(IEnumerable<CreateActorDto>? actorsDto)
     {
-        if (actorsDto == null || !actorsDto.Any())
+        var actorsList = actorsDto?.ToList();
+        if (actorsList == null || actorsList.Count == 0)
         {
             return BadRequest("Список акторів не може бути порожнім.");
         }
 
-        var createdActors = await _actorService.CreateRangeAsync(actorsDto);
+        var createdActors = await _actorService.CreateRangeAsync(actorsList);
         return Ok(createdActors);
     }
     

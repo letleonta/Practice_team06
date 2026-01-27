@@ -1,6 +1,4 @@
-﻿using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Mvc;
-using Practice_team06.DTOs;
+﻿using Microsoft.AspNetCore.Mvc;
 using Practice_team06.DTOs.Seat;
 using Practice_team06.Services;
 
@@ -14,10 +12,6 @@ public class SeatsController : ControllerBase
 
     public SeatsController(ISeatService seatService) => _seatService = seatService;
     
-    [HttpGet("hall/{hallId}")]
-    public async Task<IActionResult> GetByHall(int hallId) 
-        => Ok(await _seatService.GetSeatsByHallAsync(hallId));
-
     [HttpGet("{id}")]
     public async Task<IActionResult> GetById(int id)
     {

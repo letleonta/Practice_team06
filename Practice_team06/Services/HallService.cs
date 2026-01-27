@@ -1,6 +1,5 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using Practice_team06.Models;
-using Practice_team06.DTOs;
 using Practice_team06.DTOs.Hall;
 
 namespace Practice_team06.Services;
@@ -21,8 +20,8 @@ public class HallService : IHallService
                 Description = h.Description
             }).ToListAsync();
     }
-
-    public async Task<HallDto?> GetByIdAsync(short id)
+    
+    public async Task<HallDto?> GetByIdAsync(int id)
     {
         var h = await _context.Halls.FindAsync(id);
         if (h == null) return null;
@@ -31,14 +30,15 @@ public class HallService : IHallService
 
     public async Task<HallDto> CreateAsync(CreateHallDto dto)
     {
-        var hall = new Hall {
-            Name = dto.Name,
-            PriceModifier = dto.PriceModifier,
-            Description = dto.Description
-        };
+        if (await _context.Halls.AnyAsync(h => h.Name == dto.Name))
+        {
+            throw new InvalidOperationException("Зал з такою назвою вже існує.");
+        }
+
+        var hall = new Hall { Name = dto.Name, PriceModifier = dto.PriceModifier, Description = dto.Description };
         _context.Halls.Add(hall);
         await _context.SaveChangesAsync();
-        return new HallDto { Id = hall.Id, Name = hall.Name, PriceModifier = hall.PriceModifier };
+        return new HallDto { Id = hall.Id, Name = hall.Name, PriceModifier = hall.PriceModifier, Description = hall.Description };
     }
 
     public async Task<bool> DeleteAsync(short id)

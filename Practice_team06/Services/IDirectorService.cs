@@ -1,5 +1,4 @@
-﻿using Practice_team06.DTOs;
-using Practice_team06.DTOs.Director;
+﻿using Practice_team06.DTOs.Director;
 
 namespace Practice_team06.Services;
 
