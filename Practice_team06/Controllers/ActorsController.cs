@@ -16,12 +16,14 @@ public class ActorsController : ControllerBase
     }
 
     [HttpGet] //Client
-    public async Task<ActionResult<IEnumerable<ActorDto>>> GetActors(
-        [FromQuery] string? search = null, 
-        [FromQuery] string? sortBy = null, 
-        [FromQuery] bool isDescending = false)
+    public async Task<ActionResult<IEnumerable<ActorDto>>> GetActors([FromQuery] ActorFilterDto filter)
     {
-        var actors = await _actorService.GetAllAsync(search, sortBy, isDescending);
+        var actors = await _actorService.GetAllAsync(
+            filter.Search, 
+            filter.SortBy, 
+            filter.IsDescending
+        );
+
         return Ok(actors);
     }
 

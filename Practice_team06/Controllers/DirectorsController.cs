@@ -16,14 +16,17 @@ public class DirectorsController : ControllerBase
     }
 
     [HttpGet] //Client
-    public async Task<ActionResult<IEnumerable<DirectorDto>>> GetDirectors(
-        [FromQuery] string? search = null, 
-        [FromQuery] string? sortBy = null, 
-        [FromQuery] bool isDescending = false)
+    public async Task<ActionResult<IEnumerable<DirectorDto>>> GetActors([FromQuery] DirectorFilterDto filter)
     {
-        var directors = await _directorService.GetAllAsync(search, sortBy, isDescending);
-        return Ok(directors);
+        var actors = await _directorService.GetAllAsync(
+            filter.Search, 
+            filter.SortBy, 
+            filter.IsDescending
+        );
+
+        return Ok(actors);
     }
+
 
     [HttpGet("{id}")] //Client
     public async Task<ActionResult<DirectorDto>> GetDirector(int id) 
