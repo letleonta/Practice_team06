@@ -15,34 +15,17 @@ public class ActorService : IActorService
 
     public async Task<IEnumerable<ActorDto>> GetAllAsync(string? search = null, string? sortBy = null, bool isDescending = false)
     {
-        // 1. Починаємо формувати запит до таблиці Actors
         var query = _context.Actors.AsQueryable();
-
-        // 2. Пошук (Filtering)
+        
         if (!string.IsNullOrWhiteSpace(search))
         {
             var s = search.Trim().ToLower();
             query = query.Where(a => a.FirstName.ToLower().Contains(s) 
-                                  || a.LastName.ToLower().Contains(s));
+                                     || a.LastName.ToLower().Contains(s));
         }
-
-        // 3. Сортування (Sorting)
-        if (!string.IsNullOrWhiteSpace(sortBy))
-        {
-            query = sortBy.ToLower() switch
-            {
-                "firstname" => isDescending ? query.OrderByDescending(a => a.FirstName) : query.OrderBy(a => a.FirstName),
-                "lastname"  => isDescending ? query.OrderByDescending(a => a.LastName) : query.OrderBy(a => a.LastName),
-                "id"        => isDescending ? query.OrderByDescending(a => a.Id) : query.OrderBy(a => a.Id),
-                _           => query.OrderBy(a => a.Id) // за замовчуванням
-            };
-        }
-        else
-        {
-            query = query.OrderBy(a => a.Id);
-        }
-
-        // 4. Перетворення в DTO та виконання запиту
+        
+        query = ApplySorting(query, sortBy, isDescending);
+        
         return await query
             .Select(a => new ActorDto
             {
@@ -146,5 +129,30 @@ public class ActorService : IActorService
                 ReleaseDate = ma.Movie.ReleaseDate 
             })
             .ToListAsync();
+    }
+    
+    private static IQueryable<Actor> ApplySorting(IQueryable<Actor> query, string? sortBy, bool isDescending)
+    {
+        
+        if (string.IsNullOrWhiteSpace(sortBy))
+        {
+            return query.OrderBy(a => a.Id);
+        }
+        
+        return sortBy.ToLower() switch
+        {
+            "firstname" => isDescending 
+                ? query.OrderByDescending(a => a.FirstName) 
+                : query.OrderBy(a => a.FirstName),
+
+            "lastname" => isDescending 
+                ? query.OrderByDescending(a => a.LastName) 
+                : query.OrderBy(a => a.LastName),
+
+            "id" => isDescending 
+                ? query.OrderByDescending(a => a.Id) 
+                : query.OrderBy(a => a.Id),
+            _ => query.OrderBy(a => a.Id)
+        };
     }
 }
