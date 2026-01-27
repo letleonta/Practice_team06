@@ -20,6 +20,7 @@ public partial class PostgresContext : IdentityDbContext<User, IdentityRole<int>
     public virtual DbSet<Language> Languages { get; set; }
     public virtual DbSet<Movie> Movies { get; set; }
     public virtual DbSet<MovieActor> MovieActors { get; set; }
+    public virtual DbSet<MovieGenre> MovieGenres { get; set; }
     public virtual DbSet<Seat> Seats { get; set; }
     public virtual DbSet<Session> Sessions { get; set; }
     public virtual DbSet<Ticket> Tickets { get; set; }
@@ -134,17 +135,6 @@ public partial class PostgresContext : IdentityDbContext<User, IdentityRole<int>
                 .HasForeignKey(d => d.DirectorId)
                 .OnDelete(DeleteBehavior.Cascade)
                 .HasConstraintName("FK_MoviesDirectorId");
-            
-            entity.HasMany(d => d.Genres).WithMany(p => p.Movies)
-                .UsingEntity<Dictionary<string, object>>(
-                    "MovieGenre",
-                    r => r.HasOne<Genre>().WithMany().HasForeignKey("GenreId").OnDelete(DeleteBehavior.Cascade),
-                    l => l.HasOne<Movie>().WithMany().HasForeignKey("MovieId").OnDelete(DeleteBehavior.Cascade),
-                    j =>
-                    {
-                        j.HasKey("MovieId", "GenreId").HasName("MovieGenresPkey");
-                        j.ToTable("MovieGenres");
-                    });
         });
 
         modelBuilder.Entity<MovieActor>(entity =>
@@ -154,7 +144,14 @@ public partial class PostgresContext : IdentityDbContext<User, IdentityRole<int>
             entity.HasOne(d => d.Actor).WithMany(p => p.MovieActors).HasForeignKey(d => d.ActorId).OnDelete(DeleteBehavior.Cascade);
             entity.HasOne(d => d.Movie).WithMany(p => p.MovieActors).HasForeignKey(d => d.MovieId).OnDelete(DeleteBehavior.Cascade);
         });
-
+        
+        modelBuilder.Entity<MovieGenre>(entity =>
+        {
+            entity.HasKey(e => new { e.MovieId, e.GenreId }).HasName("PK_MovieGenres");
+            entity.ToTable("MovieGenres");
+            entity.HasOne(d => d.Genre).WithMany(p => p.MovieGenres).HasForeignKey(d => d.GenreId).OnDelete(DeleteBehavior.Cascade);
+            entity.HasOne(d => d.Movie).WithMany(p => p.MovieGenres).HasForeignKey(d => d.MovieId).OnDelete(DeleteBehavior.Cascade);
+        });
         
         modelBuilder.Entity<Session>(entity =>
         {
@@ -197,6 +194,11 @@ public partial class PostgresContext : IdentityDbContext<User, IdentityRole<int>
                 .OnDelete(DeleteBehavior.Restrict);
         });
 
+        modelBuilder.Entity<Genre>().HasData(
+            new Genre { Id = 1, Name = "Бойовик" },
+            new Genre { Id = 2, Name = "Комедія" },
+            new Genre { Id = 3, Name = "Жахи" }
+        );
         OnModelCreatingPartial(modelBuilder);
     }
 

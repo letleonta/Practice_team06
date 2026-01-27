@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using Practice_team06.Data;
 using Practice_team06.Models;
 using Practice_team06.Services;
 
@@ -102,6 +103,16 @@ using (var scope = app.Services.CreateScope())
 {
     var services = scope.ServiceProvider;
     await DbInitializer.SeedRolesAndAdminAsync(services);
+    try
+    {
+        var context = services.GetRequiredService<PostgresContext>();
+        await DbInitializer.SeedDataAsync(context);
+    }
+    catch (Exception ex)
+    {
+        var logger = services.GetRequiredService<ILogger<Program>>();
+        logger.LogError(ex, "Помилка під час ініціалізації бази даних.");
+    }
 }
 
 app.MapControllers();
