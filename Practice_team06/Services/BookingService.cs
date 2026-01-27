@@ -232,21 +232,21 @@ public class BookingService : IBookingService
     private static IQueryable<Booking> ApplySorting(IQueryable<Booking> query, BookingFilterDto filter)
     {
         var sortBy = filter.SortBy?.ToLower();
-        var sortOrder = filter.SortOrder?.ToLower() == "asc";
+        var isDescending = filter.IsDescending.GetValueOrDefault(false);
 
         return sortBy switch
         {
-            "date" => sortOrder
-                ? query.OrderBy(booking => booking.BookingTime)
-                : query.OrderByDescending(b => b.BookingTime),
+            "date" => isDescending
+                ? query.OrderByDescending(booking => booking.BookingTime)
+                : query.OrderBy(booking => booking.BookingTime),
 
-            "status" => sortOrder
-                ? query.OrderBy(booking => booking.Status)
-                : query.OrderByDescending(booking => booking.Status),
+            "status" => isDescending
+                ? query.OrderByDescending(booking => booking.Status)
+                : query.OrderBy(booking => booking.Status),
 
-            "userid" => sortOrder
-                ? query.OrderBy(booking => booking.UserId)
-                : query.OrderByDescending(booking => booking.UserId),
+            "userid" => isDescending
+                ? query.OrderByDescending(booking => booking.UserId)
+                : query.OrderBy(booking => booking.UserId),
 
             _ => query.OrderByDescending(booking => booking.BookingTime) // default
         };
