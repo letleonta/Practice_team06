@@ -47,8 +47,7 @@ public static class DbInitializer
     }
    public static async Task SeedDataAsync(PostgresContext context)
 {
-    // 0. Перевіряємо по ФІЛЬМАХ. Якщо фільмів нема - значить треба заповнювати.
-    // Це надійніше, бо фільми - це центр бази.
+    
     if (await context.Movies.AnyAsync()) return;
 
     // 1. ЖАНРИ (Додаємо, якщо їх ще нема)
