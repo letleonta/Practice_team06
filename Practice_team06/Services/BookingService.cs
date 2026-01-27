@@ -1,5 +1,4 @@
 ﻿using Microsoft.EntityFrameworkCore;
-using Practice_team06.DTOs;
 using Practice_team06.DTOs.Booking;
 using Practice_team06.DTOs.Ticket;
 using Practice_team06.Models;

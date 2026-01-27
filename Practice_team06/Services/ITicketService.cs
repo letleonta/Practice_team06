@@ -1,6 +1,4 @@
-﻿using Practice_team06.DTOs;
-using Practice_team06.DTOs.Ticket;
-using Practice_team06.Models;
+﻿using Practice_team06.DTOs.Ticket;
 
 namespace Practice_team06.Services;
 

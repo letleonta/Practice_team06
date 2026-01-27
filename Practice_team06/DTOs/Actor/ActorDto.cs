@@ -1,6 +1,4 @@
-﻿using System.ComponentModel.DataAnnotations;
-
-namespace Practice_team06.DTOs.Actor;
+﻿namespace Practice_team06.DTOs.Actor;
 
 public class ActorDto
 {

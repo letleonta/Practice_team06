@@ -1,8 +1,4 @@
-﻿using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-using Microsoft.AspNetCore.Mvc;
-using Practice_team06.DTOs;
+﻿using Microsoft.AspNetCore.Mvc;
 using Practice_team06.DTOs.Genre;
 using Practice_team06.Services;
 
@@ -45,14 +41,15 @@ public class GenresController : ControllerBase
     }
     
     [HttpPost("bulk")]
-    public async Task<ActionResult<IEnumerable<GenreDto>>> CreateGenres(IEnumerable<CreateGenreDto> genresDto)
+    public async Task<ActionResult<IEnumerable<GenreDto>>> CreateGenres(IEnumerable<CreateGenreDto>? genresDto)
     {
-        if (genresDto == null || !genresDto.Any())
+        var genresList = genresDto?.ToList();
+        if (genresList == null || genresList.Count == 0)
         {
             return BadRequest("Список жанрів не може бути порожнім.");
         }
 
-        var createdGenres = await _genreService.CreateRangeAsync(genresDto);
+        var createdGenres = await _genreService.CreateRangeAsync(genresList);
         return Ok(createdGenres);
     }
 

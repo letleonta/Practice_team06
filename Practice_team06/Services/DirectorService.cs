@@ -1,5 +1,4 @@
 ﻿using Microsoft.EntityFrameworkCore;
-using Practice_team06.DTOs;
 using Practice_team06.DTOs.Director;
 using Practice_team06.Models;
 
@@ -68,7 +67,7 @@ public class DirectorService : IDirectorService
         };
     }
 
-    public async Task<DirectorDto> CreateAsync(CreateDirectorDto directorDto)
+    public async Task<DirectorDto?> CreateAsync(CreateDirectorDto directorDto)
     {
         var director = new Director
         {

@@ -1,7 +1,4 @@
-﻿using System.Collections.Generic;
-using System.Threading.Tasks;
-using Practice_team06.DTOs;
-using Practice_team06.DTOs.Genre;
+﻿using Practice_team06.DTOs.Genre;
 
 namespace Practice_team06.Services;
 

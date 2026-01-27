@@ -1,5 +1,4 @@
-﻿using Practice_team06.DTOs;
-using Practice_team06.DTOs.Movie;
+﻿using Practice_team06.DTOs.Movie;
 
 namespace Practice_team06.Services;
 public interface IMovieService
