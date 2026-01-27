@@ -1,5 +1,7 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Practice_team06.DTOs.Booking;
 using Practice_team06.Models;
 using Practice_team06.Services;
 
@@ -23,9 +25,20 @@ namespace Practice_team06.Controllers
             return null;
         }
         
+        // GET: api/bookings/
+        // Get all bookings
+        [HttpGet]
+        [Authorize(Roles = "Admin")]
+        public async Task<IActionResult> GetAllBookings([FromQuery] BookingFilterDto filter)
+        {
+            var bookings = await _bookingService.GetAllBookingsAsync(filter);
+            return Ok(bookings);
+        }
+        
         // GET: api/Bookings/my
         // Get all client bookings
         [HttpGet("my")]
+        [Authorize(Roles = "Customer")]
         public async Task<IActionResult> GetMyBookings()
         {
             var userId = GetUserIdFromHeader();
@@ -43,30 +56,47 @@ namespace Practice_team06.Controllers
             }
         }
         
-        // GET: api/Bookings/5
+        // GET: api/bookings/5
         // Get booking by id
         [HttpGet("{bookingId}")]
+        [Authorize(Roles = "Admin,Customer")]
         public async Task<ActionResult<Booking>> GetBooking(int bookingId)
         {
-            var userId = GetUserIdFromHeader();
-            if (userId == null)
-                return BadRequest("Invalid or missing X-User-Id");
+            if (User.IsInRole("Admin"))
+            {
+                try
+                {
+                    var booking = await _bookingService.GetBookingByIdAsync(bookingId);
+                    return Ok(booking);
+                }
+                catch (KeyNotFoundException keyNotFoundException)
+                {
+                    return NotFound(keyNotFoundException.Message);
+                }
+            }
+            if (User.IsInRole("Customer"))
+            {
+                var userId = GetUserIdFromHeader();
+                if (userId == null)
+                    return BadRequest("Invalid or missing X-User-Id");
 
-            try
-            {
-                var booking = await _bookingService.GetBookingByIdAsync(userId.Value, bookingId);
-                return Ok(booking);
+                try
+                {
+                    var booking = await _bookingService.GetBookingByIdAsync(userId.Value, bookingId);
+                    return Ok(booking);
+                }
+                catch (KeyNotFoundException keyNotFoundException)
+                {
+                    return NotFound(keyNotFoundException.Message);
+                }
             }
-            catch (KeyNotFoundException keyNotFoundException)
-            {
-                return NotFound(keyNotFoundException.Message);
-            }
+            return Forbid();
         }
         
         // POST: api/Bookings
         // Create booking
-        // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
         [HttpPost]
+        [Authorize(Roles = "Customer")]
         public async Task<ActionResult<Booking>> PostBooking()
         {
             var userId = GetUserIdFromHeader();
@@ -86,6 +116,7 @@ namespace Practice_team06.Controllers
         // PUT: api/Bookings/5/cancel
         // Cancel booking
         [HttpPut("{bookingId}/cancel")]
+        [Authorize(Roles = "Customer")]
         public async Task<IActionResult> CancelBooking(int bookingId)
         {
             var userId = GetUserIdFromHeader();
@@ -114,6 +145,7 @@ namespace Practice_team06.Controllers
         // PUT: api/Bookings/5/confirm
         // Mark booking as paid
         [HttpPut("{bookingId}/confirm")]
+        [Authorize(Roles = "Customer")]
         public async Task<IActionResult> ConfirmBooking(int bookingId)
         {
             var userId = GetUserIdFromHeader();
@@ -135,6 +167,23 @@ namespace Practice_team06.Controllers
             catch (DbUpdateException dbUpdateException)
             {
                 return BadRequest(dbUpdateException.Message);
+            }
+        }
+        
+        // DELETE: api/AdminBookings/5
+        // Delete booking
+        [HttpDelete("{bookingId}")]
+        [Authorize(Roles = "Admin")]
+        public async Task<IActionResult> DeleteBooking(int bookingId)
+        {
+            try
+            {
+                await _bookingService.DeleteBookingAsync(bookingId);
+                return NoContent();
+            }
+            catch (KeyNotFoundException keyNotFoundException)
+            {
+                return NotFound(keyNotFoundException.Message);
             }
         }
     }
