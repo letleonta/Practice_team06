@@ -1,3 +1,4 @@
+using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -17,15 +18,6 @@ namespace Practice_team06.Controllers
             _ticketService = ticketService;
         }
         
-        //copied
-        private int? GetUserIdFromHeader()
-        {
-            var userIdHeader = HttpContext.Request.Headers["X-User-Id"].FirstOrDefault();
-            if (int.TryParse(userIdHeader, out var userId))
-                return userId;
-            return null;
-        }
-        
         // GET: api/tickets?bookingId=5
         [HttpGet]
         [Authorize(Roles = "Admin,Customer")]
@@ -43,13 +35,15 @@ namespace Practice_team06.Controllers
                 if (!bookingId.HasValue)
                     return BadRequest("BookingId is required for customers");
 
-                var userId = GetUserIdFromHeader();
-                if (userId == null)
-                    return BadRequest("Invalid or missing X-User-Id");
+                var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier);
+                if (userIdClaim == null)
+                    return Unauthorized("User is not authenticated");
+
+                var userId = int.Parse(userIdClaim.Value);
 
                 try
                 {
-                    var tickets = await _ticketService.GetTicketsForUserBookingAsync(userId.Value, bookingId.Value);
+                    var tickets = await _ticketService.GetTicketsForUserBookingAsync(userId, bookingId.Value);
                     return Ok(tickets);
                 }
                 catch (KeyNotFoundException keyNotFoundException)
@@ -72,13 +66,15 @@ namespace Practice_team06.Controllers
             }
             if (User.IsInRole("Customer"))
             {
-                var userId = GetUserIdFromHeader();
-                if (userId == null)
-                    return BadRequest("Invalid or missing X-User-Id");
+                var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier);
+                if (userIdClaim == null)
+                    return Unauthorized("User is not authenticated");
+
+                var userId = int.Parse(userIdClaim.Value);
                 
                 try
                 {
-                    var ticket = await _ticketService.GetTicketForUserByIdAsync(userId.Value, ticketId);
+                    var ticket = await _ticketService.GetTicketForUserByIdAsync(userId, ticketId);
                     return Ok(ticket);
                 }
                 catch (KeyNotFoundException)
@@ -94,14 +90,16 @@ namespace Practice_team06.Controllers
         [Authorize(Roles = "Customer")]
         public async Task<IActionResult> CreateTicket([FromQuery] int bookingId, CreateTicketDto dto)
         {
-            var userId = GetUserIdFromHeader();
-            if (userId == null)
-                return BadRequest("Invalid or missing X-User-Id");
+            var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier);
+            if (userIdClaim == null)
+                return Unauthorized("User is not authenticated");
+
+            var userId = int.Parse(userIdClaim.Value);
 
             try
             {
                 var ticket = await _ticketService.CreateTicketAsync(
-                    userId.Value,
+                    userId,
                     bookingId,
                     dto
                 );
