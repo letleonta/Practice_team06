@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using Practice_team06.DTOs.Actor;
 using Practice_team06.Services;
 
@@ -15,19 +16,17 @@ public class ActorsController : ControllerBase
         _actorService = actorService;
     }
 
-    [HttpGet] //Client
+    [HttpGet]
+    [Authorize(Roles = "Admin, Customer")]
     public async Task<ActionResult<IEnumerable<ActorDto>>> GetActors([FromQuery] ActorFilterDto filter)
     {
-        var actors = await _actorService.GetAllAsync(
-            filter.Search, 
-            filter.SortBy, 
-            filter.IsDescending
-        );
+        var actors = await _actorService.GetAllAsync(filter);
 
         return Ok(actors);
     }
 
-    [HttpGet("{id}")] //Client
+    [HttpGet("{id}")]
+    [Authorize(Roles = "Admin, Customer")]
     public async Task<ActionResult<ActorDto>> GetActor(int id) 
     {
         var actor = await _actorService.GetByIdAsync(id);
@@ -35,14 +34,16 @@ public class ActorsController : ControllerBase
         return Ok(actor);
     }
 
-    [HttpPost] //Admin
+    [HttpPost]
+    [Authorize(Roles = "Admin")]
     public async Task<ActionResult<ActorDto>> CreateActor(CreateActorDto actorDto)
     {
         var createdActor = await _actorService.CreateAsync(actorDto);
         return CreatedAtAction(nameof(GetActor), new { id = createdActor.Id }, createdActor);
     }
-    //для масиву акторів 
-    [HttpPost("bulk")] //Admin
+    
+    [HttpPost("bulk")] 
+    [Authorize(Roles = "Admin")]
     public async Task<ActionResult<IEnumerable<ActorDto>>> CreateActors(IEnumerable<CreateActorDto>? actorsDto)
     {
         var actorsList = actorsDto?.ToList();
@@ -56,13 +57,15 @@ public class ActorsController : ControllerBase
     }
     
     [HttpGet("{id}/movies")]
+    [Authorize(Roles = "Admin, Customer")]
     public async Task<ActionResult<IEnumerable<ActorMovieDto>>> GetActorMovies(int id)
     {
         var movies = await _actorService.GetActorMoviesAsync(id);
         return Ok(movies);
     }
 
-    [HttpPut("{id}")] //Admin
+    [HttpPut("{id}")] 
+    [Authorize(Roles = "Admin")]
     public async Task<IActionResult> UpdateActor(int id, CreateActorDto actorDto)
     {
         var result = await _actorService.UpdateAsync(id, actorDto);
@@ -70,7 +73,8 @@ public class ActorsController : ControllerBase
         return NoContent();
     }
 
-    [HttpDelete("{id}")] //Admin
+    [HttpDelete("{id}")] 
+    [Authorize(Roles = "Admin")]
     public async Task<IActionResult> DeleteActor(int id)
     {
         var result = await _actorService.DeleteAsync(id);

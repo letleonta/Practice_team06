@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using Practice_team06.DTOs.Hall;
 using Practice_team06.Services;
 
@@ -13,9 +14,11 @@ public class HallsController : ControllerBase
     public HallsController(IHallService hallService) => _hallService = hallService;
 
     [HttpGet]
+    [Authorize(Roles = "Admin, Customer")]
     public async Task<IActionResult> GetAll() => Ok(await _hallService.GetAllAsync());
 
     [HttpGet("{id}")]
+    [Authorize(Roles = "Admin, Customer")]
     public async Task<IActionResult> GetById(short id)
     {
         var hall = await _hallService.GetByIdAsync(id);
@@ -23,7 +26,7 @@ public class HallsController : ControllerBase
     }
 
     [HttpPost]
-    // [Authorize(Roles = "Admin")]
+    [Authorize(Roles = "Admin")]
     public async Task<IActionResult> Create(CreateHallDto dto)
     {
         var result = await _hallService.CreateAsync(dto);
@@ -31,7 +34,7 @@ public class HallsController : ControllerBase
     }
 
     [HttpDelete("{id}")]
-    // [Authorize(Roles = "Admin")]
+    [Authorize(Roles = "Admin")]
     public async Task<IActionResult> Delete(short id)
     {
         var result = await _hallService.DeleteAsync(id);
@@ -39,7 +42,7 @@ public class HallsController : ControllerBase
     }
     
     [HttpPost("generate-standard-seats")]
-    // [Authorize(Roles = "Admin")]
+    [Authorize(Roles = "Admin")]
     public async Task<IActionResult> GenerateStandardSeats(GenerateStandardSeatsDto dto)
     {
         var count = await _hallService.GenerateStandardSeatsAsync(dto);
@@ -48,7 +51,7 @@ public class HallsController : ControllerBase
     }
     
     [HttpPost("generate-flexible-seats")]
-    // [Authorize(Roles = "Admin")]
+    [Authorize(Roles = "Admin")]
     public async Task<IActionResult> GenerateFlexibleSeats(GenerateFlexibleSeatsDto dto)
     {
         var count = await _hallService.GenerateFlexibleSeatsAsync(dto);

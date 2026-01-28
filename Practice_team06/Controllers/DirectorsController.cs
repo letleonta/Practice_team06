@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using Practice_team06.DTOs.Director;
 using Practice_team06.Services;
 
@@ -14,21 +15,18 @@ public class DirectorsController : ControllerBase
     {
         _directorService = directorService;
     }
-
-    [HttpGet] //Client
-    public async Task<ActionResult<IEnumerable<DirectorDto>>> GetActors([FromQuery] DirectorFilterDto filter)
+    
+    [HttpGet] 
+    [Authorize(Roles = "Admin, Customer")]
+    public async Task<ActionResult<IEnumerable<DirectorDto>>> GetDirectors([FromQuery] DirectorFilterDto filter)
     {
-        var actors = await _directorService.GetAllAsync(
-            filter.Search, 
-            filter.SortBy, 
-            filter.IsDescending
-        );
+        var directors = await _directorService.GetAllAsync(filter);
 
-        return Ok(actors);
+        return Ok(directors);
     }
 
-
-    [HttpGet("{id}")] //Client
+    [HttpGet("{id}")] 
+    [Authorize(Roles = "Admin, Customer")]
     public async Task<ActionResult<DirectorDto>> GetDirector(int id) 
     {
         var director = await _directorService.GetByIdAsync(id);
@@ -36,7 +34,8 @@ public class DirectorsController : ControllerBase
         return Ok(director);
     }
 
-    [HttpPost] //Admin
+    [HttpPost]
+    [Authorize(Roles = "Admin")]
     public async Task<ActionResult<DirectorDto>> CreateDirector(CreateDirectorDto directorDto)
     {
         var createdDirector = await _directorService.CreateAsync(directorDto);
@@ -49,7 +48,8 @@ public class DirectorsController : ControllerBase
         return CreatedAtAction(nameof(GetDirector), new { id = createdDirector.Id }, createdDirector);
     }
     
-    [HttpPost("bulk")] //Admin
+    [HttpPost("bulk")] 
+    [Authorize(Roles = "Admin")]
     public async Task<ActionResult<IEnumerable<DirectorDto>>> CreateDirectors(IEnumerable<CreateDirectorDto>? directorsDto)
     {
         var directorsList = directorsDto?.ToList();
@@ -63,13 +63,15 @@ public class DirectorsController : ControllerBase
     }
 
     [HttpGet("{id}/movies")]
+    [Authorize(Roles = "Admin, Customer")]
     public async Task<ActionResult<IEnumerable<DirectorMovieDto>>> GetDirectorMovies(int id)
     {
         var movies = await _directorService.GetDirectorMoviesAsync(id);
         return Ok(movies);
     }
     
-    [HttpPut("{id}")] //Admin
+    [HttpPut("{id}")] 
+    [Authorize(Roles = "Admin")]
     public async Task<IActionResult> UpdateDirector(int id, CreateDirectorDto directorDto)
     {
         var result = await _directorService.UpdateAsync(id, directorDto);
@@ -77,7 +79,8 @@ public class DirectorsController : ControllerBase
         return NoContent();
     }
 
-    [HttpDelete("{id}")] //Admin
+    [HttpDelete("{id}")]
+    [Authorize(Roles = "Admin")]
     public async Task<IActionResult> DeleteDirector(int id)
     {
         var result = await _directorService.DeleteAsync(id);

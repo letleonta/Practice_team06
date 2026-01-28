@@ -13,18 +13,18 @@ public class ActorService : IActorService
         _context = context;
     }
 
-    public async Task<IEnumerable<ActorDto>> GetAllAsync(string? search = null, string? sortBy = null, bool isDescending = false)
+    public async Task<IEnumerable<ActorDto>> GetAllAsync(ActorFilterDto filter)
     {
         var query = _context.Actors.AsQueryable();
         
-        if (!string.IsNullOrWhiteSpace(search))
+        if (!string.IsNullOrWhiteSpace(filter.Search))
         {
-            var s = search.Trim().ToLower();
+            var s = filter.Search.Trim().ToLower();
             query = query.Where(a => a.FirstName.ToLower().Contains(s) 
                                      || a.LastName.ToLower().Contains(s));
         }
         
-        query = ApplySorting(query, sortBy, isDescending);
+        query = ApplySorting(query, filter.SortBy, filter.IsDescending);
         
         return await query
             .Select(a => new ActorDto

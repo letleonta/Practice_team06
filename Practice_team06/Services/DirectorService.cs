@@ -13,18 +13,18 @@ public class DirectorService : IDirectorService
         _context = context;
     }
 
-    public async Task<IEnumerable<DirectorDto>> GetAllAsync(string? search = null, string? sortBy = null, bool isDescending = false)
+    public async Task<IEnumerable<DirectorDto>> GetAllAsync(DirectorFilterDto filter)
     {
         var query = _context.Directors.AsQueryable();
         
-        if (!string.IsNullOrWhiteSpace(search))
+        if (!string.IsNullOrWhiteSpace(filter.Search))
         {
-            var s = search.Trim().ToLower();
+            var s = filter.Search.Trim().ToLower();
             query = query.Where(d => d.FirstName.ToLower().Contains(s) 
                                      || d.LastName.ToLower().Contains(s));
         }
         
-        query = ApplySorting(query, sortBy, isDescending);
+        query = ApplySorting(query, filter.SortBy, filter.IsDescending);
         
         return await query
             .Select(d => new DirectorDto
