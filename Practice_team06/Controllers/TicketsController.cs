@@ -9,9 +9,9 @@ namespace Practice_team06.Controllers
     [ApiController]
     public class TicketsController : ControllerBase
     {
-        private readonly TicketService _ticketService;
+        private readonly ITicketService _ticketService;
 
-        public TicketsController(TicketService ticketService)
+        public TicketsController(ITicketService ticketService)
         {
             _ticketService = ticketService;
         }
@@ -51,7 +51,7 @@ namespace Practice_team06.Controllers
         // POST: api/bookings/5/tickets
         // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
         [HttpPost]
-        public async Task<IActionResult> PutTicket(int bookingId, CreateTicketDto dto)
+        public async Task<IActionResult> CreateTicket(int bookingId, CreateTicketDto dto)
         {
             var userId = GetUserIdFromHeader();
             if (userId == null)
