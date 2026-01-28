@@ -1,5 +1,8 @@
+using System.Security.Claims;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Practice_team06.DTOs.Booking;
 using Practice_team06.Models;
 using Practice_team06.Services;
 
@@ -15,66 +18,94 @@ namespace Practice_team06.Controllers
         {
             _bookingService = bookingService;
         }
-        private int? GetUserIdFromHeader()
+        
+        // GET: api/bookings/
+        // Get all bookings
+        [HttpGet]
+        [Authorize(Roles = "Admin")]
+        public async Task<IActionResult> GetAllBookings([FromQuery] BookingFilterDto filter)
         {
-            var userIdHeader = HttpContext.Request.Headers["X-User-Id"].FirstOrDefault();
-            if (int.TryParse(userIdHeader, out var userId))
-                return userId;
-            return null;
+            var bookings = await _bookingService.GetAllBookingsAsync(filter);
+            return Ok(bookings);
         }
         
         // GET: api/Bookings/my
         // Get all client bookings
         [HttpGet("my")]
+        [Authorize(Roles = "Customer")]
         public async Task<IActionResult> GetMyBookings()
         {
-            var userId = GetUserIdFromHeader();
-            if (userId == null)
-                return BadRequest("Invalid or missing X-User-Id");
+            var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier);
+            if (userIdClaim == null)
+                return Unauthorized("User is not authenticated");
+
+            var userId = int.Parse(userIdClaim.Value);
 
             try
             {
-                var bookings = await _bookingService.GetBookingsForUserAsync(userId.Value);
+                var bookings = await _bookingService.GetBookingsForUserAsync(userId);
                 return Ok(bookings);
             }
-            catch (KeyNotFoundException keyNotFoundException)
+            catch (KeyNotFoundException e)
             {
-                return NotFound(keyNotFoundException.Message);
+                return NotFound(e.Message);
             }
         }
         
-        // GET: api/Bookings/5
+        // GET: api/bookings/5
         // Get booking by id
         [HttpGet("{bookingId}")]
+        [Authorize(Roles = "Admin,Customer")]
         public async Task<ActionResult<Booking>> GetBooking(int bookingId)
         {
-            var userId = GetUserIdFromHeader();
-            if (userId == null)
-                return BadRequest("Invalid or missing X-User-Id");
+            if (User.IsInRole("Admin"))
+            {
+                try
+                {
+                    var booking = await _bookingService.GetBookingByIdAsync(bookingId);
+                    return Ok(booking);
+                }
+                catch (KeyNotFoundException keyNotFoundException)
+                {
+                    return NotFound(keyNotFoundException.Message);
+                }
+            }
+            if (User.IsInRole("Customer"))
+            {
+                var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier);
+                if (userIdClaim == null)
+                    return Unauthorized("User is not authenticated");
 
-            try
-            {
-                var booking = await _bookingService.GetBookingByIdAsync(userId.Value, bookingId);
-                return Ok(booking);
+                var userId = int.Parse(userIdClaim.Value);
+
+                try
+                {
+                    var booking = await _bookingService.GetBookingByIdAsync(userId, bookingId);
+                    return Ok(booking);
+                }
+                catch (KeyNotFoundException keyNotFoundException)
+                {
+                    return NotFound(keyNotFoundException.Message);
+                }
             }
-            catch (KeyNotFoundException keyNotFoundException)
-            {
-                return NotFound(keyNotFoundException.Message);
-            }
+            return Forbid();
         }
         
         // POST: api/Bookings
         // Create booking
-        // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
         [HttpPost]
+        [Authorize(Roles = "Customer")]
         public async Task<ActionResult<Booking>> PostBooking()
         {
-            var userId = GetUserIdFromHeader();
-            if (userId == null)
-                return BadRequest("Invalid or missing X-User-Id");
+            var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier);
+            if (userIdClaim == null)
+                return Unauthorized("User is not authenticated");
+
+            var userId = int.Parse(userIdClaim.Value);
+            
             try
             {
-                var booking = await _bookingService.CreateBookingAsync(userId.Value);
+                var booking = await _bookingService.CreateBookingAsync(userId);
                 return Ok(booking);
             }
             catch (KeyNotFoundException keyNotFoundException)
@@ -86,15 +117,18 @@ namespace Practice_team06.Controllers
         // PUT: api/Bookings/5/cancel
         // Cancel booking
         [HttpPut("{bookingId}/cancel")]
+        [Authorize(Roles = "Customer")]
         public async Task<IActionResult> CancelBooking(int bookingId)
         {
-            var userId = GetUserIdFromHeader();
-            if (userId == null)
-                return BadRequest("Invalid or missing X-User-Id");
+            var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier);
+            if (userIdClaim == null)
+                return Unauthorized("User is not authenticated");
+
+            var userId = int.Parse(userIdClaim.Value);
 
             try
             {
-                await _bookingService.CancelBookingAsync(userId.Value, bookingId);
+                await _bookingService.CancelBookingAsync(userId, bookingId);
                 return NoContent();
             }
             catch (KeyNotFoundException keyNotFoundException)
@@ -114,14 +148,17 @@ namespace Practice_team06.Controllers
         // PUT: api/Bookings/5/confirm
         // Mark booking as paid
         [HttpPut("{bookingId}/confirm")]
+        [Authorize(Roles = "Customer")]
         public async Task<IActionResult> ConfirmBooking(int bookingId)
         {
-            var userId = GetUserIdFromHeader();
-            if (userId == null)
-                return BadRequest("Invalid or missing X-User-Id");
+            var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier);
+            if (userIdClaim == null)
+                return Unauthorized("User is not authenticated");
+
+            var userId = int.Parse(userIdClaim.Value);
 
             try {
-                await _bookingService.ConfirmBookingAsync(userId.Value, bookingId);
+                await _bookingService.ConfirmBookingAsync(userId, bookingId);
                 return NoContent();
             }
             catch (KeyNotFoundException keyNotFoundException)
@@ -135,6 +172,23 @@ namespace Practice_team06.Controllers
             catch (DbUpdateException dbUpdateException)
             {
                 return BadRequest(dbUpdateException.Message);
+            }
+        }
+        
+        // DELETE: api/Bookings/5
+        // Delete booking
+        [HttpDelete("{bookingId}")]
+        [Authorize(Roles = "Admin")]
+        public async Task<IActionResult> DeleteBooking(int bookingId)
+        {
+            try
+            {
+                await _bookingService.DeleteBookingAsync(bookingId);
+                return NoContent();
+            }
+            catch (KeyNotFoundException keyNotFoundException)
+            {
+                return NotFound(keyNotFoundException.Message);
             }
         }
     }

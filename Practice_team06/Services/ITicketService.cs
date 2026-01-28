@@ -5,8 +5,11 @@ namespace Practice_team06.Services;
 public interface ITicketService
 {
     Task<decimal> CalculatePriceAsync(int sessionId, int seatId);
-    Task<List<TicketBookingDto>> GetTicketsForUserAsync(int userId, int bookingId);
-    Task<TicketDto> CreateTicketAsync(int userId, int bookingId, CreateTicketDto dto);
+    Task<List<AdminTicketDto>> GetTicketsForBookingAsync(int bookingId);
+    Task<List<TicketBookingDto>> GetTicketsForUserBookingAsync(int userId, int bookingId);
     Task<List<AdminTicketDto>> GetAllTicketsAsync();
     Task<AdminTicketDto> GetTicketByIdAsync(int ticketId);
+    Task<TicketDto> GetTicketForUserByIdAsync(int userId, int ticketId);
+    Task<TicketDto> CreateTicketAsync(int userId, int bookingId, CreateTicketDto dto);
+    Task DeleteTicketAsync(int ticketId);
 }

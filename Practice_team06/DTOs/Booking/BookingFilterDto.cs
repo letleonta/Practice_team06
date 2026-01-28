@@ -11,5 +11,5 @@ public class BookingFilterDto
     public int? SessionId { get; set; }
     
     public string? SortBy { get; set; }       // "date", "status", "user", "session"
-    public string? SortOrder { get; set; }    // "asc" | "desc"
+    public bool? IsDescending { get; set; }    // "asc" | "desc"
 }

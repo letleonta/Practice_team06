@@ -1,3 +1,5 @@
+using System.Security.Claims;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Practice_team06.DTOs.Ticket;
@@ -5,7 +7,7 @@ using Practice_team06.Services;
 
 namespace Practice_team06.Controllers
 {
-    [Route("api/bookings/{bookingId:int}/tickets")]
+    [Route("api/[controller]")]
     [ApiController]
     public class TicketsController : ControllerBase
     {
@@ -16,51 +18,88 @@ namespace Practice_team06.Controllers
             _ticketService = ticketService;
         }
         
-        //copied
-        private int? GetUserIdFromHeader()
-        {
-            var userIdHeader = HttpContext.Request.Headers["X-User-Id"].FirstOrDefault();
-            if (int.TryParse(userIdHeader, out var userId))
-                return userId;
-            return null;
-        }
-        
-        // GET: api/bookings/5/tickets
+        // GET: api/tickets?bookingId=5
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<TicketDto>>> GetTickets(int bookingId)
+        [Authorize(Roles = "Admin,Customer")]
+        public async Task<ActionResult<IEnumerable<TicketDto>>> GetTickets([FromQuery] int? bookingId)
         {
-            var userId = GetUserIdFromHeader();
-            if (userId == null)
-                return BadRequest("Invalid or missing X-User-Id");
-
-            try
+            if (User.IsInRole("Admin"))
             {
-                var tickets = await _ticketService.GetTicketsForUserAsync(
-                    userId.Value,
-                    bookingId
-                );
-
+                var tickets = bookingId.HasValue
+                    ? await _ticketService.GetTicketsForBookingAsync(bookingId.Value)
+                    : await _ticketService.GetAllTicketsAsync();
                 return Ok(tickets);
             }
-            catch (KeyNotFoundException keyNotFoundException)
+            if (User.IsInRole("Customer"))
             {
-                return NotFound(keyNotFoundException.Message);
+                if (!bookingId.HasValue)
+                    return BadRequest("BookingId is required for customers");
+
+                var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier);
+                if (userIdClaim == null)
+                    return Unauthorized("User is not authenticated");
+
+                var userId = int.Parse(userIdClaim.Value);
+
+                try
+                {
+                    var tickets = await _ticketService.GetTicketsForUserBookingAsync(userId, bookingId.Value);
+                    return Ok(tickets);
+                }
+                catch (KeyNotFoundException keyNotFoundException)
+                {
+                    return NotFound(keyNotFoundException.Message);
+                }
             }
+            return Forbid();
         }
         
-        // POST: api/bookings/5/tickets
-        // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
-        [HttpPost]
-        public async Task<IActionResult> CreateTicket(int bookingId, CreateTicketDto dto)
+        // GET: api/tickets/5
+        [HttpGet("{ticketId}")]
+        [Authorize(Roles = "Admin, Customer")]
+        public async Task<IActionResult> GetTicketById(int ticketId)
         {
-            var userId = GetUserIdFromHeader();
-            if (userId == null)
-                return BadRequest("Invalid or missing X-User-Id");
+            if (User.IsInRole("Admin"))
+            {
+                var ticket = await _ticketService.GetTicketByIdAsync(ticketId);
+                return Ok(ticket);
+            }
+            if (User.IsInRole("Customer"))
+            {
+                var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier);
+                if (userIdClaim == null)
+                    return Unauthorized("User is not authenticated");
+
+                var userId = int.Parse(userIdClaim.Value);
+                
+                try
+                {
+                    var ticket = await _ticketService.GetTicketForUserByIdAsync(userId, ticketId);
+                    return Ok(ticket);
+                }
+                catch (KeyNotFoundException)
+                {
+                    return NotFound($"Ticket with ID {ticketId} not found.");
+                }
+            }
+            return Forbid();
+        }
+        
+        // POST: api/tickets?bookingId=5
+        [HttpPost]
+        [Authorize(Roles = "Customer")]
+        public async Task<IActionResult> CreateTicket([FromQuery] int bookingId, CreateTicketDto dto)
+        {
+            var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier);
+            if (userIdClaim == null)
+                return Unauthorized("User is not authenticated");
+
+            var userId = int.Parse(userIdClaim.Value);
 
             try
             {
                 var ticket = await _ticketService.CreateTicketAsync(
-                    userId.Value,
+                    userId,
                     bookingId,
                     dto
                 );
@@ -78,6 +117,22 @@ namespace Practice_team06.Controllers
             catch (DbUpdateException dbUpdateException)
             {
                 return BadRequest(dbUpdateException.Message);
+            }
+        }
+        
+        // DELETE: api/tickets/5
+        [HttpDelete("{ticketId}")]
+        [Authorize(Roles = "Admin")]
+        public async Task<IActionResult> DeleteTicket(int ticketId)
+        {
+            try
+            {
+                await _ticketService.DeleteTicketAsync(ticketId);
+                return NoContent();
+            }
+            catch (KeyNotFoundException e)
+            {
+                return NotFound(e.Message);
             }
         }
     }
