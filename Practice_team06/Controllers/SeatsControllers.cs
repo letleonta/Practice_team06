@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using Practice_team06.DTOs.Seat;
 using Practice_team06.Services;
 
@@ -12,7 +13,13 @@ public class SeatsController : ControllerBase
 
     public SeatsController(ISeatService seatService) => _seatService = seatService;
     
+    [HttpGet("hall/{hallId}")]
+    [Authorize(Roles = "Admin, Customer")]
+    public async Task<IActionResult> GetByHall(int hallId) 
+        => Ok(await _seatService.GetSeatsByHallAsync(hallId));
+
     [HttpGet("{id}")]
+    [Authorize(Roles = "Admin, Customer")]
     public async Task<IActionResult> GetById(int id)
     {
         var seat = await _seatService.GetByIdAsync(id);
@@ -20,7 +27,7 @@ public class SeatsController : ControllerBase
     }
     
     [HttpPut("{id}")]
-    // [Authorize(Roles = "Admin")] 
+    [Authorize(Roles = "Admin")]
     public async Task<IActionResult> Update(int id, UpdateSeatDto dto)
     {
         var result = await _seatService.UpdateSeatAsync(id, dto);
@@ -28,14 +35,14 @@ public class SeatsController : ControllerBase
     }
 
     [HttpDelete("{id}")]
-    // [Authorize(Roles = "Admin")]
+    [Authorize(Roles = "Admin")]
     public async Task<IActionResult> Delete(int id)
     {
         return await _seatService.DeleteAsync(id) ? NoContent() : NotFound();
     }
     
-    // GET: api/Seats/available/5
     [HttpGet("available/{sessionId}")]
+    [Authorize(Roles = "Admin, Customer")]
     public async Task<IActionResult> GetAvailableSeats(int sessionId)
     {
         var seats = await _seatService.GetSeatsForSessionAsync(sessionId);
