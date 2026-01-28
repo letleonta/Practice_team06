@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using Practice_team06.DTOs.Movie;
 using Practice_team06.Services;
 
@@ -46,8 +47,8 @@ public class MoviesController : ControllerBase
     //АДМІН ЧАСТИНА
 
     // Тільки Адмін може створювати
-    //[Authorize(Roles = "Admin")]
     [HttpPost]
+    [Authorize(Roles = "Admin")]
     public async Task<ActionResult<MovieDto>> Create([FromBody] CreateMovieDto dto)
     {
         if (!ModelState.IsValid) return BadRequest(ModelState);
@@ -57,11 +58,32 @@ public class MoviesController : ControllerBase
     }
 
     // Тільки Адмін може видаляти
-    //[Authorize(Roles = "Admin")]
     [HttpDelete("{id}")]
+    [Authorize(Roles = "Admin")]
     public async Task<IActionResult> Delete(int id)
     {
         await _movieService.DeleteMovieAsync(id);
         return NoContent();
+    }
+    // Тільки Адмін може оновлювати
+    [HttpPut("{id}")]
+    [Authorize(Roles = "Admin")]
+    public async Task<ActionResult<MovieDto>> Update(int id, [FromBody] CreateMovieDto dto)
+    {
+        if (!ModelState.IsValid) return BadRequest(ModelState);
+
+        try
+        {
+            var updatedMovie = await _movieService.UpdateMovieAsync(id, dto);
+            return Ok(updatedMovie);
+        }
+        catch (KeyNotFoundException)
+        {
+            return NotFound(new { message = "Фільм не знайдено" });
+        }
+        catch (ArgumentException ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
     }
 }
