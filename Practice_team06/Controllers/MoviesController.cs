@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using Practice_team06.DTOs.Movie;
 using Practice_team06.Services;
 
@@ -46,7 +47,7 @@ public class MoviesController : ControllerBase
     //АДМІН ЧАСТИНА
 
     // Тільки Адмін може створювати
-    //[Authorize(Roles = "Admin")]
+    [Authorize(Roles = "Admin")]
     [HttpPost]
     public async Task<ActionResult<MovieDto>> Create([FromBody] CreateMovieDto dto)
     {
@@ -57,14 +58,15 @@ public class MoviesController : ControllerBase
     }
 
     // Тільки Адмін може видаляти
-    //[Authorize(Roles = "Admin")]
+    [Authorize(Roles = "Admin")]
     [HttpDelete("{id}")]
     public async Task<IActionResult> Delete(int id)
     {
         await _movieService.DeleteMovieAsync(id);
         return NoContent();
     }
-    // [Authorize(Roles = "Admin")]
+    // Тільки Адмін може оновлювати
+    [Authorize(Roles = "Admin")]
     [HttpPut("{id}")]
     public async Task<ActionResult<MovieDto>> Update(int id, [FromBody] CreateMovieDto dto)
     {
