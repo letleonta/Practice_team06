@@ -64,4 +64,24 @@ public class MoviesController : ControllerBase
         await _movieService.DeleteMovieAsync(id);
         return NoContent();
     }
+    // [Authorize(Roles = "Admin")]
+    [HttpPut("{id}")]
+    public async Task<ActionResult<MovieDto>> Update(int id, [FromBody] CreateMovieDto dto)
+    {
+        if (!ModelState.IsValid) return BadRequest(ModelState);
+
+        try
+        {
+            var updatedMovie = await _movieService.UpdateMovieAsync(id, dto);
+            return Ok(updatedMovie);
+        }
+        catch (KeyNotFoundException)
+        {
+            return NotFound(new { message = "Фільм не знайдено" });
+        }
+        catch (ArgumentException ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+    }
 }

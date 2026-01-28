@@ -11,6 +11,8 @@ public class MovieDto
     public double? Rating { get; set; }
     public string? PosterUri { get; set; }
     public string AgeRestriction  { get; set; }
+    public DateOnly? StartDate { get; set; }
+    public DateOnly? EndDate { get; set; }
     public string DirectorName { get; set; }
     public List<string> Genres { get; set; } = new();
     public List<string> Actors { get; set; } = new();
