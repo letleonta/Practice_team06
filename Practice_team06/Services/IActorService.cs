@@ -4,7 +4,7 @@ namespace Practice_team06.Services;
 
 public interface IActorService
 {
-    Task<IEnumerable<ActorDto>> GetAllAsync(string? search = null, string? sortBy = null, bool isDescending = false);
+    Task<IEnumerable<ActorDto>> GetAllAsync(ActorFilterDto filter);
     Task<ActorDto?> GetByIdAsync(int id);
     Task<ActorDto> CreateAsync(CreateActorDto actorDto);
     Task<IEnumerable<ActorDto>> CreateRangeAsync(IEnumerable<CreateActorDto> actorsDto);

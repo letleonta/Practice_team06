@@ -13,43 +13,26 @@ public class DirectorService : IDirectorService
         _context = context;
     }
 
-    public async Task<IEnumerable<DirectorDto>> GetAllAsync(string? search = null, string? sortBy = null, bool isDescending = false)
+    public async Task<IEnumerable<DirectorDto>> GetAllAsync(DirectorFilterDto filter)
     {
-        // 1. Починаємо формувати запит до таблиці Directors
         var query = _context.Directors.AsQueryable();
-
-        // 2. Пошук (Filtering)
-        if (!string.IsNullOrWhiteSpace(search))
+        
+        if (!string.IsNullOrWhiteSpace(filter.Search))
         {
-            var s = search.Trim().ToLower();
-            query = query.Where(a => a.FirstName.ToLower().Contains(s) 
-                                  || a.LastName.ToLower().Contains(s));
+            var s = filter.Search.Trim().ToLower();
+            query = query.Where(d => d.FirstName.ToLower().Contains(s) 
+                                     || d.LastName.ToLower().Contains(s));
         }
-
-        // 3. Сортування (Sorting)
-        if (!string.IsNullOrWhiteSpace(sortBy))
-        {
-            query = sortBy.ToLower() switch
-            {
-                "firstname" => isDescending ? query.OrderByDescending(a => a.FirstName) : query.OrderBy(a => a.FirstName),
-                "lastname"  => isDescending ? query.OrderByDescending(a => a.LastName) : query.OrderBy(a => a.LastName),
-                "id"        => isDescending ? query.OrderByDescending(a => a.Id) : query.OrderBy(a => a.Id),
-                _           => query.OrderBy(a => a.Id) // за замовчуванням
-            };
-        }
-        else
-        {
-            query = query.OrderBy(a => a.Id);
-        }
-
-        // 4. Перетворення в DTO та виконання запиту
+        
+        query = ApplySorting(query, filter.SortBy, filter.IsDescending);
+        
         return await query
-            .Select(a => new DirectorDto
+            .Select(d => new DirectorDto
             {
-                Id = a.Id,
-                FirstName = a.FirstName,
-                LastName = a.LastName,
-                PhotoUri = a.PhotoUri
+                Id = d.Id,
+                FirstName = d.FirstName,
+                LastName = d.LastName,
+                PhotoUri = d.PhotoUri
             })
             .ToListAsync();
     }
@@ -144,5 +127,21 @@ public class DirectorService : IDirectorService
                 ReleaseDate = m.ReleaseDate
             })
             .ToListAsync();
+    }
+    
+    private static IQueryable<Director> ApplySorting(IQueryable<Director> query, string? sortBy, bool isDescending)
+    {
+        if (string.IsNullOrWhiteSpace(sortBy))
+        {
+            return query.OrderBy(d => d.Id);
+        }
+
+        return sortBy.ToLower() switch
+        {
+            "firstname" => isDescending ? query.OrderByDescending(d => d.FirstName) : query.OrderBy(d => d.FirstName),
+            "lastname"  => isDescending ? query.OrderByDescending(d => d.LastName) : query.OrderBy(d => d.LastName),
+            "id"        => isDescending ? query.OrderByDescending(d => d.Id) : query.OrderBy(d => d.Id),
+            _           => query.OrderBy(d => d.Id) 
+        };
     }
 }
