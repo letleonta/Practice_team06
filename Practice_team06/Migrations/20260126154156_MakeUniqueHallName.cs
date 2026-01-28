@@ -4,10 +4,8 @@
 
 namespace Practice_team06.Migrations
 {
-    /// <inheritdoc />
     public partial class MakeUniqueHallName : Migration
     {
-        /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.CreateIndex(
@@ -16,8 +14,7 @@ namespace Practice_team06.Migrations
                 column: "Name",
                 unique: true);
         }
-
-        /// <inheritdoc />
+        
         protected override void Down(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.DropIndex(
