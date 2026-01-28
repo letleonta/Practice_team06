@@ -2,3 +2,7 @@
 bin/
 obj/
 appsettings.json
+/cinema-frontend/node_modules/
+/cinema-frontend/dist/
+/cinema-frontend/.env.local
+/cinema-frontend/.vscode/
