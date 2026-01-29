@@ -1,0 +1,17 @@
+﻿// src/types/session.ts
+export interface SessionDto {
+    id: number;
+    movieTitle: string;
+    hallId: number;
+    hallName: string;
+    languageName: string;
+    startTime: string; // Приходить як рядок ISO
+    endTime: string;
+}
+
+export interface CreateSessionDto {
+    movieId: number;
+    hallId: number;
+    languageId: number;
+    startTime: string;
+}
