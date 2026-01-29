@@ -5,6 +5,6 @@ namespace Practice_team06.DTOs.Auth;
 public class ForgotPasswordDto
 {
     [Required]
-    [EmailAddress]
+    [EmailAddress] 
     public string Email { get; set; } = null!;
 }
