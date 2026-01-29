@@ -37,5 +37,15 @@ export const movieService = {
             body: JSON.stringify(dto)
         });
         return await response.json();
+    },
+
+    async delete(id: number): Promise<void> {
+        const response = await fetch(`${API_URL}/${id}`, {
+            method: "DELETE",
+        });
+
+        if (!response.ok) {
+            throw new Error("Не вдалося видалити фільм");
+        }
     }
 };

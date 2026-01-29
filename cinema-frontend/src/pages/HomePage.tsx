@@ -7,7 +7,6 @@ import { MovieCard } from '../components/MovieCard';
 export function HomePage() {
     const [nowPlaying, setNowPlaying] = useState<MovieDto[]>([]);
     const [upcoming, setUpcoming] = useState<MovieDto[]>([]);
-
     useEffect(() => {
         const loadData = async () => {
             try {
