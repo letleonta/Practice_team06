@@ -7,7 +7,7 @@ public interface IBookingService
 {
     Task<List<AdminBookingDto>> GetAllBookingsAsync(BookingFilterDto filter);
     Task<List<BookingDto>> GetBookingsForUserAsync(int userId);
-    Task<BookingDto> CreateBookingAsync(int userId);
+    Task<BookingDto> CreateBookingAsync(int userId, CreateBookingDto dto);
     Task<AdminBookingDto> GetBookingByIdAsync(int bookingId);
     Task<BookingDto> GetBookingByIdAsync(int userId, int bookingId);
     Task ConfirmBookingAsync(int userId, int bookingId);

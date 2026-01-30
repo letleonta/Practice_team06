@@ -41,6 +41,7 @@ public class TicketService : ITicketService
             throw new KeyNotFoundException($"Booking with ID {bookingId} not found.");
         
         var tickets = await _context.Tickets
+            .Include(ticket => ticket.Seat)
             .Where(t => t.BookingId == booking.Id)
             .Select(t => AdminTicketDto.TicketToAdminTicketDto(t, booking.UserId))
             .ToListAsync();
@@ -57,6 +58,7 @@ public class TicketService : ITicketService
             throw new KeyNotFoundException($"Booking with ID {bookingId} for user {userId} not found.");
         
         var tickets = await _context.Tickets
+            .Include(ticket => ticket.Seat)
             .Where(t => t.BookingId == booking.Id)
             .Select(t => TicketBookingDto.TicketToTicketBookingDto(t))
             .ToListAsync();
@@ -67,6 +69,7 @@ public class TicketService : ITicketService
     public async Task<List<AdminTicketDto>> GetAllTicketsAsync()
     {
         var tickets = await _context.Tickets
+            .Include(ticket => ticket.Seat)
             .Select(ticket => AdminTicketDto.TicketToAdminTicketDto(ticket, ticket.Booking.UserId))
             .ToListAsync();
         
@@ -76,7 +79,8 @@ public class TicketService : ITicketService
     public async Task<AdminTicketDto> GetTicketByIdAsync(int ticketId)
     {
         var ticket = await _context.Tickets
-            .Include(t => t.Booking)
+            .Include(ticket => ticket.Booking)
+            .Include(ticket => ticket.Seat)
             .FirstOrDefaultAsync(t => t.Id == ticketId);
 
         if (ticket == null)
@@ -88,7 +92,8 @@ public class TicketService : ITicketService
     public async Task<TicketDto> GetTicketForUserByIdAsync(int userId, int ticketId)
     {
         var ticket = await _context.Tickets
-            .Include(t => t.Booking)
+            .Include(ticket => ticket.Booking)
+            .Include(ticket => ticket.Seat)
             .FirstOrDefaultAsync(t => t.Id == ticketId && t.Booking.UserId == userId);
 
         if (ticket == null)
@@ -109,12 +114,12 @@ public class TicketService : ITicketService
 
         try
         {
-            var price = await CalculatePriceAsync(dto.SessionId, dto.SeatId);
+            var price = await CalculatePriceAsync(booking.SessionId, dto.SeatId);
             
             var ticket = new Ticket
             {
                 BookingId = bookingId,
-                SessionId = dto.SessionId,
+                SessionId = booking.SessionId,
                 SeatId = dto.SeatId,
                 ActualPrice = price
             };
@@ -122,11 +127,16 @@ public class TicketService : ITicketService
             _context.Tickets.Add(ticket);
             await _context.SaveChangesAsync();
 
-            return TicketDto.TicketToTicketDto(ticket);
+            var fullTicket = await _context.Tickets
+                .Include(t => t.Seat)
+                .ThenInclude(seat => seat.Hall)
+                .FirstAsync(t => t.Id == ticket.Id);
+
+            return TicketDto.TicketToTicketDto(fullTicket);
         }
         catch (KeyNotFoundException)
         {
-            throw new KeyNotFoundException($"Session with ID {dto.SessionId} does not exist.");
+            throw new KeyNotFoundException($"Session with ID {booking.SessionId} does not exist.");
         }
     }
 

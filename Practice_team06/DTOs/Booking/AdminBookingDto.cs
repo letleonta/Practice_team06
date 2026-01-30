@@ -10,6 +10,8 @@ public class AdminBookingDto
     [Required]
     public int UserId { get; set; }
     [Required]
+    public int SessionId { get; set; }
+    [Required]
     [DataType(DataType.DateTime)]
     public DateTime? BookingTime { get; set; }
     [Required]
