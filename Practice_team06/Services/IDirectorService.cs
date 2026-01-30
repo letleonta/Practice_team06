@@ -4,7 +4,7 @@ namespace Practice_team06.Services;
 
 public interface IDirectorService
 {
-    Task<IEnumerable<DirectorDto>> GetAllAsync(string? search = null, string? sortBy = null, bool isDescending = false);
+    Task<IEnumerable<DirectorDto>> GetAllAsync(DirectorFilterDto filter);
     
     Task<DirectorDto?> GetByIdAsync(int id);
     

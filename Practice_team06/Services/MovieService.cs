@@ -71,6 +71,13 @@ public class MovieService : IMovieService
 
     public async Task<MovieDto> CreateMovieAsync(CreateMovieDto dto)
     {
+        if (dto.StartDate.HasValue && dto.EndDate.HasValue)
+        {
+            if (dto.StartDate > dto.EndDate)
+            {
+                throw new ArgumentException("Дата закінчення прокату не може бути раніше за дату початку!");
+            }
+        }
         // Створюємо нову сутність
         var movie = new Movie
         {
@@ -86,8 +93,7 @@ public class MovieService : IMovieService
             DirectorId = dto.DirectorId, 
             AgeRestriction = dto.AgeRestriction
         };
-        // 1. ЛОГІКА РЕЖИСЕРА
-        // Якщо ID передали, перевіряємо чи він існує
+        // ЛОГІКА РЕЖИСЕРА, якщо ID передали, перевіряємо чи він існує
         if (dto.DirectorId.HasValue)
         {
             var directorExists = await _context.Directors.AnyAsync(d => d.Id == dto.DirectorId.Value);
@@ -117,7 +123,6 @@ public class MovieService : IMovieService
 
         if (dto.ActorIds.Any())
         {
-            // Знаходимо існуючих акторів
             var actors = await _context.Actors
                 .Where(a => dto.ActorIds.Contains(a.Id))
                 .ToListAsync();
@@ -136,6 +141,83 @@ public class MovieService : IMovieService
         await _context.Entry(movie).Reference(m => m.Director).LoadAsync();
         return MapToDto(movie);
     }
+    public async Task<MovieDto> UpdateMovieAsync(int id, CreateMovieDto dto)
+{
+    //Валідація дат
+    if (dto.StartDate.HasValue && dto.EndDate.HasValue && dto.StartDate > dto.EndDate)
+    {
+        throw new ArgumentException("Дата закінчення прокату не може бути раніше за дату початку!");
+    }
+    
+    var movie = await _context.Movies
+        .Include(m => m.MovieGenres)
+        .Include(m => m.MovieActors)
+        .FirstOrDefaultAsync(m => m.Id == id);
+
+    if (movie == null)
+    {
+        throw new KeyNotFoundException($"Movie with ID {id} not found");
+    }
+    
+    movie.Title = dto.Title;
+    movie.Description = dto.Description;
+    movie.DurationMin = dto.DurationMin;
+    movie.ReleaseDate = dto.ReleaseDate;
+    movie.BasePrice = dto.BasePrice;
+    movie.StartDate = dto.StartDate;
+    movie.EndDate = dto.EndDate;
+    movie.PosterUri = dto.PosterUri;
+    movie.TrailerUri = dto.TrailerUri;
+    movie.AgeRestriction = dto.AgeRestriction;
+    
+    // Скидаємо старого
+    movie.DirectorId = null; 
+    
+    if (dto.DirectorId.HasValue && dto.DirectorId.Value > 0)
+    {
+        // Перевіряємо, чи існує новий
+        var directorExists = await _context.Directors.AnyAsync(d => d.Id == dto.DirectorId.Value);
+        if (directorExists)
+        {
+            movie.DirectorId = dto.DirectorId.Value;
+        }
+    }
+    // Очищаємо старий список
+    movie.MovieGenres.Clear();
+    
+    if (dto.GenreIds.Any())
+    {
+        var genres = await _context.Genres
+            .Where(g => dto.GenreIds.Contains(g.Id))
+            .ToListAsync();
+        foreach (var genre in genres)
+        {
+            movie.MovieGenres.Add(new MovieGenre 
+            { 
+                Genre = genre 
+            });
+        }
+    }
+    // Очищаємо старий список зв'язків
+    movie.MovieActors.Clear();
+
+    if (dto.ActorIds.Any())
+    {
+        var actors = await _context.Actors
+            .Where(a => dto.ActorIds.Contains(a.Id))
+            .ToListAsync();
+
+        foreach (var actor in actors)
+        {
+            movie.MovieActors.Add(new MovieActor { Actor = actor });
+        }
+    }
+    
+    await _context.SaveChangesAsync();
+    await _context.Entry(movie).Reference(m => m.Director).LoadAsync();
+
+    return MapToDto(movie);
+}
 
     public async Task DeleteMovieAsync(int id)
     {

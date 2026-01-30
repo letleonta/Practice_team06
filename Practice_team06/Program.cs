@@ -1,8 +1,14 @@
+using System.Text;
+using System.Text.Json.Serialization;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.IdentityModel.Tokens;
 using Practice_team06.Data;
 using Practice_team06.Models;
 using Practice_team06.Services;
+
+AppContext.SetSwitch("Npgsql.EnableLegacyTimestampBehavior", true);
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -30,6 +36,41 @@ builder.Services.AddIdentity<User, IdentityRole<int>>(options =>
     .AddEntityFrameworkStores<PostgresContext>()
     .AddDefaultTokenProviders();
 
+var jwtSettings = builder.Configuration.GetSection("Jwt");
+var key = Encoding.UTF8.GetBytes(jwtSettings["Key"] ?? "SuperSecretDefaultKey_32CharactersLong");
+
+builder.Services.AddAuthentication(options =>
+    {
+        options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+        options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+    })
+    .AddJwtBearer(options =>
+    {
+        options.TokenValidationParameters = new TokenValidationParameters
+        {
+            ValidateIssuer = true,
+            ValidateAudience = true,
+            ValidateLifetime = true,
+            ValidateIssuerSigningKey = true,
+            ValidIssuer = jwtSettings["Issuer"],
+            ValidAudience = jwtSettings["Audience"],
+            IssuerSigningKey = new SymmetricSecurityKey(key)
+        };
+    });
+
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowReactApp", policy =>
+    {
+        policy.WithOrigins("http://localhost:5173")
+              .AllowAnyHeader()
+              .AllowAnyMethod()
+              .AllowCredentials();
+    });
+});
+
+builder.Services.AddScoped<IAuthService, AuthService>();
+
 builder.Services.AddScoped<IActorService, ActorService>();
 builder.Services.AddScoped<IDirectorService, DirectorService>();
 
@@ -48,8 +89,8 @@ builder.Services.AddScoped<IMovieService, MovieService>();
 builder.Services.AddControllers()
     .AddJsonOptions(options =>
     {
-        options.JsonSerializerOptions.ReferenceHandler = System.Text.Json.Serialization.ReferenceHandler.IgnoreCycles;
-        options.JsonSerializerOptions.Converters.Add(new System.Text.Json.Serialization.JsonStringEnumConverter());
+        options.JsonSerializerOptions.ReferenceHandler = ReferenceHandler.IgnoreCycles;
+        options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter());
     });
 
 builder.Services.AddEndpointsApiExplorer();
@@ -59,61 +100,61 @@ var app = builder.Build();
 
 using (var scope = app.Services.CreateScope())
 {
-    var userManager = scope.ServiceProvider.GetRequiredService<UserManager<User>>();
-
-    var user1 = new User
+    var services = scope.ServiceProvider;
+    try
     {
-        UserName = "alice",
-        NormalizedUserName = "ALICE",
-        Email = "alice@example.com",
-        NormalizedEmail = "ALICE@EXAMPLE.COM",
-        EmailConfirmed = true,
-        FirstName = "Alice",
-        LastName = "Smith",
-        BirthDate = new DateTime(1995, 5, 1),
-        PhoneNumber = "1234567890",
-        PhoneNumberConfirmed = true
-    };
+        var context = services.GetRequiredService<PostgresContext>();
+        var userManager = services.GetRequiredService<UserManager<User>>();
+        
+        await DbInitializer.SeedRolesAndAdminAsync(services);
+        
+        if (!await userManager.Users.AnyAsync())
+        {
+            var user1 = new User
+            {
+                UserName = "alice",
+                Email = "alice@example.com",
+                FirstName = "Alice",
+                LastName = "Smith",
+                BirthDate = new DateTime(1995, 5, 1),
+                PhoneNumber = "1234567890",
+                EmailConfirmed = true
+            };
 
-    var user2 = new User
+            var user2 = new User
+            {
+                UserName = "bob",
+                Email = "bob@example.com",
+                FirstName = "Bob",
+                LastName = "Johnson",
+                BirthDate = new DateTime(1990, 3, 15),
+                PhoneNumber = "0987654321",
+                EmailConfirmed = true
+            };
+            await userManager.CreateAsync(user1, "Password123!");
+            await userManager.AddToRoleAsync(user1, "Customer");
+            await userManager.CreateAsync(user2, "Password123!");
+            await userManager.AddToRoleAsync(user2, "Customer"); 
+        }
+        
+        await DbInitializer.SeedDataAsync(context);
+    }
+    catch (Exception ex)
     {
-        UserName = "bob",
-        NormalizedUserName = "BOB",
-        Email = "bob@example.com",
-        NormalizedEmail = "BOB@EXAMPLE.COM",
-        EmailConfirmed = true,
-        FirstName = "Bob",
-        LastName = "Johnson",
-        BirthDate = new DateTime(1990, 3, 15),
-        PhoneNumber = "0987654321",
-        PhoneNumberConfirmed = true
-    };
-
-    await userManager.CreateAsync(user1, "Password123!");
-    await userManager.CreateAsync(user2, "Password123!");
+        var logger = services.GetRequiredService<ILogger<Program>>();
+        logger.LogError(ex, "Помилка під час ініціалізації бази.");
+    }
 }
-
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
     app.UseSwaggerUI();
 }
 
-using (var scope = app.Services.CreateScope())
-{
-    var services = scope.ServiceProvider;
-    await DbInitializer.SeedRolesAndAdminAsync(services);
-    try
-    {
-        var context = services.GetRequiredService<PostgresContext>();
-        await DbInitializer.SeedDataAsync(context);
-    }
-    catch (Exception ex)
-    {
-        var logger = services.GetRequiredService<ILogger<Program>>();
-        logger.LogError(ex, "Помилка під час ініціалізації бази даних.");
-    }
-}
+app.UseCors("AllowReactApp"); 
+
+app.UseAuthentication(); 
+app.UseAuthorization();  
 
 app.MapControllers();
 
