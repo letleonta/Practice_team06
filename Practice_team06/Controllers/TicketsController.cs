@@ -86,9 +86,9 @@ namespace Practice_team06.Controllers
         }
         
         // POST: api/tickets?bookingId=5
-        [HttpPost]
+        [HttpPost("/api/bookings/{bookingId}/tickets")]
         [Authorize(Roles = "Customer")]
-        public async Task<IActionResult> CreateTicket([FromQuery] int bookingId, CreateTicketDto dto)
+        public async Task<IActionResult> CreateTicket(int bookingId, [FromBody] CreateTicketDto dto)
         {
             var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier);
             if (userIdClaim == null)

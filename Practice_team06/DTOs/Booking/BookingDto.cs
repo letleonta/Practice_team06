@@ -8,6 +8,8 @@ public class BookingDto
 {
     public int Id { get; set; }
     [Required]
+    public int SessionId { get; set; }
+    [Required]
     [DataType(DataType.DateTime)]
     public DateTime BookingTime { get; set; }
     [Required]

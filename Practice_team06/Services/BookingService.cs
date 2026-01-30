@@ -14,82 +14,60 @@ public class BookingService : IBookingService
         _context = context;
     }
     
-    private async Task EnsureUserExistsAsync(int userId)
-    {
-        var exists = await _context.Users.AnyAsync(u => u.Id == userId);
-        if (!exists)
-            throw new KeyNotFoundException($"User with ID {userId} does not exist");
-    }
-
-    private async Task<decimal> CalculateTotalPrice(int bookingId)
-    {
-        var totalPrice = await _context.Tickets
-            .Where(ticket => ticket.BookingId == bookingId && ticket.IsActive)
-            .SumAsync(ticket => ticket.ActualPrice);
-
-        return totalPrice;
-    }
-    
     public async Task<List<AdminBookingDto>> GetAllBookingsAsync(BookingFilterDto filter)
     {
         var bookingsQuery = _context.Bookings
-            .Include(b => b.Tickets)
             .AsQueryable();
 
         bookingsQuery = ApplySorting(ApplyFilter(bookingsQuery, filter), filter);
 
-        var bookings = await bookingsQuery.ToListAsync();
+        var bookings = await bookingsQuery
+            .Include(booking => booking.Tickets)
+            .ThenInclude(ticket => ticket.Seat)
+            .ThenInclude(seat => seat.Hall)
+            .ToListAsync();
 
-        var result = new List<AdminBookingDto>();
-
-        foreach (var booking in bookings)
+        var result = bookings.Select(booking => new AdminBookingDto
         {
-            var totalPrice = await CalculateTotalPrice(booking.Id);
-            result.Add(new AdminBookingDto
-            {
-                Id = booking.Id,
-                UserId = booking.UserId,
-                BookingTime = booking.BookingTime,
-                Status = booking.Status,
-                Tickets = booking.Tickets.Select(TicketBookingDto.TicketToTicketBookingDto).ToList(),
-                TotalPrice = totalPrice
-            });
-        }
+            Id = booking.Id,
+            UserId = booking.UserId,
+            SessionId = booking.SessionId,
+            BookingTime = booking.BookingTime,
+            Status = booking.Status,
+            Tickets = booking.Tickets
+                .Select(TicketBookingDto.TicketToTicketBookingDto)
+                .ToList(),
+            TotalPrice = booking.Tickets
+                .Where(ticket => ticket.IsActive)
+                .Sum(ticket => ticket.ActualPrice)
+        }).ToList();
 
         return result;
     }
     
     public async Task<List<BookingDto>> GetBookingsForUserAsync(int userId)
     {
-        await EnsureUserExistsAsync(userId);
-
         var bookings = await _context.Bookings
             .Where(booking => booking.UserId == userId)
             .OrderByDescending(booking => booking.BookingTime)
             .Include(booking => booking.Tickets)
+            .ThenInclude(ticket => ticket.Seat)
+            .ThenInclude(seat => seat.Hall)
             .ToListAsync();
 
-        var result = new List<BookingDto>();
-
-        foreach (var booking in bookings)
+        var result = bookings.Select(booking => new BookingDto
         {
-            var totalPrice = await CalculateTotalPrice(booking.Id);
-            result.Add(new BookingDto
-            {
-                Id = booking.Id,
-                BookingTime = booking.BookingTime,
-                Status = booking.Status,
-                Tickets = booking.Tickets.Select(ticket => new TicketBookingDto
-                {
-                    Id = ticket.Id,
-                    SessionId = ticket.SessionId,
-                    SeatId = ticket.SeatId,
-                    ActualPrice = ticket.ActualPrice,
-                    IsActive = ticket.IsActive
-                }).ToList(),
-                TotalPrice = totalPrice
-            });
-        }
+            Id = booking.Id,
+            SessionId = booking.SessionId,
+            BookingTime = booking.BookingTime,
+            Status = booking.Status,
+            Tickets = booking.Tickets
+                .Select(TicketBookingDto.TicketToTicketBookingDto)
+                .ToList(),
+            TotalPrice = booking.Tickets
+                .Where(ticket => ticket.IsActive)
+                .Sum(ticket => ticket.ActualPrice)
+        }).ToList();
 
         return result;
     }
@@ -99,22 +77,25 @@ public class BookingService : IBookingService
     {
         var booking = await _context.Bookings
             .Include(b => b.Tickets)
+            .ThenInclude(ticket => ticket.Seat)
+            .ThenInclude(seat => seat.Hall)
             .FirstOrDefaultAsync(b => b.Id == bookingId && b.UserId == userId);
         
         if (booking == null)
             throw new KeyNotFoundException($"Booking with ID {bookingId} for user {userId} not found.");
-
-        var totalPrice = await CalculateTotalPrice(bookingId);
         
         return new BookingDto
         {
             Id = booking.Id,
+            SessionId = booking.SessionId,
             BookingTime = booking.BookingTime,
             Status = booking.Status,
             Tickets = booking.Tickets
                 .Select(TicketBookingDto.TicketToTicketBookingDto)
                 .ToList(),
-            TotalPrice = totalPrice
+            TotalPrice = booking.Tickets
+                .Where(ticket => ticket.IsActive)
+                .Sum(ticket => ticket.ActualPrice)
         };
     }
 
@@ -123,33 +104,39 @@ public class BookingService : IBookingService
     {
         var booking = await _context.Bookings
             .Include(b => b.Tickets)
+            .ThenInclude(ticket => ticket.Seat)
+            .ThenInclude(seat => seat.Hall)
             .FirstOrDefaultAsync(b => b.Id == bookingId);
 
         if (booking == null)
             throw new KeyNotFoundException($"Booking with ID {bookingId} not found.");
-
-        var totalPrice = await CalculateTotalPrice(bookingId);
         
         return new AdminBookingDto
         {
             Id = booking.Id,
             UserId =  booking.UserId,
+            SessionId = booking.SessionId,
             BookingTime = booking.BookingTime,
             Status = booking.Status,
             Tickets = booking.Tickets
                 .Select(TicketBookingDto.TicketToTicketBookingDto)
                 .ToList(),
-            TotalPrice = totalPrice
+            TotalPrice = booking.Tickets
+                .Where(ticket => ticket.IsActive)
+                .Sum(ticket => ticket.ActualPrice)
         };
     }
     
-    public async Task<BookingDto> CreateBookingAsync(int userId)
+    public async Task<BookingDto> CreateBookingAsync(int userId, CreateBookingDto dto)
     {
-        await EnsureUserExistsAsync(userId);
+        var sessionExists = await _context.Sessions.AnyAsync(s => s.Id == dto.SessionId);
+        if (!sessionExists)
+            throw new KeyNotFoundException($"Session with ID {dto.SessionId} not found");
         
         var booking = new Booking
         {
             UserId = userId,
+            SessionId = dto.SessionId,
             BookingTime = DateTime.Now,
             Status = BookingStatus.Inprogress
         };
@@ -160,6 +147,7 @@ public class BookingService : IBookingService
         return new BookingDto
         {
             Id = booking.Id,
+            SessionId = booking.SessionId,
             BookingTime = booking.BookingTime,
             Status = booking.Status,
             Tickets = new List<TicketBookingDto>(),
@@ -215,9 +203,9 @@ public class BookingService : IBookingService
 
         if (filter.UserId != null)
             query = query.Where(booking => booking.UserId == filter.UserId);
-/*
+
         if (filter.SessionId != null)
-            query = query.Where(b => b.Tickets.Any(t => t.SessionSeat.SessionId == filter.SessionId));*/
+            query = query.Where(b => b.SessionId == filter.SessionId);
 
         if (filter.FromDate != null)
             query = query.Where(booking => booking.BookingTime >= filter.FromDate.Value);

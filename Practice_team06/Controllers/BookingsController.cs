@@ -95,7 +95,7 @@ namespace Practice_team06.Controllers
         // Create booking
         [HttpPost]
         [Authorize(Roles = "Customer")]
-        public async Task<ActionResult<Booking>> PostBooking()
+        public async Task<ActionResult<Booking>> PostBooking([FromBody] CreateBookingDto dto)
         {
             var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier);
             if (userIdClaim == null)
@@ -105,7 +105,7 @@ namespace Practice_team06.Controllers
             
             try
             {
-                var booking = await _bookingService.CreateBookingAsync(userId);
+                var booking = await _bookingService.CreateBookingAsync(userId, dto);
                 return Ok(booking);
             }
             catch (KeyNotFoundException keyNotFoundException)
@@ -157,7 +157,8 @@ namespace Practice_team06.Controllers
 
             var userId = int.Parse(userIdClaim.Value);
 
-            try {
+            try
+            {
                 await _bookingService.ConfirmBookingAsync(userId, bookingId);
                 return NoContent();
             }
