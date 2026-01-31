@@ -102,7 +102,7 @@ namespace Practice_team06.Controllers
                 return Unauthorized("User is not authenticated");
 
             var userId = int.Parse(userIdClaim.Value);
-            
+
             try
             {
                 var booking = await _bookingService.CreateBookingAsync(userId, dto);
@@ -111,6 +111,10 @@ namespace Practice_team06.Controllers
             catch (KeyNotFoundException keyNotFoundException)
             {
                 return NotFound(keyNotFoundException.Message);
+            }
+            catch (InvalidOperationException invalidOperationException)
+            {
+                return BadRequest(invalidOperationException.Message);
             }
         }
 

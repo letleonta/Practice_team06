@@ -102,44 +102,6 @@ public class TicketService : ITicketService
         return TicketDto.TicketToTicketDto(ticket);
     }
 
-    public async Task<TicketDto> CreateTicketAsync(int userId, int bookingId, CreateTicketDto dto)
-    {
-        var booking = await _context.Bookings
-            .FirstOrDefaultAsync(b => b.Id == bookingId && b.UserId == userId);
-
-        if (booking == null)
-            throw new KeyNotFoundException($"Booking with ID {bookingId} for user {userId} not found.");
-        if (booking.Status != BookingStatus.Inprogress)
-            throw new InvalidOperationException($"Booking with ID {bookingId} is cancelled or already paid");
-
-        try
-        {
-            var price = await CalculatePriceAsync(booking.SessionId, dto.SeatId);
-            
-            var ticket = new Ticket
-            {
-                BookingId = bookingId,
-                SessionId = booking.SessionId,
-                SeatId = dto.SeatId,
-                ActualPrice = price
-            };
-        
-            _context.Tickets.Add(ticket);
-            await _context.SaveChangesAsync();
-
-            var fullTicket = await _context.Tickets
-                .Include(t => t.Seat)
-                .ThenInclude(seat => seat.Hall)
-                .FirstAsync(t => t.Id == ticket.Id);
-
-            return TicketDto.TicketToTicketDto(fullTicket);
-        }
-        catch (KeyNotFoundException)
-        {
-            throw new KeyNotFoundException($"Session with ID {booking.SessionId} does not exist.");
-        }
-    }
-
     public async Task DeleteTicketAsync(int ticketId)
     {
         var ticket = await _context.Tickets.FindAsync(ticketId);

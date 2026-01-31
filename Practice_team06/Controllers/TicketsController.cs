@@ -85,41 +85,6 @@ namespace Practice_team06.Controllers
             return Forbid();
         }
         
-        // POST: api/tickets?bookingId=5
-        [HttpPost("/api/bookings/{bookingId}/tickets")]
-        [Authorize(Roles = "Customer")]
-        public async Task<IActionResult> CreateTicket(int bookingId, [FromBody] CreateTicketDto dto)
-        {
-            var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier);
-            if (userIdClaim == null)
-                return Unauthorized("User is not authenticated");
-
-            var userId = int.Parse(userIdClaim.Value);
-
-            try
-            {
-                var ticket = await _ticketService.CreateTicketAsync(
-                    userId,
-                    bookingId,
-                    dto
-                );
-
-                return Ok(ticket);
-            }
-            catch (KeyNotFoundException keyNotFoundException)
-            {
-                return NotFound(keyNotFoundException.Message);
-            }
-            catch (InvalidOperationException invalidOperationException)
-            {
-                return BadRequest(invalidOperationException.Message);
-            }
-            catch (DbUpdateException dbUpdateException)
-            {
-                return BadRequest(dbUpdateException.Message);
-            }
-        }
-        
         // DELETE: api/tickets/5
         [HttpDelete("{ticketId}")]
         [Authorize(Roles = "Admin")]
