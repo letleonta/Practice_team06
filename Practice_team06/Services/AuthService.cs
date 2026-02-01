@@ -120,11 +120,29 @@ public class AuthService : IAuthService
     public async Task<IdentityResult> AssignRoleAsync(string email, string roleName)
     {
         var user = await _userManager.FindByEmailAsync(email);
-        if (user == null) return IdentityResult.Failed(new IdentityError { Description = "Користувача не знайдено" });
+        if (user == null) 
+            return IdentityResult.Failed(new IdentityError { Description = "Користувача не знайдено" });
 
         if (!await _roleManager.RoleExistsAsync(roleName))
-            return IdentityResult.Failed(new IdentityError { Description = "Ролі не існує" });
+            return IdentityResult.Failed(new IdentityError { Description = $"Ролі '{roleName}' не існує" });
 
+        // 1. Отримуємо всі поточні ролі користувача
+        var currentRoles = await _userManager.GetRolesAsync(user);
+
+        // 2. Якщо користувач вже має ТІЛЬКИ цю роль і ніяких інших — нічого не робимо
+        if (currentRoles.Count == 1 && currentRoles.Contains(roleName))
+        {
+            return IdentityResult.Success;
+        }
+
+        // 3. Видаляємо всі існуючі ролі
+        if (currentRoles.Any())
+        {
+            var removeResult = await _userManager.RemoveFromRolesAsync(user, currentRoles);
+            if (!removeResult.Succeeded) return removeResult;
+        }
+
+        // 4. Додаємо нову чисту роль
         return await _userManager.AddToRoleAsync(user, roleName);
     }
 

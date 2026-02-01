@@ -22,7 +22,7 @@ namespace Practice_team06.Controllers
         // GET: api/bookings/
         // Get all bookings
         [HttpGet]
-        [Authorize(Roles = "Admin")]
+        [Authorize(Roles = "Admin, Manager")]
         public async Task<IActionResult> GetAllBookings([FromQuery] BookingFilterDto filter)
         {
             var bookings = await _bookingService.GetAllBookingsAsync(filter);
@@ -55,7 +55,7 @@ namespace Practice_team06.Controllers
         // GET: api/bookings/5
         // Get booking by id
         [HttpGet("{bookingId}")]
-        [Authorize(Roles = "Admin,Customer")]
+        [Authorize(Roles = "Admin,Customer, Manager")]
         public async Task<ActionResult<Booking>> GetBooking(int bookingId)
         {
             if (User.IsInRole("Admin"))
@@ -178,7 +178,7 @@ namespace Practice_team06.Controllers
         // DELETE: api/Bookings/5
         // Delete booking
         [HttpDelete("{bookingId}")]
-        [Authorize(Roles = "Admin")]
+        [Authorize(Roles = "Admin, Manager")]
         public async Task<IActionResult> DeleteBooking(int bookingId)
         {
             try

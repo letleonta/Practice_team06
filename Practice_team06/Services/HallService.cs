@@ -41,11 +41,19 @@ public class HallService : IHallService
         return new HallDto { Id = hall.Id, Name = hall.Name, PriceModifier = hall.PriceModifier, Description = hall.Description };
     }
 
-    public async Task<bool> DeleteAsync(short id)
+    public async Task<bool> DeleteAsync(int id)
     {
         var hall = await _context.Halls.FindAsync(id);
         if (hall == null) return false;
+        
+        var linkedSeats = _context.Seats.Where(s => s.HallId == id);
+        _context.Seats.RemoveRange(linkedSeats);
+        
+        var linkedSessions = _context.Sessions.Where(s => s.HallId == id);
+        _context.Sessions.RemoveRange(linkedSessions);
+        
         _context.Halls.Remove(hall);
+
         await _context.SaveChangesAsync();
         return true;
     }

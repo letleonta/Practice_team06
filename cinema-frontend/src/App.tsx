@@ -1,33 +1,24 @@
-// src/App.tsx
-import { BrowserRouter, Routes, Route, Link } from 'react-router-dom';
-import { HomePage } from './pages/HomePage';
-import './App.css';
-import { MovieDetailPage } from './pages/MovieDetailPage';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import Login from './pages/Login';
+import Home from './pages/Home';
+import Register from './pages/Register';
+import AdminDashboard from "./pages/admin/AdminDashboard.tsx";
 
 function App() {
     return (
         <BrowserRouter>
-            <header className="main-header">
-                <div className="container header-content">
-                    <Link to="/" className="logo">🎬 CINEMA-HUB</Link>
-                    <nav>
-                        <Link to="/">Головна</Link>
-                        <Link to="/admin" className="admin-link">Адмін-панель</Link>
-                    </nav>
-                </div>
-            </header>
+            <Routes>
+                {/* Тепер тут буде відображатися контент з файлу src/pages/Home.tsx */}
+                <Route path="/" element={<Home />} />
 
-            <main>
-                <Routes>
-                    <Route path="/" element={<HomePage />} />
-                    <Route path="/movie/:id" element={<MovieDetailPage />} /> {/* ТЕПЕР ПРАЦЮЄ */}
-                    <Route path="/admin" element={<div>Панель адміністратора</div>} />
-                </Routes>
-            </main>
+                <Route path="/login" element={<Login />} />
 
-            <footer className="main-footer">
-                <p>&copy; 2026 Cinema Team 06. Усі права захищені.</p>
-            </footer>
+                <Route path="*" element={<Navigate to="/" />} />
+
+                <Route path="/register" element={<Register />} />
+
+                <Route path="/admin/*" element={<AdminDashboard />} />
+            </Routes>
         </BrowserRouter>
     );
 }

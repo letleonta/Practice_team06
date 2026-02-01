@@ -1,0 +1,25 @@
+﻿export interface LoginResponseDto {
+    token: string;
+    expiration: string; // DateTime в C# прийде як рядок ISO
+    email: string;
+}
+
+export interface AuthResultDto {
+    succeeded: boolean;
+    response?: LoginResponseDto;
+    errors?: string[];
+}
+
+export interface LoginDto {
+    email: string;
+    password: string;
+}
+
+// Для реєстрації (RegisterDto)
+export interface RegisterDto {
+    email: string;
+    password: string;
+    firstName: string;
+    lastName: string;
+    birthDate: string;
+}
