@@ -32,7 +32,7 @@ export const Checkout = () => {
             setIsProcessing(true);
             await BookingService.confirmBooking(booking.id);
             alert("Оплата успішна! Квитки надіслано на пошту.");
-            setBooking(null); // Очищаємо екран після оплати
+            setBooking(null);
         } catch (err) {
             console.error(err);
             alert("Помилка при оплаті");
