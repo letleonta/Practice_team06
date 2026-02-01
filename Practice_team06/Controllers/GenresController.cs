@@ -17,7 +17,7 @@ public class GenresController : ControllerBase
     }
     
     [HttpGet]
-    [Authorize(Roles = "Admin, Customer")]
+    [Authorize(Roles = "Admin, Customer, Manager")]
     public async Task<ActionResult<IEnumerable<GenreDto>>> GetGenres(
         [FromQuery] string? search = null,
         [FromQuery] string? sortBy = null,
@@ -28,7 +28,7 @@ public class GenresController : ControllerBase
     }
     
     [HttpGet("{id}")]
-    [Authorize(Roles = "Admin, Customer")]
+    [Authorize(Roles = "Admin, Customer, Manager")]
     public async Task<ActionResult<GenreDto>> GetGenre(int id)
     {
         var genre = await _genreService.GetByIdAsync(id);
@@ -37,7 +37,7 @@ public class GenresController : ControllerBase
     }
     
     [HttpPost]
-    [Authorize(Roles = "Admin")]
+    [Authorize(Roles = "Admin, Manager")]
     public async Task<ActionResult<GenreDto>> CreateGenre(CreateGenreDto genreDto)
     {
         var createdGenre = await _genreService.CreateAsync(genreDto);
@@ -45,7 +45,7 @@ public class GenresController : ControllerBase
     }
     
     [HttpPost("bulk")]
-    [Authorize(Roles = "Admin")]
+    [Authorize(Roles = "Admin, Manager")]
     public async Task<ActionResult<IEnumerable<GenreDto>>> CreateGenres(IEnumerable<CreateGenreDto>? genresDto)
     {
         var genresList = genresDto?.ToList();
@@ -59,7 +59,7 @@ public class GenresController : ControllerBase
     }
 
     [HttpPut("{id}")]
-    [Authorize(Roles = "Admin")]
+    [Authorize(Roles = "Admin, Manager")]
     public async Task<IActionResult> UpdateGenre(int id, CreateGenreDto genreDto)
     {
         var result = await _genreService.UpdateAsync(id, genreDto);
@@ -68,7 +68,7 @@ public class GenresController : ControllerBase
     }
 
     [HttpDelete("{id}")]
-    [Authorize(Roles = "Admin")]
+    [Authorize(Roles = "Admin, Manager")]
     public async Task<IActionResult> DeleteGenre(int id)
     {
         var result = await _genreService.DeleteAsync(id);
