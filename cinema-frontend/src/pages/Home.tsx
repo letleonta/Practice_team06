@@ -1,12 +1,9 @@
 ﻿import { useEffect, useState } from 'react';
-import { useAuthStore } from '../store/useAuthStore';
-import { Link } from 'react-router-dom';
 import api from '../api/axiosInstance';
 import type { Movie } from '../types/movie';
-import { Star, Clock, Ticket, ShieldCheck, LogOut, User as UserIcon } from 'lucide-react';
+import { Star, Clock, Ticket } from 'lucide-react';
 
 const Home = () => {
-    const { user, logout } = useAuthStore();
     const [movies, setMovies] = useState<Movie[]>([]);
     const [loading, setLoading] = useState(true);
 
@@ -24,54 +21,6 @@ const Home = () => {
 
     return (
         <div className="min-h-screen bg-[#0f1117] text-white font-sans">
-            {/* Navbar */}
-            <nav className="sticky top-0 z-50 p-4 bg-[#1a1d26]/90 backdrop-blur-md flex justify-between items-center border-b border-gray-800 shadow-2xl">
-                <div className="flex items-center gap-8">
-                    <h1 className="text-2xl font-black text-red-600 tracking-tighter cursor-pointer">CINEMA</h1>
-                    <div className="hidden md:flex gap-6 text-sm font-medium text-gray-400">
-                        <Link to="/" className="hover:text-white transition">Афіша</Link>
-                        <Link to="/" className="hover:text-white transition">Кінотеатри</Link>
-                        <Link to="/" className="hover:text-white transition">Акції</Link>
-                    </div>
-                </div>
-
-                <div className="flex items-center gap-4">
-                    {user ? (
-                        <div className="flex items-center gap-3">
-                            {/* Кнопка Адміна - з'являється тільки якщо роль Admin */}
-                            {user.role === 'Admin' && (
-                                <Link
-                                    to="/admin"
-                                    className="flex items-center gap-2 bg-amber-500/10 hover:bg-amber-500/20 text-amber-500 border border-amber-500/50 px-4 py-2 rounded-xl text-sm font-bold transition-all shadow-lg shadow-amber-500/10"
-                                >
-                                    <ShieldCheck size={18} />
-                                    <span>Панель адміна</span>
-                                </Link>
-                            )}
-
-                            <div className="flex items-center gap-3 bg-gray-800/50 p-1 pr-4 rounded-full border border-gray-700">
-                                <div className="bg-red-600 p-2 rounded-full">
-                                    <UserIcon size={16} />
-                                </div>
-                                <span className="text-gray-200 text-sm font-medium hidden sm:inline">{user.email}</span>
-                            </div>
-
-                            <button
-                                onClick={logout}
-                                className="p-2.5 text-gray-400 hover:text-red-500 hover:bg-red-500/10 rounded-xl transition-all"
-                                title="Вийти"
-                            >
-                                <LogOut size={20} />
-                            </button>
-                        </div>
-                    ) : (
-                        <Link to="/login" className="bg-red-600 hover:bg-red-700 text-white px-8 py-2.5 rounded-xl text-sm font-bold transition-all shadow-lg shadow-red-600/30">
-                            Увійти
-                        </Link>
-                    )}
-                </div>
-            </nav>
-
             {/* Main Content */}
             <main className="max-w-7xl mx-auto p-6 md:p-10">
                 <header className="mb-12">
