@@ -27,9 +27,7 @@ export const BookingService = {
     },
 
     async createBooking(data: CreateBookingDto) {
-        const response = await axiosInstance.post<BookingDto>("/bookings", {
-            params: data
-        });
+        const response = await axiosInstance.post<BookingDto>("/bookings", data);
         return response.data;
     },
 
