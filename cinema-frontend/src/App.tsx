@@ -9,7 +9,6 @@ import MyBookingsPage from './pages/MyBookingsPage.tsx';
 import BookingDetailsPage from "./pages/BookingDetailsPage.tsx";
 import SessionPage from "./pages/SessionPage.tsx";
 import MainLayout from "./layouts/MainLayout.tsx";
-import AdminBookings from "./pages/admin/AdminBookings.tsx";
 
 function App() {
     const { user, token } = useAuthStore();
@@ -24,7 +23,6 @@ function App() {
                 <Route path="/register" element={<Register />} />
 
                 <Route path="/checkout" element={<Checkout />} />
-                <Route path="/admin/bookings" element={<AdminBookings />} />
 
                 <Route element={<MainLayout />}>
                     <Route path="/" element={<Home />} />

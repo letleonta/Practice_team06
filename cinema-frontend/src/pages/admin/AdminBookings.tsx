@@ -99,24 +99,9 @@ const AdminBookingsPage = () => {
             : <TrendingUp size={14} className="text-red-500" />;
     };
 
-    // ─── render ──────────────────────────────────────────────────────────────
     return (
-        <div className="min-h-screen bg-[#0f1117] text-white font-sans">
+        <div className="min-h-screen text-white font-sans">
             <div className="max-w-7xl mx-auto px-4 py-8 space-y-6">
-
-                {/* Header */}
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                    <h1 className="text-3xl font-black">
-                        Адмін <span className="text-red-600">бронювань</span>
-                    </h1>
-                    <button
-                        onClick={fetchBookings}
-                        className="self-start sm:self-auto px-4 py-2 rounded-lg bg-[#1a1d26] border border-gray-700 text-gray-300 text-sm hover:border-red-600/50 hover:text-white transition-all"
-                    >
-                        Оновити
-                    </button>
-                </div>
-
                 {/* Stats */}
                 <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
                     <StatCard label="Всього"    value={stats.total}      />
