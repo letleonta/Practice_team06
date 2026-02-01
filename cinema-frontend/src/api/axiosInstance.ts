@@ -8,7 +8,6 @@ const api = axios.create({
     },
 });
 
-// Додаємо токен до кожного запиту автоматично
 api.interceptors.request.use((config) => {
     const token = localStorage.getItem('token');
     if (token) {

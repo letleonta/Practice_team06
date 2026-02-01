@@ -13,28 +13,47 @@ interface AuthState {
     logout: () => void;
 }
 
+// Функція для відновлення стану користувача при оновленні сторінки
+const getInitialState = () => {
+    const token = localStorage.getItem('token');
+    if (!token) return { user: null, token: null };
+
+    try {
+        const decoded: any = jwtDecode(token);
+        // Перевіряємо чи токен не прострочений
+        const currentTime = Date.now() / 1000;
+        if (decoded.exp < currentTime) {
+            localStorage.removeItem('token');
+            return { user: null, token: null };
+        }
+
+        const role = decoded["http://schemas.microsoft.com/ws/2008/06/identity/claims/role"] || decoded.role || 'User';
+        const email = decoded.email || decoded.sub || '';
+
+        return {
+            token,
+            user: { email, role }
+        };
+    } catch (error) {
+        localStorage.removeItem('token');
+        return { user: null, token: null };
+    }
+};
+
 export const useAuthStore = create<AuthState>((set) => ({
-    user: null,
-    token: localStorage.getItem('token'),
+    // Ініціалізуємо стан відразу при створенні стору
+    ...getInitialState(),
 
     setAuth: (token: string) => {
         try {
             const decoded: any = jwtDecode(token);
-
-            // В ASP.NET Identity роль зазвичай лежить за цим довгим ключем:
-            const role = decoded["http://schemas.microsoft.com/ws/2008/06/identity/claims/role"]
-                || decoded.role
-                || 'User';
-
+            const role = decoded["http://schemas.microsoft.com/ws/2008/06/identity/claims/role"] || decoded.role || 'User';
             const email = decoded.email || decoded.sub || '';
 
             localStorage.setItem('token', token);
-            set({
-                token,
-                user: { email, role }
-            });
+            set({ token, user: { email, role } });
         } catch (error) {
-            console.error("Помилка декодування токена:", error);
+            console.error("Помилка декодування:", error);
         }
     },
 

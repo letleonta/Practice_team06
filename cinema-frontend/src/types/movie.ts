@@ -3,7 +3,7 @@
     title: string;
     description?: string;
     durationMin?: number;
-    releaseDate?: string; // DateOnly приходить як рядок "YYYY-MM-DD"
+    releaseDate?: string;
     basePrice: number;
     rating?: number;
     posterUri?: string;
@@ -13,19 +13,22 @@
     directorName: string;
     genres: string[];
     actors: string[];
+    languageIds: number[];
 }
 export interface CreateMovieDto {
     title: string;
     description: string;
     durationMin: number;
-    releaseDate: string; // Формат "YYYY-MM-DD"
+    releaseDate: string;
     basePrice: number;
     startDate?: string;
     endDate?: string;
     posterUri?: string;
     trailerUri?: string;
-    ageRestriction: number; // Або рядок, залежно від того, як приходить Enum з беку
+    languageIds: number[];
+    ageRestriction: number;
     directorId?: number;
     genreIds: number[];
     actorIds: number[];
+    rating?: number;
 }
