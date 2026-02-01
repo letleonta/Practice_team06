@@ -8,20 +8,16 @@ import { Star, Clock, Ticket, ShieldCheck, LogOut, User as UserIcon, Search, Fil
 const Home = () => {
     const { user, logout } = useAuthStore();
 
-    // 👇 СТАНИ ДЛЯ ДАНИХ
     const [nowPlayingMovies, setNowPlayingMovies] = useState<MovieDto[]>([]);
     const [upcomingMovies, setUpcomingMovies] = useState<MovieDto[]>([]);
     const [loading, setLoading] = useState(true);
 
-    // 👇 СТАН ПЕРЕМИКАЧА (Що ми зараз дивимось?)
     const [activeTab, setActiveTab] = useState<'now' | 'soon'>('now');
 
-    // Стани для фільтрів
     const [searchTerm, setSearchTerm] = useState('');
     const [selectedGenre, setSelectedGenre] = useState('Всі');
 
     useEffect(() => {
-        // 👇 ЗАВАНТАЖУЄМО ОБИДВА СПИСКИ ОДНОЧАСНО
         Promise.all([
             api.get<MovieDto[]>('/movies/now-playing'),
             api.get<MovieDto[]>('/movies/upcoming')
@@ -41,14 +37,14 @@ const Home = () => {
     // Визначаємо, який список зараз показувати
     const currentList = activeTab === 'now' ? nowPlayingMovies : upcomingMovies;
 
-    // 1. Отримуємо список унікальних жанрів для ПОТОЧНОГО списку
+    // Отримуємо список унікальних жанрів для ПОТОЧНОГО списку
     const uniqueGenres = useMemo(() => {
         if (!currentList.length) return ['Всі'];
         const allGenres = currentList.flatMap(movie => movie.genres || []);
         return ['Всі', ...Array.from(new Set(allGenres))];
     }, [currentList]);
 
-    // 2. Логіка фільтрації
+    // Логіка фільтрації
     const filteredMovies = useMemo(() => {
         return currentList.filter(movie => {
             const matchesSearch = movie.title.toLowerCase().includes(searchTerm.toLowerCase());
@@ -117,7 +113,7 @@ const Home = () => {
                         <span className="text-red-600 font-bold uppercase tracking-widest text-xs">Афіша кінотеатру</span>
                     </div>
 
-                    {/* 👇 ГОЛОВНИЙ ПЕРЕМИКАЧ (ТАБИ) */}
+                    {/* ГОЛОВНИЙ ПЕРЕМИКАЧ (ТАБИ) */}
                     <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-8">
                         <div className="flex items-baseline gap-6 sm:gap-10 border-b border-gray-800 pb-1 w-full lg:w-auto">
 
@@ -239,7 +235,7 @@ const Home = () => {
                                         </div>
                                     )}
 
-                                    {/* 👇 РІЗНІ КНОПКИ ДЛЯ "ЗАРАЗ" І "СКОРО" */}
+                                    {/* РІЗНІ КНОПКИ ДЛЯ "ЗАРАЗ" І "СКОРО" */}
                                     <div className="absolute inset-0 bg-gradient-to-t from-black via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-end p-4">
                                         {activeTab === 'now' ? (
                                             <button className="w-full bg-white text-black font-black py-3 rounded-2xl flex items-center justify-center gap-2 transform translate-y-4 group-hover:translate-y-0 transition-transform duration-300 shadow-2xl hover:bg-gray-100">
