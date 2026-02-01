@@ -1,5 +1,5 @@
 ﻿import { useEffect, useState, useMemo } from 'react';
-import { ticketService } from '../../services/ticketService';
+import { TicketService } from '../../services/ticket.service.ts';
 import type { AdminTicketDto } from '../../types/ticket';
 import {
     Ticket, Search, Trash2, Loader2, RefreshCw,
@@ -14,7 +14,7 @@ const AdminTickets = () => {
     const loadTickets = async () => {
         try {
             setIsLoading(true);
-            const data = await ticketService.getAll();
+            const data = await TicketService.getTickets();
             setTickets(data);
         } catch (err) {
             console.error("Failed to load tickets", err);
@@ -28,7 +28,7 @@ const AdminTickets = () => {
     const handleDelete = async (id: number) => {
         if (!confirm('Анулювати цей квиток? Місце в залі знову стане вільним.')) return;
         try {
-            await ticketService.delete(id);
+            await TicketService.delete(id);
             setTickets(prev => prev.filter(t => t.id !== id));
         } catch (err) {
             alert("Помилка при видаленні квитка");

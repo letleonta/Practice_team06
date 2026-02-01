@@ -7,8 +7,8 @@ import AdminSessions from './AdminSessions';
 import AdminHalls from './AdminHalls';
 import AdminLanguages from './AdminLanguages';
 import AdminUsers from './AdminUsers';
+import AdminTickets from './AdminTickets'; // Підключено
 import { useAuthStore } from '../../store/useAuthStore';
-import AdminTickets from './AdminTickets';
 import {
     Film,
     Calendar,
@@ -27,13 +27,15 @@ import {
 
 const AdminDashboard = () => {
     const location = useLocation();
-    const { user } = useAuthStore(); // Отримуємо дані юзера
+    const { user } = useAuthStore();
+    // Захист від null (якщо юзер ще вантажиться)
     const userRole = user?.role || 'Guest';
 
-    const isActive = (path: string) => location.pathname === path;
+    // Перевірка активного посилання (includes дозволяє підсвічувати батьківський розділ)
+    const isActive = (path: string) => location.pathname.includes(path);
 
     const navItemClass = (path: string) => `
-        flex items-center justify-between p-3 rounded-xl transition-all duration-200 group
+        flex items-center justify-between p-3 rounded-xl transition-all duration-200 group cursor-pointer
         ${isActive(path)
         ? 'bg-red-600 text-white shadow-lg shadow-red-600/30'
         : 'text-gray-400 hover:bg-gray-800 hover:text-white'}
@@ -42,12 +44,12 @@ const AdminDashboard = () => {
     return (
         <div className="flex min-h-screen bg-[#0f1117] text-white font-sans">
             {/* --- SIDEBAR --- */}
-            <aside className="w-72 bg-[#1a1d26] border-r border-gray-800 p-6 flex flex-col shadow-2xl z-20">
+            <aside className="w-72 bg-[#1a1d26] border-r border-gray-800 p-6 flex flex-col shadow-2xl z-20 sticky top-0 h-screen">
                 <div className="flex items-center gap-3 mb-10 px-2">
                     <div className="bg-red-600 p-2 rounded-lg shadow-lg shadow-red-600/20">
                         <Clapperboard size={24} className="text-white" />
                     </div>
-                    <h2 className="text-xl font-black uppercase tracking-tighter italic">Cinema Management</h2>
+                    <h2 className="text-xl font-black uppercase tracking-tighter italic">Cinema Admin</h2>
                 </div>
 
                 <nav className="flex-1 space-y-8 overflow-y-auto custom-scrollbar pr-2">
@@ -74,9 +76,9 @@ const AdminDashboard = () => {
                         </div>
                     </div>
 
-                    {/* ГРУПА: ПЛАНУВАННЯ ТА ПРОДАЖІ */}
+                    {/* ГРУПА: ЗАЛИ ТА ПРОДАЖІ */}
                     <div>
-                        <p className="text-[10px] font-black text-gray-600 uppercase tracking-[0.2em] mb-4 px-2">Керування залом</p>
+                        <p className="text-[10px] font-black text-gray-600 uppercase tracking-[0.2em] mb-4 px-2">Кінотеатр</p>
                         <div className="space-y-1">
                             <Link to="/admin/sessions" className={navItemClass('/admin/sessions')}>
                                 <div className="flex items-center gap-3"><Calendar size={18} /> <span>Сеанси</span></div>
@@ -85,7 +87,7 @@ const AdminDashboard = () => {
                                 <div className="flex items-center gap-3"><LayoutGrid size={18} /> <span>Зали</span></div>
                             </Link>
                             <Link to="/admin/tickets" className={navItemClass('/admin/tickets')}>
-                                <div className="flex items-center gap-3"><Ticket size={18} /> <span>Квитки / Продажі</span></div>
+                                <div className="flex items-center gap-3"><Ticket size={18} /> <span>Квитки</span></div>
                             </Link>
                         </div>
                     </div>
@@ -93,7 +95,7 @@ const AdminDashboard = () => {
                     {/* ГРУПА: СИСТЕМА (Доступна і Адміну, і Менеджеру) */}
                     {(userRole === 'Admin' || userRole === 'Manager') && (
                         <div>
-                            <p className="text-[10px] font-black text-gray-600 uppercase tracking-[0.2em] mb-4 px-2">Адміністрування</p>
+                            <p className="text-[10px] font-black text-gray-600 uppercase tracking-[0.2em] mb-4 px-2">Система</p>
                             <div className="space-y-1">
                                 <Link to="/admin/users" className={navItemClass('/admin/users')}>
                                     <div className="flex items-center gap-3"><Users size={18} /> <span>Користувачі</span></div>
@@ -105,7 +107,7 @@ const AdminDashboard = () => {
 
                 <div className="pt-6 border-t border-gray-800">
                     <Link to="/" className="flex items-center gap-3 p-4 rounded-2xl bg-gray-800/50 text-gray-300 hover:bg-red-600 hover:text-white transition-all font-bold text-sm shadow-inner">
-                        <Home size={18} /> На головну сайту
+                        <Home size={18} /> На сайт
                     </Link>
                 </div>
             </aside>
@@ -117,7 +119,7 @@ const AdminDashboard = () => {
                     <div className="flex items-center gap-3 text-gray-400">
                         <LayoutDashboard size={20} className="text-red-600" />
                         <span className="text-sm font-bold uppercase tracking-widest text-gray-500">
-                            Dashboard / {location.pathname.replace('/admin/', '').replace('/admin', 'Головна')}
+                            {location.pathname === '/admin' ? 'DASHBOARD' : location.pathname.split('/').pop()?.toUpperCase()}
                         </span>
                     </div>
 
@@ -128,14 +130,15 @@ const AdminDashboard = () => {
                             </span>
                             <span className="text-[10px] text-gray-500 font-bold mt-1 uppercase tracking-tighter">System Access</span>
                         </div>
+                        {/* Безпечний рендер першої літери */}
                         <div className={`h-12 w-12 rounded-2xl flex items-center justify-center font-black text-xl shadow-lg border ${userRole === 'Admin' ? 'bg-gradient-to-br from-red-600 to-red-900 border-red-500/20' : 'bg-gradient-to-br from-amber-500 to-amber-700 border-amber-500/20'}`}>
-                            {userRole.charAt(0)}
+                            {(userRole || 'G').charAt(0)}
                         </div>
                     </div>
                 </header>
 
                 {/* Scrollable Content */}
-                <div className="flex-1 overflow-y-auto p-10 bg-[#0b0d12]">
+                <div className="flex-1 overflow-y-auto p-10 bg-[#0b0d12] custom-scrollbar">
                     <Routes>
                         <Route path="/" element={
                             <div className="flex flex-col items-center justify-center h-full text-center space-y-4 animate-fade-in">
@@ -143,10 +146,8 @@ const AdminDashboard = () => {
                                     <Shield size={64} className="text-red-600 opacity-20" />
                                 </div>
                                 <h2 className="text-4xl font-black italic uppercase tracking-tighter text-gray-700">Вітаємо, {userRole}</h2>
-                                <p className="text-gray-500 max-w-sm">
-                                    {userRole === 'Admin'
-                                        ? 'Вам доступний повний контроль над системою.'
-                                        : 'Ви можете керувати контентом та користувачами.'}
+                                <p className="text-gray-500 max-w-sm font-medium">
+                                    Система готова до роботи. Оберіть розділ у меню зліва.
                                 </p>
                             </div>
                         } />
