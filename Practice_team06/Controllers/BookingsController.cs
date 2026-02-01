@@ -33,7 +33,7 @@ namespace Practice_team06.Controllers
         // Get all client bookings
         [HttpGet("my")]
         [Authorize(Roles = "Customer")]
-        public async Task<IActionResult> GetMyBookings()
+        public async Task<IActionResult> GetMyBookings([FromQuery] BookingFilterDto filter)
         {
             var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier);
             if (userIdClaim == null)
@@ -43,7 +43,7 @@ namespace Practice_team06.Controllers
 
             try
             {
-                var bookings = await _bookingService.GetBookingsForUserAsync(userId);
+                var bookings = await _bookingService.GetBookingsForUserAsync(userId, filter);
                 return Ok(bookings);
             }
             catch (KeyNotFoundException e)

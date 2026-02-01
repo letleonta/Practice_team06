@@ -50,9 +50,9 @@ public class BookingService : IBookingService
         return result;
     }
     
-    public async Task<List<BookingDto>> GetBookingsForUserAsync(int userId)
+    public async Task<List<BookingDto>> GetBookingsForUserAsync(int userId, BookingFilterDto filter)
     {
-        var bookings = await _context.Bookings
+        var query = _context.Bookings
             .AsNoTracking()
             .Include(b => b.Session)
             .ThenInclude(s => s.Movie)
@@ -61,8 +61,12 @@ public class BookingService : IBookingService
             .ThenInclude(s => s.Hall)
             .Where(b => b.UserId == userId)
             .OrderByDescending(b => b.BookingTime)
-            .ToListAsync();
+            .AsQueryable();
 
+        query = ApplySorting(ApplyFilter(query, filter), filter);
+
+        var bookings = await query.ToListAsync();
+        
         return bookings.Select(b => new BookingDto
         {
             Id = b.Id,
@@ -276,11 +280,17 @@ public class BookingService : IBookingService
         if (filter.SessionId != null)
             query = query.Where(b => b.SessionId == filter.SessionId);
 
-        if (filter.FromDate != null)
-            query = query.Where(booking => booking.BookingTime >= filter.FromDate.Value);
+        if (filter.BookingFromDate != null)
+            query = query.Where(booking => booking.BookingTime >= filter.BookingFromDate.Value);
 
-        if (filter.ToDate != null)
-            query = query.Where(booking => booking.BookingTime <= filter.ToDate.Value);
+        if (filter.BookingToDate != null)
+            query = query.Where(booking => booking.BookingTime <= filter.BookingToDate.Value);
+        
+        if (filter.SessionFromDate != null)
+            query = query.Where(booking => booking.Session.StartTime >= filter.SessionFromDate.Value);
+
+        if (filter.SessionToDate != null)
+            query = query.Where(booking => booking.Session.StartTime <= filter.SessionToDate.Value);
 
         return query;
     }
@@ -307,5 +317,4 @@ public class BookingService : IBookingService
             _ => query.OrderByDescending(booking => booking.BookingTime) // default
         };
     }
-
 }
