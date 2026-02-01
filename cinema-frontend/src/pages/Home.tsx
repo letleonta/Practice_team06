@@ -2,15 +2,15 @@
 import { useAuthStore } from '../store/useAuthStore';
 import { Link } from 'react-router-dom';
 import api from '../api/axiosInstance';
-import type { Movie } from '../types/movie';
+import type { MovieDto } from '../types/movie';
 import { Star, Clock, Ticket, ShieldCheck, LogOut, User as UserIcon, Search, Filter, CalendarDays } from 'lucide-react';
 
 const Home = () => {
     const { user, logout } = useAuthStore();
 
     // 👇 СТАНИ ДЛЯ ДАНИХ
-    const [nowPlayingMovies, setNowPlayingMovies] = useState<Movie[]>([]);
-    const [upcomingMovies, setUpcomingMovies] = useState<Movie[]>([]);
+    const [nowPlayingMovies, setNowPlayingMovies] = useState<MovieDto[]>([]);
+    const [upcomingMovies, setUpcomingMovies] = useState<MovieDto[]>([]);
     const [loading, setLoading] = useState(true);
 
     // 👇 СТАН ПЕРЕМИКАЧА (Що ми зараз дивимось?)
@@ -23,8 +23,8 @@ const Home = () => {
     useEffect(() => {
         // 👇 ЗАВАНТАЖУЄМО ОБИДВА СПИСКИ ОДНОЧАСНО
         Promise.all([
-            api.get<Movie[]>('/movies/now-playing'),
-            api.get<Movie[]>('/movies/upcoming')
+            api.get<MovieDto[]>('/movies/now-playing'),
+            api.get<MovieDto[]>('/movies/upcoming')
         ])
             .then(([nowRes, upRes]) => {
                 setNowPlayingMovies(nowRes.data);
@@ -84,10 +84,14 @@ const Home = () => {
                 <div className="flex items-center gap-4">
                     {user ? (
                         <div className="flex items-center gap-3">
-                            {user.role === 'Admin' && (
-                                <Link to="/admin" className="hidden sm:flex items-center gap-2 bg-amber-500/10 hover:bg-amber-500/20 text-amber-500 border border-amber-500/50 px-4 py-2 rounded-xl text-sm font-bold transition-all">
+                            {/* Кнопка Адміна - з'являється тільки якщо роль Admin */}
+                            {user && (user.role === 'Admin' || user.role === 'Manager') && (
+                                <Link
+                                    to="/admin"
+                                    className="flex items-center gap-2 bg-amber-500/10 hover:bg-amber-500/20 text-amber-500 border border-amber-500/50 px-4 py-2 rounded-xl text-sm font-bold transition-all shadow-lg shadow-amber-500/10"
+                                >
                                     <ShieldCheck size={18} />
-                                    <span>Панель адміна</span>
+                                    <span>Панель керування</span>
                                 </Link>
                             )}
                             <div className="flex items-center gap-3 bg-gray-800/50 p-1 pr-4 rounded-full border border-gray-700">
