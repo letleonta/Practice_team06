@@ -75,6 +75,7 @@ builder.Services.AddScoped<IGenreService, GenreService>();
 builder.Services.AddScoped<ILanguageService, LanguageService>();
 builder.Services.AddScoped<ISessionService, SessionService>();
 builder.Services.AddScoped<IMovieService, MovieService>();
+builder.Services.AddScoped<IUserService, UserService>();
 
 builder.Services.AddControllers()
     .AddJsonOptions(options =>
@@ -128,7 +129,7 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
-
+app.UseStaticFiles();
 app.UseRouting(); 
 
 app.UseCors("AllowReactApp"); 

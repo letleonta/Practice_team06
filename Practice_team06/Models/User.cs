@@ -14,6 +14,6 @@ public class User : IdentityUser<int>
     [Required]
     [DataType(DataType.Date)]
     public DateTime? BirthDate { get; set; }
-    
+    public string? AvatarUrl { get; set; } 
     public List<Booking> Bookings { get; set; } = new();
 }
