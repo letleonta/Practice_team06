@@ -7,7 +7,7 @@ import AdminSessions from './AdminSessions';
 import AdminHalls from './AdminHalls';
 import AdminLanguages from './AdminLanguages';
 import AdminUsers from './AdminUsers';
-import AdminTickets from './AdminTickets'; // Підключено
+import AdminBookings from './AdminBookings';
 import { useAuthStore } from '../../store/useAuthStore';
 import {
     Film,
@@ -86,8 +86,8 @@ const AdminDashboard = () => {
                             <Link to="/admin/halls" className={navItemClass('/admin/halls')}>
                                 <div className="flex items-center gap-3"><LayoutGrid size={18} /> <span>Зали</span></div>
                             </Link>
-                            <Link to="/admin/tickets" className={navItemClass('/admin/tickets')}>
-                                <div className="flex items-center gap-3"><Ticket size={18} /> <span>Квитки</span></div>
+                            <Link to="/admin/bookings" className={navItemClass('/admin/bookings')}>
+                                <div className="flex items-center gap-3"><Ticket size={18} /> <span>Бронювання</span></div>
                             </Link>
                         </div>
                     </div>
@@ -160,7 +160,7 @@ const AdminDashboard = () => {
                         <Route path="halls" element={<AdminHalls />} />
                         <Route path="languages" element={<AdminLanguages />} />
                         <Route path="users" element={<AdminUsers />} />
-                        <Route path="tickets" element={<AdminTickets />} />
+                        <Route path="bookings" element={<AdminBookings />} />
 
                         <Route path="*" element={
                             <div className="text-center py-20">

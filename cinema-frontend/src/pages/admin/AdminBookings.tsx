@@ -7,21 +7,10 @@ import {
 import { getStatusColor, getStatusText } from '../../utils/bookingStatus';
 import { getAgeRestrictionText } from '../../utils/ageRestriction';
 import api from '../../api/axiosInstance';
-import type {AdminBookingDto, BookingStatus, SortBy} from "../../types/booking.ts";
-import {formatDate, formatTime} from "../../utils/timeFormat.ts";
-
-const STATUS_OPTIONS: { value: BookingStatus; label: string }[] = [
-    { value: null,          label: 'Усі статуси' },
-    { value: 'Inprogress',     label: 'Активні' },
-    { value: 'Paid',  label: 'Завершені' },
-    { value: 'Cancelled',  label: 'Скасовані' },
-];
-
-const SORT_OPTIONS: { value: SortBy; label: string }[] = [
-    { value: 'date',   label: 'Дата бронювання' },
-    { value: 'status', label: 'Статус' },
-    { value: 'userId', label: 'ID користувача' }
-];
+import type { AdminBookingDto, SortBy } from "../../types/booking.ts";
+import { BookingStatus } from "../../types/booking.ts";
+import { formatDate, formatTime } from "../../utils/timeFormat.ts";
+import BookingFilterBar, { type FilterStatus } from "../../components/BookingFilterBar.tsx";
 
 const StatCard = ({ label, value, accent }: { label: string; value: string | number; accent?: string }) => (
     <div className="bg-[#1a1d26] border border-gray-800 rounded-xl p-4 flex flex-col gap-1">
@@ -30,34 +19,38 @@ const StatCard = ({ label, value, accent }: { label: string; value: string | num
     </div>
 );
 
-// ─── Main page ───────────────────────────────────────────────────────────────
-
 const AdminBookingsPage = () => {
-    // ── state ──
-    const [bookings, setBookings]       = useState<AdminBookingDto[]>([]);
-    const [loading, setLoading]         = useState(true);
-    const [search, setSearch]           = useState('');
-    const [statusFilter, setStatusFilter] = useState<BookingStatus>(null);
-    const [sortBy, setSortBy]           = useState<SortBy>('date');
-    const [isDesc, setIsDesc]           = useState(true);
-    const [sessionFrom, setSessionFrom] = useState('');
-    const [sessionTo, setSessionTo]     = useState('');
-    const [filtersOpen, setFiltersOpen] = useState(false);
-    const [page, setPage]               = useState(1);
+    const [bookings, setBookings]           = useState<AdminBookingDto[]>([]);
+    const [loading, setLoading]             = useState(true);
+    const [search, setSearch]               = useState('');
+    const [activeFilter, setActiveFilter]   = useState<FilterStatus>('ALL');
+    const [sortBy, setSortBy]               = useState<SortBy>('date');
+    const [isDesc, setIsDesc]               = useState(true);
+    const [sessionFrom, setSessionFrom]     = useState('');
+    const [sessionTo, setSessionTo]         = useState('');
+    const [filtersOpen, setFiltersOpen]     = useState(false);
+    const [page, setPage]                   = useState(1);
     const [selectedBooking, setSelectedBooking] = useState<AdminBookingDto | null>(null);
 
     const PAGE_SIZE = 12;
 
-    // ── fetch ──
     const fetchBookings = useCallback(async () => {
         setLoading(true);
         try {
             const params: Record<string, any> = {};
-            if (statusFilter)  params.Status        = statusFilter;
-            if (sortBy)         params.SortBy        = sortBy;
+
+            if (activeFilter === 'PAST') {
+                params.SessionToDate = new Date().toISOString();
+            } else if (activeFilter === 'ACTIVE') {
+                params.SessionFromDate = new Date().toISOString();
+            } else if (activeFilter === 'CANCELLED') {
+                params.Status = BookingStatus.Cancelled;
+            }
+
+            if (sessionFrom) params.SessionFromDate = sessionFrom;
+            if (sessionTo) params.SessionToDate = sessionTo;
+            if (sortBy) params.SortBy = sortBy;
             params.IsDescending = isDesc;
-            if (sessionFrom)    params.SessionFromDate = sessionFrom;
-            if (sessionTo)      params.SessionToDate   = sessionTo;
 
             const res = await api.get<AdminBookingDto[]>('/bookings', { params });
             setBookings(res.data);
@@ -67,11 +60,12 @@ const AdminBookingsPage = () => {
         } finally {
             setLoading(false);
         }
-    }, [statusFilter, sortBy, isDesc, sessionFrom, sessionTo]);
+    }, [activeFilter, sortBy, isDesc, sessionFrom, sessionTo]);
 
     useEffect(() => { fetchBookings(); }, [fetchBookings]);
 
-    // ── client-side search (by id or title) ──
+    console.log(bookings.map(b => b.status));
+
     const filtered = useMemo(() => {
         if (!search) return bookings;
         const q = search.toLowerCase();
@@ -81,19 +75,18 @@ const AdminBookingsPage = () => {
         );
     }, [bookings, search]);
 
-    // ── pagination slice ──
     const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
-    const paginated = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+    const paginated  = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
 
     // ── stats ──
     const stats = useMemo(() => ({
-        total:     bookings.length,
-        inprogress:    bookings.filter(b => b.status === 'Inprogress').length,
-        paid: bookings.filter(b => b.status === 'Paid').length,
-        cancelled: bookings.filter(b => b.status === 'Cancelled').length,
+        total:      bookings.length,
+        inprogress: bookings.filter(b => b.status === BookingStatus.Inprogress).length,
+        paid:       bookings.filter(b => b.status === BookingStatus.Paid).length,
+        cancelled:  bookings.filter(b => b.status === BookingStatus.Cancelled).length,
     }), [bookings]);
 
-    // ── handlers ──
+    // ── sort ──
     const toggleSort = (field: SortBy) => {
         if (sortBy === field) setIsDesc(d => !d);
         else { setSortBy(field); setIsDesc(true); }
@@ -106,36 +99,24 @@ const AdminBookingsPage = () => {
             : <TrendingUp size={14} className="text-red-500" />;
     };
 
-    // ─── render ──────────────────────────────────────────────────────────────
-
     return (
-        <div className="min-h-screen bg-[#0f1117] text-white font-sans">
+        <div className="min-h-screen text-white font-sans">
             <div className="max-w-7xl mx-auto px-4 py-8 space-y-6">
-
-                {/* ── Header ── */}
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                    <h1 className="text-3xl font-black">
-                        Адмін <span className="text-red-600">бронювань</span>
-                    </h1>
-                    <button
-                        onClick={fetchBookings}
-                        className="self-start sm:self-auto px-4 py-2 rounded-lg bg-[#1a1d26] border border-gray-700 text-gray-300 text-sm hover:border-red-600/50 hover:text-white transition-all"
-                    >
-                        Оновити
-                    </button>
-                </div>
-
-                {/* ── Stats row ── */}
+                {/* Stats */}
                 <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-                    <StatCard label="Всього"     value={stats.total}     />
-                    <StatCard label="Активні" value={stats.inprogress} accent="text-emerald-400" />
-                    <StatCard label="Завершені" value={stats.paid} accent="text-blue-400"    />
-                    <StatCard label="Скасовані"  value={stats.cancelled} accent="text-red-400"     />
+                    <StatCard label="Всього"    value={stats.total}      />
+                    <StatCard label="Активні"   value={stats.inprogress} accent="text-emerald-400" />
+                    <StatCard label="Завершені" value={stats.paid}       accent="text-blue-400"    />
+                    <StatCard label="Скасовані" value={stats.cancelled}  accent="text-red-400"    />
                 </div>
 
-                {/* ── Search + filter toggle row ── */}
+                <BookingFilterBar
+                    activeFilter={activeFilter}
+                    onFilterChange={(filter) => { setActiveFilter(filter); setPage(1); }}
+                />
+
+                {/* Search + date filters toggle */}
                 <div className="flex flex-col sm:flex-row gap-3">
-                    {/* search */}
                     <div className="relative flex-1">
                         <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-600" />
                         <input
@@ -152,7 +133,6 @@ const AdminBookingsPage = () => {
                         )}
                     </div>
 
-                    {/* filter toggle */}
                     <button
                         onClick={() => setFiltersOpen(o => !o)}
                         className={`flex items-center gap-2 px-4 py-2.5 rounded-xl border text-sm font-semibold transition-all
@@ -161,42 +141,17 @@ const AdminBookingsPage = () => {
                             : 'bg-[#1a1d26] border-gray-700 text-gray-400 hover:border-red-600/40 hover:text-white'
                         }`}
                     >
-                        <Filter size={16} /> Фільтри
-                        {(statusFilter || sessionFrom || sessionTo) && (
+                        <Filter size={16} /> Дати
+                        {(sessionFrom || sessionTo) && (
                             <span className="ml-1 w-2 h-2 rounded-full bg-red-600 inline-block" />
                         )}
                     </button>
                 </div>
 
-                {/* ── Expanded filters panel ── */}
+                {/* Date range panel */}
                 {filtersOpen && (
-                    <div className="bg-[#1a1d26] border border-gray-800 rounded-2xl p-5 space-y-4 animate-[fadeDown_0.2s_ease]">
-                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-
-                            {/* Status pills */}
-                            <div className="flex flex-col gap-1.5">
-                                <label className="text-xs text-gray-500 uppercase tracking-wider">Статус</label>
-                                <div className="flex flex-wrap gap-2">
-                                    {STATUS_OPTIONS.map(opt => {
-                                        const active = statusFilter === opt.value;
-                                        return (
-                                            <button
-                                                key={String(opt.value)}
-                                                onClick={() => { setStatusFilter(opt.value); setPage(1); }}
-                                                className={`px-3 py-1 rounded-full text-xs font-semibold transition-all
-                                                    ${active
-                                                    ? 'bg-red-600 text-white shadow-md shadow-red-600/25'
-                                                    : 'bg-gray-800 text-gray-400 hover:bg-gray-700 hover:text-white'
-                                                }`}
-                                            >
-                                                {opt.label}
-                                            </button>
-                                        );
-                                    })}
-                                </div>
-                            </div>
-
-                            {/* Session date from */}
+                    <div className="bg-[#1a1d26] border border-gray-800 rounded-2xl p-5 animate-[fadeDown_0.2s_ease]">
+                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                             <div className="flex flex-col gap-1.5">
                                 <label className="text-xs text-gray-500 uppercase tracking-wider">Сеанс від</label>
                                 <input
@@ -206,8 +161,6 @@ const AdminBookingsPage = () => {
                                     className="px-3 py-2 rounded-lg bg-gray-800 border border-gray-700 text-sm text-white focus:outline-none focus:border-red-600/50 transition-colors"
                                 />
                             </div>
-
-                            {/* Session date to */}
                             <div className="flex flex-col gap-1.5">
                                 <label className="text-xs text-gray-500 uppercase tracking-wider">Сеанс до</label>
                                 <input
@@ -217,21 +170,19 @@ const AdminBookingsPage = () => {
                                     className="px-3 py-2 rounded-lg bg-gray-800 border border-gray-700 text-sm text-white focus:outline-none focus:border-red-600/50 transition-colors"
                                 />
                             </div>
-
-                            {/* Reset */}
                             <div className="flex items-end">
                                 <button
-                                    onClick={() => { setStatusFilter(null); setSessionFrom(''); setSessionTo(''); setPage(1); }}
+                                    onClick={() => { setSessionFrom(''); setSessionTo(''); setPage(1); }}
                                     className="px-4 py-2 rounded-lg text-xs text-gray-500 hover:text-red-400 transition-colors"
                                 >
-                                    Сбросити фільтри
+                                    Сбросити дати
                                 </button>
                             </div>
                         </div>
                     </div>
                 )}
 
-                {/* ── Table ── */}
+                {/* Table */}
                 <div className="bg-[#1a1d26] border border-gray-800 rounded-2xl overflow-hidden shadow-xl">
                     <div className="overflow-x-auto">
                         <table className="w-full text-sm">
@@ -259,7 +210,6 @@ const AdminBookingsPage = () => {
                                 <th className="px-4 py-3 w-12" />
                             </tr>
                             </thead>
-
                             <tbody>
                             {loading ? (
                                 <tr>
@@ -275,14 +225,13 @@ const AdminBookingsPage = () => {
                                         <p className="text-gray-500">Немає бронювань</p>
                                     </td>
                                 </tr>
-                            ) : paginated.map((b, i) => (
+                            ) : paginated.map((b) => (
                                 <tr
                                     key={b.id}
                                     className="border-b border-gray-800/60 hover:bg-[#22252f] transition-colors group cursor-pointer"
                                     onClick={() => setSelectedBooking(b)}
                                 >
                                     <td className="px-4 py-3 text-red-600 font-bold">#{b.id}</td>
-
                                     <td className="px-4 py-3">
                                         <div className="flex items-center gap-3">
                                             {b.posterUri ? (
@@ -302,27 +251,21 @@ const AdminBookingsPage = () => {
                                             </div>
                                         </div>
                                     </td>
-
-                                    <td className="px-4 py-3 text-gray-400 font-mono text-xs">{b.userId ?? '-'}</td>
-
+                                    <td className="px-4 py-3 text-gray-400 font-mono text-xs">{b.userId}</td>
                                     <td className="px-4 py-3 text-gray-300 whitespace-nowrap">
                                         <p>{formatDate(b.startTime)}</p>
                                         <p className="text-gray-600 text-xs">{formatTime(b.startTime)}</p>
                                     </td>
-
                                     <td className="px-4 py-3 text-gray-300 whitespace-nowrap">
                                         <p>{formatDate(b.bookingTime)}</p>
                                         <p className="text-gray-600 text-xs">{formatTime(b.bookingTime)}</p>
                                     </td>
-
                                     <td className="px-4 py-3">
                                             <span className={`inline-block px-3 py-1 rounded-full text-xs font-semibold border ${getStatusColor(b.status)}`}>
                                                 {getStatusText(b.status)}
                                             </span>
                                     </td>
-
                                     <td className="px-4 py-3 text-right text-red-500 font-black">{b.totalPrice}₴</td>
-
                                     <td className="px-4 py-3 text-center opacity-0 group-hover:opacity-100 transition-opacity">
                                         <button
                                             onClick={e => { e.stopPropagation(); setSelectedBooking(b); }}
@@ -337,7 +280,7 @@ const AdminBookingsPage = () => {
                         </table>
                     </div>
 
-                    {/* ── Pagination ── */}
+                    {/* Pagination */}
                     {totalPages > 1 && (
                         <div className="flex items-center justify-between px-4 py-3 border-t border-gray-800 bg-[#161820]">
                             <span className="text-xs text-gray-500">
@@ -388,7 +331,7 @@ const AdminBookingsPage = () => {
                 </div>
             </div>
 
-            {/* ── Detail Modal ── */}
+            {/* Detail Modal */}
             {selectedBooking && (
                 <div
                     className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm px-4"
@@ -398,7 +341,6 @@ const AdminBookingsPage = () => {
                         className="bg-[#1a1d26] border border-gray-800 rounded-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto shadow-2xl"
                         onClick={e => e.stopPropagation()}
                     >
-                        {/* modal header */}
                         <div className="flex items-center justify-between p-5 border-b border-gray-800 bg-gradient-to-r from-red-600/10 to-transparent rounded-t-2xl">
                             <h2 className="text-lg font-black">
                                 Бронювання <span className="text-red-600">#{selectedBooking.id}</span>
@@ -413,9 +355,7 @@ const AdminBookingsPage = () => {
                             </div>
                         </div>
 
-                        {/* modal body */}
                         <div className="p-5 space-y-5">
-                            {/* movie row */}
                             <div className="flex gap-4">
                                 {selectedBooking.posterUri ? (
                                     <img src={selectedBooking.posterUri} alt={selectedBooking.title} className="w-20 h-32 object-cover rounded-lg bg-gray-900 shrink-0" />
@@ -436,7 +376,7 @@ const AdminBookingsPage = () => {
                                     <div className="space-y-1.5 text-sm">
                                         <div className="flex items-center gap-2 text-gray-400">
                                             <User size={14} className="text-red-600" />
-                                            <span>User ID: <span className="text-gray-200 font-mono">{selectedBooking.UserId ?? '—'}</span></span>
+                                            <span>User ID: <span className="text-gray-200 font-mono">{selectedBooking.userId}</span></span>
                                         </div>
                                         <div className="flex items-center gap-2 text-gray-400">
                                             <Calendar size={14} className="text-red-600" />
@@ -470,7 +410,6 @@ const AdminBookingsPage = () => {
                                 </div>
                             </div>
 
-                            {/* total */}
                             <div className="flex items-center justify-between pt-4 border-t border-gray-700">
                                 <span className="text-gray-500 text-sm">Загальна сума</span>
                                 <span className="text-3xl font-black text-red-600">{selectedBooking.totalPrice}₴</span>
