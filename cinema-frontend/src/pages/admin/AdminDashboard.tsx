@@ -82,7 +82,7 @@ const AdminDashboard = () => {
                                 <div className="flex items-center gap-3"><Calendar size={18} /> <span>Сеанси</span></div>
                             </Link>
                             <Link to="/admin/halls" className={navItemClass('/admin/halls')}>
-                                <div className="flex items-center gap-3"><LayoutGrid size={18} /> <span>Кінозали</span></div>
+                                <div className="flex items-center gap-3"><LayoutGrid size={18} /> <span>Зали</span></div>
                             </Link>
                             <Link to="/admin/tickets" className={navItemClass('/admin/tickets')}>
                                 <div className="flex items-center gap-3"><Ticket size={18} /> <span>Квитки / Продажі</span></div>

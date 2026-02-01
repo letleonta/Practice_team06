@@ -229,7 +229,7 @@ const AdminHalls = () => {
                 {/* ПРАВА ЧАСТИНА: СПИСОК */}
                 <div className="w-full lg:w-2/3 bg-[#1a1d26] rounded-[40px] border border-gray-800 shadow-2xl overflow-hidden flex flex-col min-h-[600px]">
                     <div className="p-8 border-b border-gray-800 bg-gray-900/30 flex flex-col md:flex-row justify-between items-center gap-4">
-                        <h2 className="font-black flex items-center gap-3 text-xl uppercase tracking-tighter italic"><Layers className="text-red-600" size={24} /> Усі кінозали</h2>
+                        <h2 className="font-black flex items-center gap-3 text-xl uppercase tracking-tighter italic"><Layers className="text-red-600" size={24} /> Усі зали</h2>
                         <div className="flex gap-3 w-full md:w-auto">
                             <div className="relative flex-1 md:w-64">
                                 <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500" size={18} />

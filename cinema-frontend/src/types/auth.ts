@@ -1,6 +1,6 @@
 ﻿export interface LoginResponseDto {
     token: string;
-    expiration: string; // DateTime в C# прийде як рядок ISO
+    expiration: string;
     email: string;
 }
 

@@ -2,7 +2,7 @@
 import { useForm } from 'react-hook-form';
 import api from '../../api/axiosInstance';
 import type { CreateMovieDto, Movie } from '../../types/movie';
-import { Film, Image, Info, Search, Users, Edit, Trash2, ListFilter, X, Calendar, DollarSign, Clock, Plus, ArrowLeft, Save, Star } from 'lucide-react';
+import { Film, Image, Info, Search, Users, Edit, Trash2, ListFilter, Calendar, DollarSign, Clock, Plus, ArrowLeft, Save, Star } from 'lucide-react';
 
 const AdminMovies = () => {
     const { register, handleSubmit, reset, setValue, watch, formState: { errors } } = useForm<CreateMovieDto>();
