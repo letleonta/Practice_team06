@@ -185,7 +185,7 @@ const SessionPage = () => {
                             </div>
                             <div className="flex items-center gap-2">
                                 <div className="w-5 h-5 rounded-md bg-gray-800 border border-gray-800" />
-                                <span className="text-gray-500 text-xs">Занято</span>
+                                <span className="text-gray-500 text-xs">Зайнято</span>
                             </div>
                         </div>
 
@@ -233,7 +233,7 @@ const SessionPage = () => {
                                     <div className="w-12 h-12 rounded-full bg-gray-800 flex items-center justify-center mx-auto mb-3">
                                         <MapPin size={22} className="text-gray-600" />
                                     </div>
-                                    <p className="text-gray-500 text-sm">Виберете місця на схемі залу</p>
+                                    <p className="text-gray-500 text-sm">Виберіть місця на схемі залу</p>
                                 </div>
                             ) : (
                                 <>
@@ -308,7 +308,7 @@ const SessionPage = () => {
                                                 Оформлення...
                                             </>
                                         ) : !user ? (
-                                            'Авторізуйтесь для покупки'
+                                            'Авторизуйтесь для покупки'
                                         ) : (
                                             <>
                                                 Купити квитки

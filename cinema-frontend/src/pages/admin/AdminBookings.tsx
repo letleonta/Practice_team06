@@ -11,14 +11,12 @@ import type { AdminBookingDto, BookingFilterDto } from "../../types/booking.ts";
 import { BookingService } from "../../services/booking.service";
 import { formatDate, formatTime } from "../../utils/formatTime";
 
-//  types local 
 type StatusFilter = BookingStatus | 'ALL';
-type SortField   = 'date' | 'status' | 'userId';   // exact strings backend expects
+type SortField   = 'date' | 'status' | 'userId';
 
-
-//  main 
+//  main
 const AdminBookingsPage = () => {
-    //  filter state 
+    //  filter state
     const [statusFilter,    setStatusFilter]    = useState<StatusFilter>('ALL');
     const [sessionFrom,     setSessionFrom]     = useState('');
     const [sessionTo,       setSessionTo]       = useState('');
@@ -26,11 +24,11 @@ const AdminBookingsPage = () => {
     const [bookingTo,       setBookingTo]       = useState('');
     const [userIdInput,     setUserIdInput]     = useState('');
 
-    //  sort state 
+    //  sort state
     const [sortBy,  setSortBy]  = useState<SortField>('date');
     const [isDesc,  setIsDesc]  = useState(true);
 
-    //  ui state 
+    //  ui state
     const [bookings,        setBookings]        = useState<AdminBookingDto[]>([]);
     const [loading,         setLoading]         = useState(true);
     const [search,          setSearch]          = useState('');
@@ -40,7 +38,7 @@ const AdminBookingsPage = () => {
 
     const PAGE_SIZE = 12;
 
-    //  fetch 
+    //  fetch
     const fetchBookings = useCallback(async () => {
         setLoading(true);
         try {
@@ -67,7 +65,7 @@ const AdminBookingsPage = () => {
 
     useEffect(() => { fetchBookings(); }, [fetchBookings]);
 
-    //  client search (по ID/назві) 
+    //  client search (по ID/назві)
     const filtered = useMemo(() => {
         if (!search) return bookings;
         const q = search.toLowerCase();
@@ -77,11 +75,11 @@ const AdminBookingsPage = () => {
         );
     }, [bookings, search]);
 
-    //  pagination 
+    //  pagination
     const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
     const paginated  = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
 
-    //  stats 
+    //  stats
     const stats = useMemo(() => ({
         total:      bookings.length,
         inprogress: bookings.filter(b => b.status === BookingStatus.Inprogress).length,
@@ -89,7 +87,7 @@ const AdminBookingsPage = () => {
         cancelled:  bookings.filter(b => b.status === BookingStatus.Cancelled).length,
     }), [bookings]);
 
-    //  sort 
+    //  sort
     const toggleSort = (field: SortField) => {
         if (sortBy === field) setIsDesc(d => !d);
         else { setSortBy(field); setIsDesc(true); }
@@ -102,7 +100,7 @@ const AdminBookingsPage = () => {
             : <TrendingUp size={14} className="text-red-500" />;
     };
 
-    //  helpers 
+    //  helpers
     const hasActiveFilters = statusFilter !== 'ALL' || sessionFrom || sessionTo || bookingFrom || bookingTo || userIdInput;
 
     const resetAllFilters = () => {
@@ -115,7 +113,7 @@ const AdminBookingsPage = () => {
         setPage(1);
     };
 
-    //  status pills config 
+    //  status pills config
     const STATUS_PILLS: { value: StatusFilter; label: string; color: string }[] = [
         { value: 'ALL',                      label: 'Усі',         color: 'text-white' },
         { value: BookingStatus.Inprogress,   label: 'В процесі',   color: 'text-emerald-400' },
@@ -123,7 +121,7 @@ const AdminBookingsPage = () => {
         { value: BookingStatus.Cancelled,    label: 'Скасовані',   color: 'text-red-400' },
     ];
 
-    //  render 
+    //  render
     return (
         <div className="min-h-screen text-white font-sans">
             <div className="max-w-7xl mx-auto px-4 py-8 space-y-6">
