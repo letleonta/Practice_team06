@@ -69,6 +69,10 @@ public partial class PostgresContext : IdentityDbContext<User, IdentityRole<int>
                 .HasForeignKey(d => d.UserId)
                 .OnDelete(DeleteBehavior.Restrict)
                 .HasConstraintName("FK_BookingsUserId");
+            
+            entity.HasOne(d => d.Session).WithMany(p => p.Bookings)
+                .HasForeignKey(d => d.SessionId)
+                .OnDelete(DeleteBehavior.Restrict);
         });
         
         modelBuilder.Entity<Director>(entity =>

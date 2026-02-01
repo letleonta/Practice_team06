@@ -20,7 +20,7 @@ namespace Practice_team06.Controllers
         
         // GET: api/tickets?bookingId=5
         [HttpGet]
-        [Authorize(Roles = "Admin,Customer")]
+        [Authorize(Roles = "Admin,Customer, Manager")]
         public async Task<ActionResult<IEnumerable<TicketDto>>> GetTickets([FromQuery] int? bookingId)
         {
             if (User.IsInRole("Admin"))
@@ -56,7 +56,7 @@ namespace Practice_team06.Controllers
         
         // GET: api/tickets/5
         [HttpGet("{ticketId}")]
-        [Authorize(Roles = "Admin, Customer")]
+        [Authorize(Roles = "Admin, Customer, Manager")]
         public async Task<IActionResult> GetTicketById(int ticketId)
         {
             if (User.IsInRole("Admin"))
@@ -85,44 +85,9 @@ namespace Practice_team06.Controllers
             return Forbid();
         }
         
-        // POST: api/tickets?bookingId=5
-        [HttpPost]
-        [Authorize(Roles = "Customer")]
-        public async Task<IActionResult> CreateTicket([FromQuery] int bookingId, CreateTicketDto dto)
-        {
-            var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier);
-            if (userIdClaim == null)
-                return Unauthorized("User is not authenticated");
-
-            var userId = int.Parse(userIdClaim.Value);
-
-            try
-            {
-                var ticket = await _ticketService.CreateTicketAsync(
-                    userId,
-                    bookingId,
-                    dto
-                );
-
-                return Ok(ticket);
-            }
-            catch (KeyNotFoundException keyNotFoundException)
-            {
-                return NotFound(keyNotFoundException.Message);
-            }
-            catch (InvalidOperationException invalidOperationException)
-            {
-                return BadRequest(invalidOperationException.Message);
-            }
-            catch (DbUpdateException dbUpdateException)
-            {
-                return BadRequest(dbUpdateException.Message);
-            }
-        }
-        
         // DELETE: api/tickets/5
         [HttpDelete("{ticketId}")]
-        [Authorize(Roles = "Admin")]
+        [Authorize(Roles = "Admin, Manager")]
         public async Task<IActionResult> DeleteTicket(int ticketId)
         {
             try

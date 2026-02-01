@@ -48,7 +48,7 @@ public class MoviesController : ControllerBase
 
     // Тільки Адмін може створювати
     [HttpPost]
-    [Authorize(Roles = "Admin")]
+    [Authorize(Roles = "Admin, Manager")]
     public async Task<ActionResult<MovieDto>> Create([FromBody] CreateMovieDto dto)
     {
         if (!ModelState.IsValid) return BadRequest(ModelState);
@@ -59,7 +59,7 @@ public class MoviesController : ControllerBase
 
     // Тільки Адмін може видаляти
     [HttpDelete("{id}")]
-    [Authorize(Roles = "Admin")]
+    [Authorize(Roles = "Admin, Manager")]
     public async Task<IActionResult> Delete(int id)
     {
         await _movieService.DeleteMovieAsync(id);
@@ -67,7 +67,7 @@ public class MoviesController : ControllerBase
     }
     // Тільки Адмін може оновлювати
     [HttpPut("{id}")]
-    [Authorize(Roles = "Admin")]
+    [Authorize(Roles = "Admin, Manager")]
     public async Task<ActionResult<MovieDto>> Update(int id, [FromBody] CreateMovieDto dto)
     {
         if (!ModelState.IsValid) return BadRequest(ModelState);

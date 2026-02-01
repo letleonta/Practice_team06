@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using Practice_team06.DTOs.Session;
 using Practice_team06.Services;
 
@@ -38,8 +39,9 @@ public class SessionsController : ControllerBase
 
     //АДМІН ЧАСТИНА 
 
-    //[Authorize(Roles = "Admin")]
+    
     [HttpPost]
+    [Authorize(Roles = "Admin, Manager")]
     public async Task<ActionResult<SessionDto>> Create([FromBody] CreateSessionDto dto)
     {
         try 
@@ -54,16 +56,18 @@ public class SessionsController : ControllerBase
         }
     }
 
-    //[Authorize(Roles = "Admin")]
+    
     [HttpDelete("{id}")]
+    [Authorize(Roles = "Admin, Manager")]
     public async Task<IActionResult> Delete(int id)
     {
         await _sessionService.DeleteSessionAsync(id);
         return NoContent();
     }
     
-    // [Authorize(Roles = "Admin")]
+    
     [HttpPut("{id}")]
+    [Authorize(Roles = "Admin, Manager")]
     public async Task<ActionResult<SessionDto>> Update(int id, [FromBody] CreateSessionDto dto)
     {
         try

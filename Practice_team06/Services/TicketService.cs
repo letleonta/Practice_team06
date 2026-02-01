@@ -41,6 +41,7 @@ public class TicketService : ITicketService
             throw new KeyNotFoundException($"Booking with ID {bookingId} not found.");
         
         var tickets = await _context.Tickets
+            .Include(ticket => ticket.Seat)
             .Where(t => t.BookingId == booking.Id)
             .Select(t => AdminTicketDto.TicketToAdminTicketDto(t, booking.UserId))
             .ToListAsync();
@@ -57,6 +58,7 @@ public class TicketService : ITicketService
             throw new KeyNotFoundException($"Booking with ID {bookingId} for user {userId} not found.");
         
         var tickets = await _context.Tickets
+            .Include(ticket => ticket.Seat)
             .Where(t => t.BookingId == booking.Id)
             .Select(t => TicketBookingDto.TicketToTicketBookingDto(t))
             .ToListAsync();
@@ -67,6 +69,7 @@ public class TicketService : ITicketService
     public async Task<List<AdminTicketDto>> GetAllTicketsAsync()
     {
         var tickets = await _context.Tickets
+            .Include(ticket => ticket.Seat)
             .Select(ticket => AdminTicketDto.TicketToAdminTicketDto(ticket, ticket.Booking.UserId))
             .ToListAsync();
         
@@ -76,7 +79,8 @@ public class TicketService : ITicketService
     public async Task<AdminTicketDto> GetTicketByIdAsync(int ticketId)
     {
         var ticket = await _context.Tickets
-            .Include(t => t.Booking)
+            .Include(ticket => ticket.Booking)
+            .Include(ticket => ticket.Seat)
             .FirstOrDefaultAsync(t => t.Id == ticketId);
 
         if (ticket == null)
@@ -88,46 +92,14 @@ public class TicketService : ITicketService
     public async Task<TicketDto> GetTicketForUserByIdAsync(int userId, int ticketId)
     {
         var ticket = await _context.Tickets
-            .Include(t => t.Booking)
+            .Include(ticket => ticket.Booking)
+            .Include(ticket => ticket.Seat)
             .FirstOrDefaultAsync(t => t.Id == ticketId && t.Booking.UserId == userId);
 
         if (ticket == null)
             throw new KeyNotFoundException($"Ticket with ID {ticketId} for user {userId} not found.");
 
         return TicketDto.TicketToTicketDto(ticket);
-    }
-
-    public async Task<TicketDto> CreateTicketAsync(int userId, int bookingId, CreateTicketDto dto)
-    {
-        var booking = await _context.Bookings
-            .FirstOrDefaultAsync(b => b.Id == bookingId && b.UserId == userId);
-
-        if (booking == null)
-            throw new KeyNotFoundException($"Booking with ID {bookingId} for user {userId} not found.");
-        if (booking.Status != BookingStatus.Inprogress)
-            throw new InvalidOperationException($"Booking with ID {bookingId} is cancelled or already paid");
-
-        try
-        {
-            var price = await CalculatePriceAsync(dto.SessionId, dto.SeatId);
-            
-            var ticket = new Ticket
-            {
-                BookingId = bookingId,
-                SessionId = dto.SessionId,
-                SeatId = dto.SeatId,
-                ActualPrice = price
-            };
-        
-            _context.Tickets.Add(ticket);
-            await _context.SaveChangesAsync();
-
-            return TicketDto.TicketToTicketDto(ticket);
-        }
-        catch (KeyNotFoundException)
-        {
-            throw new KeyNotFoundException($"Session with ID {dto.SessionId} does not exist.");
-        }
     }
 
     public async Task DeleteTicketAsync(int ticketId)

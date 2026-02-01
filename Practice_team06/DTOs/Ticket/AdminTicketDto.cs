@@ -12,12 +12,13 @@ public class AdminTicketDto
     [Required]
     public int SessionId { get; set; }
     [Required]
-    public int SeatId { get; set; }
-    [Required]
     [Range(0, 10000)]
     public decimal ActualPrice { get; set; }
     [Required]
     public bool IsActive { get; set; }
+    public string? HallName { get; set; } = null!;
+    public short? RowNumber { get; set; }
+    public short? SeatNumber { get; set; }
     
     public static AdminTicketDto TicketToAdminTicketDto(Models.Ticket ticket, int userId)
     {
@@ -29,7 +30,9 @@ public class AdminTicketDto
             ActualPrice = ticket.ActualPrice,
             IsActive = ticket.IsActive,
             SessionId = ticket.SessionId,
-            SeatId = ticket.SeatId
+            HallName = ticket.Seat.Hall.Name,
+            RowNumber = ticket.Seat.RowNumber,
+            SeatNumber = ticket.Seat.SeatNumber
         };
     }
 }
