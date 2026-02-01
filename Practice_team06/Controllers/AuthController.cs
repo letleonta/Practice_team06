@@ -1,7 +1,10 @@
 ﻿using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using Practice_team06.DTOs.Auth;
+using Practice_team06.Models;
 using Practice_team06.Services;
 
 namespace Practice_team06.Controllers;
@@ -123,7 +126,7 @@ public class AuthController : ControllerBase
     /// Доступ: ТІЛЬКИ АДМІНІСТРАТОР.
     /// </summary>
     [HttpPost("assign-role")]
-    [Authorize(Roles = "Admin")]
+    [Authorize(Roles = "Admin, Manager")] 
     public async Task<IActionResult> AssignRole([FromQuery] string email, [FromQuery] string roleName)
     {
         var result = await _authService.AssignRoleAsync(email, roleName);
@@ -141,7 +144,7 @@ public class AuthController : ControllerBase
     /// Доступ: ТІЛЬКИ АДМІНІСТРАТОР.
     /// </summary>
     [HttpGet("users")]
-    [Authorize(Roles = "Admin")]
+    [Authorize(Roles = "Admin, Manager")] 
     public async Task<IActionResult> GetUsers()
     {
         var users = await _authService.GetAllUsersWithRolesAsync();
