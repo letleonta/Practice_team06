@@ -1,7 +1,10 @@
 ﻿using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using Practice_team06.DTOs.Auth;
+using Practice_team06.Models;
 using Practice_team06.Services;
 
 namespace Practice_team06.Controllers;
