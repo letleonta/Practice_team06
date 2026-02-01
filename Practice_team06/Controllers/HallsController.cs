@@ -17,8 +17,7 @@ public class HallsController : ControllerBase
         _hallService = hallService;
         _seatService = seatService;
     }
-
-    public HallsController(IHallService hallService) => _hallService = hallService;
+    
     
     [HttpGet("{id}/seats")]
     public async Task<IActionResult> GetHallSeats(int id)
@@ -35,11 +34,11 @@ public class HallsController : ControllerBase
     
 
     [HttpGet]
-    [Authorize(Roles = "Admin, Customer")]
+    [Authorize(Roles = "Admin, Customer, Manager")]
     public async Task<IActionResult> GetAll() => Ok(await _hallService.GetAllAsync());
 
     [HttpGet("{id}")]
-    [Authorize(Roles = "Admin, Customer")]
+    [Authorize(Roles = "Admin, Customer, Manager")]
     public async Task<IActionResult> GetById(short id)
     {
         var hall = await _hallService.GetByIdAsync(id);
@@ -47,7 +46,7 @@ public class HallsController : ControllerBase
     }
 
     [HttpPost]
-    [Authorize(Roles = "Admin")]
+    [Authorize(Roles = "Admin, Manager")]
     public async Task<IActionResult> Create(CreateHallDto dto)
     {
         var result = await _hallService.CreateAsync(dto);
@@ -55,7 +54,7 @@ public class HallsController : ControllerBase
     }
 
     [HttpDelete("{id}")]
-    [Authorize(Roles = "Admin")]
+    [Authorize(Roles = "Admin, Manager")]
     public async Task<IActionResult> Delete(short id)
     {
         var result = await _hallService.DeleteAsync(id);
@@ -63,7 +62,7 @@ public class HallsController : ControllerBase
     }
     
     [HttpPost("generate-standard-seats")]
-    [Authorize(Roles = "Admin")]
+    [Authorize(Roles = "Admin, Manager")]
     public async Task<IActionResult> GenerateStandardSeats(GenerateStandardSeatsDto dto)
     {
         var count = await _hallService.GenerateStandardSeatsAsync(dto);
@@ -72,7 +71,7 @@ public class HallsController : ControllerBase
     }
     
     [HttpPost("generate-flexible-seats")]
-    [Authorize(Roles = "Admin")]
+    [Authorize(Roles = "Admin, Manager")]
     public async Task<IActionResult> GenerateFlexibleSeats(GenerateFlexibleSeatsDto dto)
     {
         var count = await _hallService.GenerateFlexibleSeatsAsync(dto);
