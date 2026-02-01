@@ -6,3 +6,4 @@ appsettings.json
 /cinema-frontend/dist/
 /cinema-frontend/.env.local
 /cinema-frontend/.vscode/
+**/wwwroot/uploads/*
