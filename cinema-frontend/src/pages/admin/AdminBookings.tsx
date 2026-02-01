@@ -2,70 +2,72 @@ import { useEffect, useState, useCallback, useMemo } from 'react';
 import {
     Search, Filter, ArrowUpDown, X, Eye,
     Calendar, Clock, User, Film, Ticket as TicketIcon,
-    ArrowLeft, ArrowRight, Loader2, TrendingDown, TrendingUp
+    ArrowLeft, ArrowRight, Loader2, TrendingDown, TrendingUp, ChevronDown
 } from 'lucide-react';
-import { getStatusColor, getStatusText } from '../../utils/bookingStatus';
-import { getAgeRestrictionText } from '../../utils/ageRestriction';
-import api from '../../api/axiosInstance';
-import type { AdminBookingDto, SortBy } from "../../types/booking.ts";
+import { getStatusColor, getStatusText } from '../../utils/formatBookingStatus';
+import { getAgeRestrictionText } from '../../utils/formatAgeRestriction';
 import { BookingStatus } from "../../types/booking.ts";
-import { formatDate, formatTime } from "../../utils/timeFormat.ts";
-import BookingFilterBar, { type FilterStatus } from "../../components/BookingFilterBar.tsx";
+import type { AdminBookingDto, BookingFilterDto } from "../../types/booking.ts";
+import { BookingService } from "../../services/booking.service";
+import { formatDate, formatTime } from "../../utils/formatTime";
 
-const StatCard = ({ label, value, accent }: { label: string; value: string | number; accent?: string }) => (
-    <div className="bg-[#1a1d26] border border-gray-800 rounded-xl p-4 flex flex-col gap-1">
-        <span className="text-gray-500 text-xs uppercase tracking-wider">{label}</span>
-        <span className={`text-2xl font-black ${accent || 'text-white'}`}>{value}</span>
-    </div>
-);
+//  types local 
+type StatusFilter = BookingStatus | 'ALL';
+type SortField   = 'date' | 'status' | 'userId';   // exact strings backend expects
 
+
+//  main 
 const AdminBookingsPage = () => {
-    const [bookings, setBookings]           = useState<AdminBookingDto[]>([]);
-    const [loading, setLoading]             = useState(true);
-    const [search, setSearch]               = useState('');
-    const [activeFilter, setActiveFilter]   = useState<FilterStatus>('ALL');
-    const [sortBy, setSortBy]               = useState<SortBy>('date');
-    const [isDesc, setIsDesc]               = useState(true);
-    const [sessionFrom, setSessionFrom]     = useState('');
-    const [sessionTo, setSessionTo]         = useState('');
-    const [filtersOpen, setFiltersOpen]     = useState(false);
-    const [page, setPage]                   = useState(1);
+    //  filter state 
+    const [statusFilter,    setStatusFilter]    = useState<StatusFilter>('ALL');
+    const [sessionFrom,     setSessionFrom]     = useState('');
+    const [sessionTo,       setSessionTo]       = useState('');
+    const [bookingFrom,     setBookingFrom]     = useState('');
+    const [bookingTo,       setBookingTo]       = useState('');
+    const [userIdInput,     setUserIdInput]     = useState('');
+
+    //  sort state 
+    const [sortBy,  setSortBy]  = useState<SortField>('date');
+    const [isDesc,  setIsDesc]  = useState(true);
+
+    //  ui state 
+    const [bookings,        setBookings]        = useState<AdminBookingDto[]>([]);
+    const [loading,         setLoading]         = useState(true);
+    const [search,          setSearch]          = useState('');
+    const [filtersOpen,     setFiltersOpen]     = useState(false);
+    const [page,            setPage]            = useState(1);
     const [selectedBooking, setSelectedBooking] = useState<AdminBookingDto | null>(null);
 
     const PAGE_SIZE = 12;
 
+    //  fetch 
     const fetchBookings = useCallback(async () => {
         setLoading(true);
         try {
-            const params: Record<string, any> = {};
+            const filter: BookingFilterDto = {
+                Status:            statusFilter !== 'ALL' ? statusFilter : undefined,
+                SessionFromDate:   sessionFrom || undefined,
+                SessionToDate:     sessionTo   || undefined,
+                BookingFromDate:   bookingFrom || undefined,
+                BookingToDate:     bookingTo   || undefined,
+                UserId:            userIdInput && !isNaN(Number(userIdInput)) ? Number(userIdInput) : undefined,
+                SortBy:            sortBy,
+                IsDescending:      isDesc,
+            };
 
-            if (activeFilter === 'PAST') {
-                params.SessionToDate = new Date().toISOString();
-            } else if (activeFilter === 'ACTIVE') {
-                params.SessionFromDate = new Date().toISOString();
-            } else if (activeFilter === 'CANCELLED') {
-                params.Status = BookingStatus.Cancelled;
-            }
-
-            if (sessionFrom) params.SessionFromDate = sessionFrom;
-            if (sessionTo) params.SessionToDate = sessionTo;
-            if (sortBy) params.SortBy = sortBy;
-            params.IsDescending = isDesc;
-
-            const res = await api.get<AdminBookingDto[]>('/bookings', { params });
-            setBookings(res.data);
+            const data = await BookingService.getAllBookings(filter);
+            setBookings(data);
             setPage(1);
         } catch (e) {
             console.error('Fetch error', e);
         } finally {
             setLoading(false);
         }
-    }, [activeFilter, sortBy, isDesc, sessionFrom, sessionTo]);
+    }, [statusFilter, sessionFrom, sessionTo, bookingFrom, bookingTo, userIdInput, sortBy, isDesc]);
 
     useEffect(() => { fetchBookings(); }, [fetchBookings]);
 
-    console.log(bookings.map(b => b.status));
-
+    //  client search (по ID/назві) 
     const filtered = useMemo(() => {
         if (!search) return bookings;
         const q = search.toLowerCase();
@@ -75,10 +77,11 @@ const AdminBookingsPage = () => {
         );
     }, [bookings, search]);
 
+    //  pagination 
     const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
     const paginated  = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
 
-    // ── stats ──
+    //  stats 
     const stats = useMemo(() => ({
         total:      bookings.length,
         inprogress: bookings.filter(b => b.status === BookingStatus.Inprogress).length,
@@ -86,37 +89,76 @@ const AdminBookingsPage = () => {
         cancelled:  bookings.filter(b => b.status === BookingStatus.Cancelled).length,
     }), [bookings]);
 
-    // ── sort ──
-    const toggleSort = (field: SortBy) => {
+    //  sort 
+    const toggleSort = (field: SortField) => {
         if (sortBy === field) setIsDesc(d => !d);
         else { setSortBy(field); setIsDesc(true); }
     };
 
-    const SortIcon = ({ field }: { field: SortBy }) => {
+    const SortIcon = ({ field }: { field: SortField }) => {
         if (sortBy !== field) return <ArrowUpDown size={14} className="text-gray-600" />;
         return isDesc
             ? <TrendingDown size={14} className="text-red-500" />
             : <TrendingUp size={14} className="text-red-500" />;
     };
 
+    //  helpers 
+    const hasActiveFilters = statusFilter !== 'ALL' || sessionFrom || sessionTo || bookingFrom || bookingTo || userIdInput;
+
+    const resetAllFilters = () => {
+        setStatusFilter('ALL');
+        setSessionFrom('');
+        setSessionTo('');
+        setBookingFrom('');
+        setBookingTo('');
+        setUserIdInput('');
+        setPage(1);
+    };
+
+    //  status pills config 
+    const STATUS_PILLS: { value: StatusFilter; label: string; color: string }[] = [
+        { value: 'ALL',                      label: 'Усі',         color: 'text-white' },
+        { value: BookingStatus.Inprogress,   label: 'В процесі',   color: 'text-emerald-400' },
+        { value: BookingStatus.Paid,         label: 'Оплачені',    color: 'text-blue-400' },
+        { value: BookingStatus.Cancelled,    label: 'Скасовані',   color: 'text-red-400' },
+    ];
+
+    //  render 
     return (
         <div className="min-h-screen text-white font-sans">
             <div className="max-w-7xl mx-auto px-4 py-8 space-y-6">
-                {/* Stats */}
-                <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-                    <StatCard label="Всього"    value={stats.total}      />
-                    <StatCard label="Активні"   value={stats.inprogress} accent="text-emerald-400" />
-                    <StatCard label="Завершені" value={stats.paid}       accent="text-blue-400"    />
-                    <StatCard label="Скасовані" value={stats.cancelled}  accent="text-red-400"    />
+                {/*  Status pills  */}
+                <div className="flex flex-wrap gap-2">
+                    {STATUS_PILLS.map(pill => {
+                        const active = statusFilter === pill.value;
+                        return (
+                            <button
+                                key={pill.value}
+                                onClick={() => { setStatusFilter(pill.value); setPage(1); }}
+                                className={`px-5 py-2 rounded-full text-sm font-semibold transition-all duration-200
+                                    ${active
+                                    ? 'bg-red-600 text-white shadow-lg shadow-red-600/25 scale-105'
+                                    : 'bg-[#1a1d26] border border-gray-700 hover:border-red-600/50 hover:text-white ' + pill.color
+                                }`}
+                            >
+                                {pill.label}
+                                {/* count badge */}
+                                <span className={`ml-2 text-xs ${active ? 'text-red-200' : 'text-gray-600'}`}>
+                                    {pill.value === 'ALL'
+                                        ? stats.total
+                                        : pill.value === BookingStatus.Inprogress ? stats.inprogress
+                                            : pill.value === BookingStatus.Paid      ? stats.paid
+                                                : stats.cancelled
+                                    }
+                                </span>
+                            </button>
+                        );
+                    })}
                 </div>
 
-                <BookingFilterBar
-                    activeFilter={activeFilter}
-                    onFilterChange={(filter) => { setActiveFilter(filter); setPage(1); }}
-                />
-
-                {/* Search + date filters toggle */}
+                {/*  Search + Filters toggle  */}
                 <div className="flex flex-col sm:flex-row gap-3">
+                    {/* search */}
                     <div className="relative flex-1">
                         <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-600" />
                         <input
@@ -133,6 +175,7 @@ const AdminBookingsPage = () => {
                         )}
                     </div>
 
+                    {/* filters toggle button */}
                     <button
                         onClick={() => setFiltersOpen(o => !o)}
                         className={`flex items-center gap-2 px-4 py-2.5 rounded-xl border text-sm font-semibold transition-all
@@ -141,17 +184,44 @@ const AdminBookingsPage = () => {
                             : 'bg-[#1a1d26] border-gray-700 text-gray-400 hover:border-red-600/40 hover:text-white'
                         }`}
                     >
-                        <Filter size={16} /> Дати
-                        {(sessionFrom || sessionTo) && (
+                        <Filter size={16} /> Фільтри
+                        <ChevronDown size={14} className={`transition-transform ${filtersOpen ? 'rotate-180' : ''}`} />
+                        {hasActiveFilters && !filtersOpen && (
                             <span className="ml-1 w-2 h-2 rounded-full bg-red-600 inline-block" />
                         )}
                     </button>
+
+                    {hasActiveFilters && (
+                        <button
+                            onClick={resetAllFilters}
+                            className="px-4 py-2.5 rounded-xl border border-gray-700 bg-[#1a1d26] text-xs text-gray-500 hover:text-red-400 hover:border-red-600/40 transition-all"
+                        >
+                            Скинути все
+                        </button>
+                    )}
                 </div>
 
-                {/* Date range panel */}
+                {/*  Filters panel  */}
                 {filtersOpen && (
                     <div className="bg-[#1a1d26] border border-gray-800 rounded-2xl p-5 animate-[fadeDown_0.2s_ease]">
-                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-4 gap-y-5">
+
+                            {/* User ID */}
+                            <div className="flex flex-col gap-1.5">
+                                <label className="text-xs text-gray-500 uppercase tracking-wider">User ID</label>
+                                <div className="relative">
+                                    <User size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-600" />
+                                    <input
+                                        type="number"
+                                        placeholder="Введіть ID"
+                                        value={userIdInput}
+                                        onChange={e => { setUserIdInput(e.target.value); setPage(1); }}
+                                        className="w-full pl-8 pr-3 py-2 rounded-lg bg-gray-800 border border-gray-700 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-red-600/50 transition-colors"
+                                    />
+                                </div>
+                            </div>
+
+                            {/* Сеанс від */}
                             <div className="flex flex-col gap-1.5">
                                 <label className="text-xs text-gray-500 uppercase tracking-wider">Сеанс від</label>
                                 <input
@@ -161,6 +231,8 @@ const AdminBookingsPage = () => {
                                     className="px-3 py-2 rounded-lg bg-gray-800 border border-gray-700 text-sm text-white focus:outline-none focus:border-red-600/50 transition-colors"
                                 />
                             </div>
+
+                            {/* Сеанс до */}
                             <div className="flex flex-col gap-1.5">
                                 <label className="text-xs text-gray-500 uppercase tracking-wider">Сеанс до</label>
                                 <input
@@ -170,19 +242,33 @@ const AdminBookingsPage = () => {
                                     className="px-3 py-2 rounded-lg bg-gray-800 border border-gray-700 text-sm text-white focus:outline-none focus:border-red-600/50 transition-colors"
                                 />
                             </div>
-                            <div className="flex items-end">
-                                <button
-                                    onClick={() => { setSessionFrom(''); setSessionTo(''); setPage(1); }}
-                                    className="px-4 py-2 rounded-lg text-xs text-gray-500 hover:text-red-400 transition-colors"
-                                >
-                                    Сбросити дати
-                                </button>
+
+                            {/* Бронь від */}
+                            <div className="flex flex-col gap-1.5">
+                                <label className="text-xs text-gray-500 uppercase tracking-wider">Бронь від</label>
+                                <input
+                                    type="date"
+                                    value={bookingFrom}
+                                    onChange={e => { setBookingFrom(e.target.value); setPage(1); }}
+                                    className="px-3 py-2 rounded-lg bg-gray-800 border border-gray-700 text-sm text-white focus:outline-none focus:border-red-600/50 transition-colors"
+                                />
+                            </div>
+
+                            {/* Бронь до */}
+                            <div className="flex flex-col gap-1.5">
+                                <label className="text-xs text-gray-500 uppercase tracking-wider">Бронь до</label>
+                                <input
+                                    type="date"
+                                    value={bookingTo}
+                                    onChange={e => { setBookingTo(e.target.value); setPage(1); }}
+                                    className="px-3 py-2 rounded-lg bg-gray-800 border border-gray-700 text-sm text-white focus:outline-none focus:border-red-600/50 transition-colors"
+                                />
                             </div>
                         </div>
                     </div>
                 )}
 
-                {/* Table */}
+                {/*  Table  */}
                 <div className="bg-[#1a1d26] border border-gray-800 rounded-2xl overflow-hidden shadow-xl">
                     <div className="overflow-x-auto">
                         <table className="w-full text-sm">
@@ -251,7 +337,7 @@ const AdminBookingsPage = () => {
                                             </div>
                                         </div>
                                     </td>
-                                    <td className="px-4 py-3 text-gray-400 font-mono text-xs">{b.userId}</td>
+                                    <td className="px-4 py-3 text-gray-400 font-mono">{b.userId}</td>
                                     <td className="px-4 py-3 text-gray-300 whitespace-nowrap">
                                         <p>{formatDate(b.startTime)}</p>
                                         <p className="text-gray-600 text-xs">{formatTime(b.startTime)}</p>
@@ -331,7 +417,7 @@ const AdminBookingsPage = () => {
                 </div>
             </div>
 
-            {/* Detail Modal */}
+            {/*  Detail Modal  */}
             {selectedBooking && (
                 <div
                     className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm px-4"

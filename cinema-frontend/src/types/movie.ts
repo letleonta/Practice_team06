@@ -41,13 +41,3 @@ export const AgeRestriction = {
 } as const;
 
 export type AgeRestrictionType = typeof AgeRestriction[keyof typeof AgeRestriction];
-
-export const formatAgeRestriction = (ageString: string): string => {
-    const map: Record<string, string> = {
-        "ZeroPlus": "0+",
-        "TwelvePlus": "12+",
-        "SixteenPlus": "16+",
-        "EighteenPlus": "18+"
-    };
-    return map[ageString] || ageString;
-};

@@ -2,7 +2,7 @@ import { axiosInstance } from "../api/axiosInstance";
 import type {
     BookingDto,
     AdminBookingDto,
-    BookingFilterDto
+    BookingFilterDto, CreateBookingDto
 } from "../types/booking";
 
 export const BookingService = {
@@ -19,14 +19,17 @@ export const BookingService = {
     },
 
     // --- ДЛЯ КЛІЄНТА (CUSTOMER) ---
-    async getMyBookings() {
-        const response = await axiosInstance.get<BookingDto[]>("/bookings/my");
+    async getMyBookings(filter?: BookingFilterDto) {
+        const response = await axiosInstance.get<BookingDto[]>("/bookings/my", {
+            params: filter
+        });
         return response.data;
     },
 
-    async createBooking() {
-        // У тебе в контролері PostBooking не приймає тіло (бере userId з токена)
-        const response = await axiosInstance.post<BookingDto>("/bookings");
+    async createBooking(data: CreateBookingDto) {
+        const response = await axiosInstance.post<BookingDto>("/bookings", {
+            params: data
+        });
         return response.data;
     },
 
@@ -40,7 +43,6 @@ export const BookingService = {
 
     // --- СПІЛЬНЕ ---
     async getBookingById(bookingId: number) {
-        // Бекенд сам вирішить по ролі, що повернути
         const response = await axiosInstance.get<AdminBookingDto | BookingDto>(`/bookings/${bookingId}`);
         return response.data;
     }

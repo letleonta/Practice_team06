@@ -1,7 +1,6 @@
 import { useEffect, useState, useCallback } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../store/useAuthStore';
-import api from '../api/axiosInstance';
 import {
     ArrowLeft,
     Calendar,
@@ -11,10 +10,13 @@ import {
     X,
     Loader2,
 } from 'lucide-react';
-import type {SessionDto, SessionSeatDto} from "../types/session.ts";
-import type {CreatedBookingDto} from "../types/booking.ts";
-import {formatDate, formatTime} from "../utils/timeFormat.ts";
-import {getSeatTypeColor, getSeatTypeLabelColor} from "../utils/seatColor.ts";
+import type { SessionDto } from "../types/session.ts";
+import { formatDate, formatTime } from "../utils/formatTime.ts";
+import { getSeatTypeColor, getSeatTypeLabelColor } from "../utils/formatSeat.ts";
+import { SessionService } from "../services/session.service";
+import { SeatService } from "../services/seat.service";
+import { BookingService } from "../services/booking.service";
+import type {SessionSeatDto} from "../types/seat.ts";
 
 const SessionPage = () => {
     const { user } = useAuthStore();
@@ -34,12 +36,13 @@ const SessionPage = () => {
     const fetchData = useCallback(async () => {
         if (!sessionId) return;
         try {
-            const [sessionRes, seatsRes] = await Promise.all([
-                api.get<SessionDto>(`/sessions/${sessionId}`),
-                api.get<SessionSeatDto[]>(`/seats/available/${sessionId}`),
+            const id = Number(sessionId);
+            const [sessionData, seatsData] = await Promise.all([
+                SessionService.getById(id),
+                SeatService.getAvailableSeats(id),
             ]);
-            setSession(sessionRes.data);
-            setSeats(seatsRes.data);
+            setSession(sessionData);
+            setSeats(seatsData);
         } catch (err) {
             console.error(err);
             setError('Не вдалося завантажити сеанс.');
@@ -70,12 +73,12 @@ const SessionPage = () => {
         setPurchaseError(null);
 
         try {
-            const res = await api.post<CreatedBookingDto>('/bookings', {
+            const created = await BookingService.createBooking({
                 sessionId: session.id,
                 seatIds: selectedSeats.map((s) => s.seatId),
             });
 
-            navigate(`/bookings/${res.data.id}`);
+            navigate(`/bookings/${created.id}`);
         } catch (err: any) {
             setPurchaseError(
                 err?.response?.data?.message || 'Помилка при оформленні бронювання.'
@@ -251,8 +254,7 @@ const SessionPage = () => {
                                                             Місце <span className="text-white font-semibold">{seat.seatNumber}</span>
                                                         </span>
                                                         <span className={`block text-xs capitalize mt-0.5 ${
-                                                            seat.type?.toLowerCase() === 'vip' ? 'text-yellow-500' :
-                                                                seat.type?.toLowerCase() === 'premium' ? 'text-purple-500' :
+                                                            seat.type.toString().toLowerCase() === 'vip' ? 'text-yellow-500' :
                                                                     'text-gray-500'
                                                         }`}>
                                                             {seat.type}
