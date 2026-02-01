@@ -1,5 +1,5 @@
 ﻿import { useEffect, useState, useMemo } from 'react';
-import { userService } from '../../services/user.service.ts';
+import { AuthService } from '../../services/auth.service.ts'
 import { useAuthStore } from '../../store/useAuthStore';
 import {
     Users,
@@ -9,7 +9,7 @@ import {
     ShieldCheck,
     ShieldAlert,
 } from 'lucide-react';
-import type { UserDto } from '../../types/user';
+import type { UserDto } from '../../types/auth';
 
 const AdminUsers = () => {
     const { user: currentUser } = useAuthStore();
@@ -24,7 +24,7 @@ const AdminUsers = () => {
     const loadUsers = async () => {
         try {
             setIsLoadingPage(true);
-            const data = await userService.getAll();
+            const data = await AuthService.getAllUsers();
             setUsers(data);
         } catch (err) {
             console.error("Failed to fetch users:", err);
@@ -47,7 +47,7 @@ const AdminUsers = () => {
         if (!canEdit) return;
         setLoadingId(email);
         try {
-            await userService.assignRole(email, newRole);
+            await AuthService.assignRole(email, newRole);
             await loadUsers();
         } catch (err: any) {
             alert("Помилка зміни ролі");

@@ -43,12 +43,18 @@ const Navbar = () => {
                             </Link>
                         )}
 
-                        <div className="flex items-center gap-3 bg-gray-800/50 p-1 pr-4 rounded-full border border-gray-700">
-                            <div className="bg-red-600 p-2 rounded-full">
+                        <Link
+                            to="/profile"
+                            className="flex items-center gap-3 bg-gray-800/50 hover:bg-gray-800 p-1 pr-4 rounded-full border border-gray-700 transition-all group"
+                        >
+                            <div className="bg-red-600 p-2 rounded-full group-hover:bg-red-500 transition-colors">
                                 <UserIcon size={16} />
                             </div>
-                            <span className="text-gray-200 text-sm font-medium hidden sm:inline">{user.name}</span>
-                        </div>
+                            <div className="flex flex-col">
+                                <span className="text-gray-200 text-[10px] font-black uppercase tracking-widest leading-none">Мій кабінет</span>
+                                <span className="text-white text-xs font-bold truncate max-w-[100px]">{user.name}</span>
+                            </div>
+                        </Link>
 
                         <button
                             onClick={handleLogout}
