@@ -22,9 +22,9 @@ export interface BookingDto {
     totalPrice: number;
 }
 
-export interface CreatedBookingDto {
-    id: number;
-    status: string;
+export interface CreateBookingDto {
+    sessionId: number;
+    seatIds: number[];
 }
 
 export interface AdminBookingDto extends BookingDto {

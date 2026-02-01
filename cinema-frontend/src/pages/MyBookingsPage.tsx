@@ -1,12 +1,12 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import api from '../api/axiosInstance';
 import { Ticket, Calendar, Clock, Film, ChevronRight } from 'lucide-react';
 import {type BookingDto, type BookingFilterDto, BookingStatus} from "../types/booking.ts";
-import {getAgeRestrictionText} from "../utils/ageRestriction.ts";
+import {getAgeRestrictionText} from "../utils/formatAgeRestriction.ts";
 import BookingFilterBar, {type FilterStatus} from "../components/BookingFilterBar.tsx";
-import {getStatusColor, getStatusText} from "../utils/bookingStatus.ts";
-import {formatDate, formatTime} from "../utils/timeFormat.ts";
+import {getStatusColor, getStatusText} from "../utils/formatBookingStatus.ts";
+import {formatDate, formatTime} from "../utils/formatTime.ts";
+import {BookingService} from "../services/booking.service.ts";
 
 const MyBookingsPage = () => {
     const [bookings, setBookings] = useState<BookingDto[]>([]);
@@ -29,8 +29,8 @@ const MyBookingsPage = () => {
                     }
                 }
 
-                const response = await api.get<BookingDto[]>('/bookings/my', { params: filter });
-                setBookings(response.data);
+                const data = await BookingService.getMyBookings(filter);
+                setBookings(data);
             } catch (err) {
                 console.error("Error fetching bookings:", err);
                 setError("Не вдалося завантажити бронювання.");
