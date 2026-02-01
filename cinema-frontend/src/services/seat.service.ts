@@ -1,8 +1,8 @@
 import { axiosInstance } from "../api/axiosInstance";
-import type { SeatDto, SessionSeatDto, UpdateSeatDto } from "../types/seat";
+import type { SeatDto, SessionSeatDto} from "../types/seat";
 
 export const SeatService = {
-    async getByHall(hallId: number) {
+    async getByHallId(hallId: number) {
         const response = await axiosInstance.get<SeatDto[]>(`/seats/hall/${hallId}`);
         return response.data;
     },
@@ -17,7 +17,7 @@ export const SeatService = {
         return response.data;
     },
 
-    async update(id: number, data: UpdateSeatDto) {
+    async update(id: number, data: { SeatType: number; priceModifier: number }) {
         const response = await axiosInstance.put<SeatDto>(`/seats/${id}`, data);
         return response.data;
     },

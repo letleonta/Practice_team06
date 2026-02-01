@@ -2,7 +2,6 @@ import { axiosInstance } from "../api/axiosInstance";
 import type {
     HallDto,
     CreateHallDto,
-    GenerateStandardSeatsDto,
     GenerateFlexibleSeatsDto,
     SeatDto
 } from "../types/hall";
@@ -37,15 +36,6 @@ export const HallService = {
         await axiosInstance.delete(`/halls/${id}`);
     },
 
-    // --- ГЕНЕРАЦІЯ МІСЦЬ (Admin only) ---
-
-    // Швидка генерація прямокутного залу
-    async generateStandardSeats(data: GenerateStandardSeatsDto) {
-        const response = await axiosInstance.post<{ message: string }>("/halls/generate-standard-seats", data);
-        return response.data;
-    },
-
-    // Гнучка генерація (різна кількість місць у рядах)
     async generateFlexibleSeats(data: GenerateFlexibleSeatsDto) {
         const response = await axiosInstance.post<{ message: string }>("/halls/generate-flexible-seats", data);
         return response.data;

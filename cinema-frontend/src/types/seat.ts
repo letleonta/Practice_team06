@@ -1,4 +1,9 @@
-import { SeatType } from "./hall"; // Використовуємо вже створений enum
+export const SeatType = {
+    Standard: 0,
+    VIP: 1,
+} as const;
+
+export type SeatType = typeof SeatType[keyof typeof SeatType];
 
 export interface SeatDto {
     id: number;

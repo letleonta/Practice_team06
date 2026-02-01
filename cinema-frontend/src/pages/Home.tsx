@@ -39,13 +39,13 @@ const Home = () => {
                     {user ? (
                         <div className="flex items-center gap-3">
                             {/* Кнопка Адміна - з'являється тільки якщо роль Admin */}
-                            {user.role === 'Admin' && (
+                            {user && (user.role === 'Admin' || user.role === 'Manager') && (
                                 <Link
                                     to="/admin"
                                     className="flex items-center gap-2 bg-amber-500/10 hover:bg-amber-500/20 text-amber-500 border border-amber-500/50 px-4 py-2 rounded-xl text-sm font-bold transition-all shadow-lg shadow-amber-500/10"
                                 >
                                     <ShieldCheck size={18} />
-                                    <span>Панель адміна</span>
+                                    <span>Панель керування</span>
                                 </Link>
                             )}
 
