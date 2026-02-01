@@ -5,6 +5,7 @@ import Register from './pages/Register';
 import {Checkout} from "./pages/Checkout";
 import AdminDashboard from "./pages/admin/AdminDashboard.tsx";
 import { useAuthStore } from './store/useAuthStore';
+import {Profile} from "./pages/Profile.tsx";
 
 function App() {
     const { user, token } = useAuthStore();
@@ -20,6 +21,10 @@ function App() {
                 <Route path="/register" element={<Register />} />
 
                 <Route path="/checkout" element={<Checkout />} />
+                <Route
+                    path="/profile"
+                    element={token ? <Profile /> : <Navigate to="/login" replace />}
+                />
                 <Route
                     path="/admin/*"
                     element={hasAdminAccess ? <AdminDashboard /> : <Navigate to="/" replace />}

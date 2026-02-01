@@ -6,7 +6,7 @@ import type { MovieDto } from '../types/movie';
 import { Star, Clock, Ticket, ShieldCheck, LogOut, User as UserIcon, Search, Filter, CalendarDays } from 'lucide-react';
 
 const Home = () => {
-    const { user, logout } = useAuthStore();
+    const { user, logout, token } = useAuthStore();
 
     const [nowPlayingMovies, setNowPlayingMovies] = useState<MovieDto[]>([]);
     const [upcomingMovies, setUpcomingMovies] = useState<MovieDto[]>([]);
@@ -80,26 +80,42 @@ const Home = () => {
                 <div className="flex items-center gap-4">
                     {user ? (
                         <div className="flex items-center gap-3">
-                            {/* Кнопка Адміна - з'являється тільки якщо роль Admin */}
-                            {user && (user.role === 'Admin' || user.role === 'Manager') && (
+                            {/* Кнопка Адміна */}
+                            {token && (user.role === 'Admin' || user.role === 'Manager') && (
                                 <Link
                                     to="/admin"
-                                    className="flex items-center gap-2 bg-amber-500/10 hover:bg-amber-500/20 text-amber-500 border border-amber-500/50 px-4 py-2 rounded-xl text-sm font-bold transition-all shadow-lg shadow-amber-500/10"
+                                    className="hidden lg:flex items-center gap-2 bg-amber-500/10 hover:bg-amber-500/20 text-amber-500 border border-amber-500/50 px-4 py-2 rounded-xl text-sm font-bold transition-all shadow-lg shadow-amber-500/10"
                                 >
                                     <ShieldCheck size={18} />
-                                    <span>Панель керування</span>
+                                    <span>Адмін</span>
                                 </Link>
                             )}
-                            <div className="flex items-center gap-3 bg-gray-800/50 p-1 pr-4 rounded-full border border-gray-700">
-                                <div className="bg-red-600 p-2 rounded-full"><UserIcon size={16} /></div>
-                                <span className="text-gray-200 text-sm font-medium hidden sm:inline">{user.email}</span>
-                            </div>
-                            <button onClick={logout} className="p-2.5 text-gray-400 hover:text-red-500 hover:bg-red-500/10 rounded-xl transition-all">
+
+                            {/* НОВА КНОПКА: ПРОФІЛЬ */}
+                            <Link
+                                to="/profile"
+                                className="flex items-center gap-3 bg-gray-800/50 hover:bg-gray-800 p-1 pr-4 rounded-full border border-gray-700 transition-all group"
+                            >
+                                <div className="bg-red-600 p-2 rounded-full group-hover:bg-red-500 transition-colors">
+                                    <UserIcon size={16} />
+                                </div>
+                                <div className="flex flex-col">
+                                    <span className="text-gray-200 text-[10px] font-black uppercase tracking-widest leading-none">Мій кабінет</span>
+                                    <span className="text-white text-xs font-bold truncate max-w-[100px]">{user.email}</span>
+                                </div>
+                            </Link>
+
+                            {/* Кнопка Виходу */}
+                            <button
+                                onClick={logout}
+                                className="p-2.5 text-gray-400 hover:text-red-500 hover:bg-red-500/10 rounded-xl transition-all"
+                                title="Вийти"
+                            >
                                 <LogOut size={20} />
                             </button>
                         </div>
                     ) : (
-                        <Link to="/login" className="bg-red-600 hover:bg-red-700 text-white px-8 py-2.5 rounded-xl text-sm font-bold transition-all shadow-lg shadow-red-600/30">
+                        <Link to="/login" className="bg-red-600 hover:bg-red-700 text-white px-8 py-2.5 rounded-xl text-sm font-bold transition-all shadow-lg shadow-red-600/30 uppercase tracking-widest">
                             Увійти
                         </Link>
                     )}

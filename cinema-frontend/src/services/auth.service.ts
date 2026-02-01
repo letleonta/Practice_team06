@@ -33,7 +33,6 @@ export const AuthService = {
         await axiosInstance.post("/auth/reset-password", data);
     },
 
-    // Методи для Адміна
     async getAllUsers(): Promise<UserDto[]> {
         const response = await axiosInstance.get<UserDto[]>("/auth/users");
         return response.data;
