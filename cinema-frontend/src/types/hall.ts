@@ -1,10 +1,5 @@
-export const SeatType = {
-    Standard: 0,
-    VIP: 1,
-    LoveSeats: 2
-} as const;
+import type {SeatType} from "./seat.ts";
 
-export type SeatType = typeof SeatType[keyof typeof SeatType];
 
 export interface HallDto {
     id: number;
@@ -17,18 +12,12 @@ export interface CreateHallDto {
     name: string;
     priceModifier: number;
     description?: string;
+    totalSeats?: number;
 }
 
 export interface RowConfigDto {
     rowNumber: number;
     seatCount: number;
-    type: SeatType;
-}
-
-export interface GenerateStandardSeatsDto {
-    hallId: number;
-    rowCount: number;
-    seatsPerRow: number;
     type: SeatType;
 }
 

@@ -13,8 +13,8 @@
     directorName: string;
     genres: string[];
     actors: string[];
+    languageIds: number[];
 }
-
 export interface CreateMovieDto {
     title: string;
     description: string;
@@ -25,10 +25,12 @@ export interface CreateMovieDto {
     endDate?: string;
     posterUri?: string;
     trailerUri?: string;
-    ageRestriction: AgeRestrictionType;
+    languageIds: number[];
+    ageRestriction: number;
     directorId?: number;
     genreIds: number[];
     actorIds: number[];
+    rating?: number;
 }
 
 export const AgeRestriction = {

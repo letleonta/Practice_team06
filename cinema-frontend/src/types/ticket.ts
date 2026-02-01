@@ -9,6 +9,8 @@ export interface TicketDto {
 
 export interface TicketBookingDto {
     id: number;
+    userId: number;
+    bookingId: number;
     sessionId: number;
     seatId: number;
     actualPrice: number;

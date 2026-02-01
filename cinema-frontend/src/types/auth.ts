@@ -15,7 +15,6 @@ export interface LoginDto {
     password: string;
 }
 
-// Для реєстрації (RegisterDto)
 export interface RegisterDto {
     email: string;
     password: string;
