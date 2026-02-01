@@ -1,5 +1,7 @@
-export const getStatusColor = (status: string) => {
-    switch (status.toLowerCase()) {
+import type {BookingStatus} from "../types/booking.ts";
+
+export const getStatusColor = (status: BookingStatus) => {
+    switch (status.toString().toLowerCase()) {
         case 'paid':
         case 'оплачено':
             return 'bg-green-500/20 text-green-400 border-green-500/30';
@@ -14,11 +16,11 @@ export const getStatusColor = (status: string) => {
     }
 };
 
-export const getStatusText = (status: string) => {
+export const getStatusText = (status: BookingStatus) => {
     const statusMap: { [key: string]: string } = {
         'paid': 'Оплачено',
         'inprogress': 'В процесі',
         'cancelled': 'Скасовано',
     };
-    return statusMap[status.toLowerCase()] || status;
+    return statusMap[status.toString().toLowerCase()] || status;
 };

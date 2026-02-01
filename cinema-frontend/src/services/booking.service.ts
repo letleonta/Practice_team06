@@ -39,7 +39,6 @@ export const BookingService = {
         await axiosInstance.put(`/bookings/${bookingId}/confirm`);
     },
 
-    // --- СПІЛЬНЕ ---
     async getBookingById(bookingId: number) {
         const response = await axiosInstance.get<AdminBookingDto | BookingDto>(`/bookings/${bookingId}`);
         return response.data;
