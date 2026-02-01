@@ -69,6 +69,7 @@ public class AuthService : IAuthService
         var roles = await _userManager.GetRolesAsync(user);
         var authClaims = new List<Claim>
         {
+            new Claim(ClaimTypes.Name, user.FirstName),
             new Claim(ClaimTypes.Email, user.Email!),
             new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
             new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
@@ -113,10 +114,8 @@ public class AuthService : IAuthService
         if (user == null) 
             return IdentityResult.Failed(new IdentityError { Description = "Користувача не знайдено" });
 
-        // Використовуємо UserManager для скидання
         return await _userManager.ResetPasswordAsync(user, dto.Token, dto.NewPassword);
     }
-    // --- РЕАЛІЗАЦІЯ МЕТОДІВ, ЯКИХ НЕ ВИСТАЧАЛО ---
 
     public async Task<IdentityResult> AssignRoleAsync(string email, string roleName)
     {
