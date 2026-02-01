@@ -42,7 +42,7 @@ public class SeatsController : ControllerBase
     }
     
     [HttpGet("available/{sessionId}")]
-    [Authorize(Roles = "Admin, Customer")]
+    //[Authorize(Roles = "Admin, Customer")]
     public async Task<IActionResult> GetAvailableSeats(int sessionId)
     {
         var seats = await _seatService.GetSeatsForSessionAsync(sessionId);

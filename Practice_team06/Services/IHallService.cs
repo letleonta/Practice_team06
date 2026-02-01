@@ -7,7 +7,7 @@ public interface IHallService
     Task<IEnumerable<HallDto>> GetAllAsync();
     Task<HallDto?> GetByIdAsync(int id);
     Task<HallDto> CreateAsync(CreateHallDto dto);
-    Task<bool> DeleteAsync(short id);
+    Task<bool> DeleteAsync(int id);
     Task<int> GenerateStandardSeatsAsync(GenerateStandardSeatsDto dto);
     Task<int> GenerateFlexibleSeatsAsync(GenerateFlexibleSeatsDto dto);
 }
