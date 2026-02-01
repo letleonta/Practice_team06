@@ -1,14 +1,24 @@
-import type {TicketDto} from "./ticket.ts";
+import type {TicketBookingDto} from "./ticket.ts";
+
+export const BookingStatus = {
+    Inprogress: "Inprogress",
+    Paid: "Paid",
+    Cancelled: "Cancelled",
+} as const;
+
+export type SortBy = 'date' | 'status' | 'userId' | null;
+
+export type BookingStatus = typeof BookingStatus[keyof typeof BookingStatus];
 
 export interface BookingDto {
     id: number;
     title: string;
     bookingTime: string;
+    status: BookingStatus;
     startTime: string;
     ageRestriction: string;
     posterUri: string;
-    status: string;
-    tickets: TicketDto[];
+    tickets: TicketBookingDto[];
     totalPrice: number;
 }
 
@@ -18,11 +28,8 @@ export interface CreatedBookingDto {
 }
 
 export interface AdminBookingDto extends BookingDto {
-    userId?: number;
+    userId: number;
 }
-
-export type BookingStatus = 'Inprogress' | 'Cancelled' | 'Paid' | null;
-export type SortBy = 'date' | 'status' | 'userId' | null;
 
 export interface BookingFilterDto {
     Status?: BookingStatus;

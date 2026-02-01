@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import api from '../api/axiosInstance';
 import { Ticket, Calendar, Clock, Film, ChevronRight } from 'lucide-react';
-import type {BookingDto, BookingFilterDto} from "../types/booking.ts";
+import {type BookingDto, type BookingFilterDto, BookingStatus} from "../types/booking.ts";
 import {getAgeRestrictionText} from "../utils/ageRestriction.ts";
 import BookingFilterBar, {type FilterStatus} from "../components/BookingFilterBar.tsx";
 import {getStatusColor, getStatusText} from "../utils/bookingStatus.ts";
@@ -25,7 +25,7 @@ const MyBookingsPage = () => {
                     } else if (activeFilter === 'ACTIVE') {
                         filter.SessionFromDate = new Date().toISOString();
                     } else if (activeFilter === 'CANCELLED') {
-                        filter.Status = 'CANCELLED';
+                        filter.Status = BookingStatus.Cancelled;
                     }
                 }
 

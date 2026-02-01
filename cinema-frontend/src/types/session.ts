@@ -16,3 +16,10 @@ export interface SessionSeatDto {
     isAvailable: boolean;
     price: number;
 }
+
+export interface CreateSessionDto {
+    movieId: number;
+    hallId: number;
+    languageId: number;
+    startTime: string;
+}

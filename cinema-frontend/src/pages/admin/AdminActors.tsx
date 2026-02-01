@@ -1,26 +1,70 @@
 ﻿import { useForm } from 'react-hook-form';
-import api from '../../api/axiosInstance';
-import { Users } from 'lucide-react';
+import { ActorService } from '../../services/actor.service.ts'; // Використовуємо сервіс
+import type { CreateActorDto } from '../../types/actor'; // Типізація
+import { Users, Image as ImageIcon } from 'lucide-react';
 
 const AdminActors = () => {
-    const { register, handleSubmit, reset } = useForm<{ name: string }>();
+    const { register, handleSubmit, reset, formState: { errors } } = useForm<CreateActorDto>();
 
-    const onSubmit = async (data: { name: string }) => {
+    const onSubmit = async (data: CreateActorDto) => {
         try {
-            await api.post('/actors', data);
-            alert('Актора додано!');
-            reset();
-        } catch (err) { alert('Помилка'); }
+            await ActorService.create(data);
+            alert('Актора додано успішно!');
+            reset(); // Очищуємо форму
+        } catch (err) {
+            console.error(err);
+            alert('Помилка при додаванні актора');
+        }
     };
 
     return (
-        <div className="max-w-md bg-[#1a1d26] p-6 rounded-2xl border border-gray-800">
-            <h2 className="text-xl font-bold mb-4 flex items-center gap-2"><Users className="text-red-600"/> Додати актора</h2>
+        <div className="max-w-md bg-[#1a1d26] p-6 rounded-2xl border border-gray-800 text-white">
+            <h2 className="text-xl font-bold mb-4 flex items-center gap-2">
+                <Users className="text-red-600"/> Додати актора
+            </h2>
+
             <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-                <input {...register('name', { required: true })} placeholder="ПІБ Актора" className="w-full p-3 bg-gray-900 border border-gray-700 rounded-xl text-white outline-none focus:border-red-500" />
-                <button className="w-full bg-red-600 py-3 rounded-xl font-bold">Зберегти</button>
+                {/* Ім'я */}
+                <div>
+                    <input
+                        {...register('firstName', { required: "Ім'я обов'язкове" })}
+                        placeholder="Ім'я"
+                        className={`w-full p-3 bg-gray-900 border ${errors.firstName ? 'border-red-500' : 'border-gray-700'} rounded-xl outline-none focus:border-red-500`}
+                    />
+                    {errors.firstName && <span className="text-xs text-red-500 mt-1">{errors.firstName.message}</span>}
+                </div>
+
+                {/* Прізвище */}
+                <div>
+                    <input
+                        {...register('lastName', { required: "Прізвище обов'язкове" })}
+                        placeholder="Прізвище"
+                        className={`w-full p-3 bg-gray-900 border ${errors.lastName ? 'border-red-500' : 'border-gray-700'} rounded-xl outline-none focus:border-red-500`}
+                    />
+                    {errors.lastName && <span className="text-xs text-red-500 mt-1">{errors.lastName.message}</span>}
+                </div>
+
+                {/* Фото (URL) */}
+                <div className="relative">
+                    <div className="absolute inset-y-0 left-3 flex items-center pointer-events-none">
+                        <ImageIcon size={18} className="text-gray-500" />
+                    </div>
+                    <input
+                        {...register('photoUri')}
+                        placeholder="URL фото (необов'язково)"
+                        className="w-full p-3 pl-10 bg-gray-900 border border-gray-700 rounded-xl outline-none focus:border-red-500"
+                    />
+                </div>
+
+                <button
+                    type="submit"
+                    className="w-full bg-red-600 hover:bg-red-700 transition-colors py-3 rounded-xl font-bold uppercase tracking-wider text-sm"
+                >
+                    Зберегти актора
+                </button>
             </form>
         </div>
     );
 };
+
 export default AdminActors;
