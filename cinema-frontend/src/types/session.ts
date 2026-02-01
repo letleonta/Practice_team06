@@ -8,9 +8,11 @@ export interface SessionDto {
     endTime: string;
 }
 
-export interface CreateSessionDto {
-    movieId: number;
-    hallId: number;
-    languageId: number;
-    startTime: string;
+export interface SessionSeatDto {
+    seatId: number;
+    rowNumber: number;
+    seatNumber: number;
+    type: string;
+    isAvailable: boolean;
+    price: number;
 }

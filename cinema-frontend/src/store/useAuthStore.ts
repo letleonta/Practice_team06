@@ -3,47 +3,46 @@ import { jwtDecode } from 'jwt-decode';
 
 interface UserInfo {
     email: string;
-    role: string | string[]; // В .NET може бути одна роль або масив
-    id: string;
+    name: string;
+    role: string;
 }
 
 interface AuthState {
     user: UserInfo | null;
     token: string | null;
-    isAuth: boolean;
     setAuth: (token: string) => void;
     logout: () => void;
 }
 
-// Константи для клеймів .NET Identity
-const ROLE_CLAIM = "http://schemas.microsoft.com/ws/2008/06/identity/claims/role";
-const ID_CLAIM = "http://schemas.microsoft.com/ws/2008/06/identity/claims/nameidentifier";
-
 const getInitialState = () => {
     const token = localStorage.getItem('token');
-    if (!token) return { user: null, token: null, isAuth: false };
+    if (!token) return { user: null, token: null };
 
     try {
         const decoded: any = jwtDecode(token);
         const currentTime = Date.now() / 1000;
-
         if (decoded.exp < currentTime) {
             localStorage.removeItem('token');
-            return { user: null, token: null, isAuth: false };
+            return { user: null, token: null };
         }
+
+        const role = decoded["http://schemas.microsoft.com/ws/2008/06/identity/claims/role"] || decoded.role || 'User';
+        const email =
+            decoded["http://schemas.xmlsoap.org/ws/2005/05/identity/claims/emailaddress"]
+            || decoded.email
+            || '';
+        const name =
+            decoded["https://schemas.xmlsoap.org/ws/2005/05/identity/claims/name"]
+            || decoded.name
+            || '';
 
         return {
             token,
-            isAuth: true,
-            user: {
-                email: decoded.email || decoded.sub || decoded.name,
-                role: decoded[ROLE_CLAIM] || 'User',
-                id: decoded[ID_CLAIM]
-            }
+            user: { email, name, role }
         };
     } catch (error) {
         localStorage.removeItem('token');
-        return { user: null, token: null, isAuth: false };
+        return { user: null, token: null };
     }
 };
 
@@ -53,22 +52,28 @@ export const useAuthStore = create<AuthState>((set) => ({
     setAuth: (token: string) => {
         try {
             const decoded: any = jwtDecode(token);
+            const role = decoded["http://schemas.microsoft.com/ws/2008/06/identity/claims/role"] || decoded.role || 'User';
+            const email =
+                decoded["http://schemas.xmlsoap.org/ws/2005/05/identity/claims/emailaddress"]
+                || decoded.email
+                || '';
+            const name =
+                decoded["http://schemas.xmlsoap.org/ws/2005/05/identity/claims/name"]
+                || decoded.name
+                || '';
+            console.log(decoded);
 
-            const user = {
-                email: decoded.email || decoded.sub || decoded.name,
-                role: decoded[ROLE_CLAIM] || 'User',
-                id: decoded[ID_CLAIM]
-            };
+            console.log("NAME"+name);
 
             localStorage.setItem('token', token);
-            set({ token, user, isAuth: true });
+            set({ token, user: { email, name, role } });
         } catch (error) {
-            console.error("Помилка декодування токена:", error);
+            console.error("Помилка декодування:", error);
         }
     },
 
     logout: () => {
         localStorage.removeItem('token');
-        set({ user: null, token: null, isAuth: false });
+        set({ user: null, token: null });
     },
 }));
