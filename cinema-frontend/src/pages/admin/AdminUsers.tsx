@@ -1,5 +1,5 @@
 ﻿import { useEffect, useState, useMemo } from 'react';
-import { userService } from '../../services/userService';
+import { userService } from '../../services/user.service.ts';
 import { useAuthStore } from '../../store/useAuthStore';
 import {
     Users,

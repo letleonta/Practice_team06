@@ -1,6 +1,6 @@
 ﻿import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
-import { directorService } from '../../services/directorService';
+import { DirectorService } from '../../services/director.service.ts';
 import type { CreateDirectorDto, DirectorDto } from '../../types/director';
 import { UserPlus, Image, Trash2, UserCheck, Search, ListFilter, X } from 'lucide-react';
 
@@ -12,7 +12,7 @@ const AdminDirectors = () => {
 
     const loadDirectors = async () => {
         try {
-            const data = await directorService.getAll();
+            const data = await DirectorService.getAll();
             setDirectors(data);
         } catch (err) {
             console.error("Не вдалося завантажити режисерів", err);
@@ -26,7 +26,7 @@ const AdminDirectors = () => {
     const onSubmit = async (data: CreateDirectorDto) => {
         setLoading(true);
         try {
-            await directorService.create(data);
+            await DirectorService.create(data);
             reset();
             loadDirectors();
         } catch (err: any) {
@@ -38,7 +38,7 @@ const AdminDirectors = () => {
 
     const handleDelete = async (id: number) => {
         if (window.confirm('Видалити цього режисера?')) {
-            await directorService.delete(id);
+            await DirectorService.delete(id);
             loadDirectors();
         }
     };

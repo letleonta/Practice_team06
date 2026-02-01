@@ -1,7 +1,7 @@
 ﻿import { useEffect, useState, useMemo } from 'react';
 import { useForm } from 'react-hook-form';
 import api from '../../api/axiosInstance';
-import type { CreateMovieDto, Movie } from '../../types/movie';
+import type { CreateMovieDto, MovieDto } from '../../types/movie';
 import { Film, Image, Info, Search, Users, Edit, Trash2, ListFilter, Calendar, DollarSign, Clock, Plus, ArrowLeft, Save, Star } from 'lucide-react';
 
 const AdminMovies = () => {
@@ -13,7 +13,7 @@ const AdminMovies = () => {
     const [directors, setDirectors] = useState<{id: number, firstName: string, lastName: string}[]>([]);
     const [actors, setActors] = useState<{id: number, firstName: string, lastName: string}[]>([]);
     const [languages, setLanguages] = useState<{id: number, name: string}[]>([]); // НОВЕ
-    const [movies, setMovies] = useState<Movie[]>([]);
+    const [movies, setMovies] = useState<MovieDto[]>([]);
 
     const [isFormOpen, setIsFormOpen] = useState(false);
     const [editingId, setEditingId] = useState<number | null>(null);
@@ -27,7 +27,7 @@ const AdminMovies = () => {
 
     const loadMovies = async () => {
         try {
-            const res = await api.get<Movie[]>('/movies');
+            const res = await api.get<MovieDto[]>('/movies');
             setMovies(res.data);
         } catch (err) { console.error(err); }
     };
@@ -62,7 +62,7 @@ const AdminMovies = () => {
     const openCreateForm = () => { setEditingId(null); reset(); setValue('directorId', undefined); setIsFormOpen(true); };
     const closeForm = () => { setEditingId(null); reset(); setIsFormOpen(false); };
 
-    const handleEditMovie = (movie: Movie) => {
+    const handleEditMovie = (movie: MovieDto) => {
         setEditingId(movie.id);
         setValue('title', movie.title);
         setValue('description', movie.description || '');

@@ -22,3 +22,22 @@ export interface RegisterDto {
     lastName: string;
     birthDate: string;
 }
+
+export interface ChangePasswordDto {
+    oldPassword: string;
+    newPassword: string;
+}
+
+export interface ResetPasswordDto {
+    email: string;
+    token: string;
+    newPassword: string;
+}
+
+export interface UserDto {
+    id: number;
+    email: string;
+    firstName: string;
+    lastName: string;
+    roles: string[];
+}

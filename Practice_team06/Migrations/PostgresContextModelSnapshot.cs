@@ -202,6 +202,9 @@ namespace Practice_team06.Migrations
                         .HasColumnName("BookingTime")
                         .HasDefaultValueSql("CURRENT_TIMESTAMP");
 
+                    b.Property<int>("SessionId")
+                        .HasColumnType("integer");
+
                     b.Property<int>("Status")
                         .HasColumnType("integer");
 
@@ -211,6 +214,8 @@ namespace Practice_team06.Migrations
 
                     b.HasKey("Id")
                         .HasName("PK_Bookings");
+
+                    b.HasIndex("SessionId");
 
                     b.HasIndex("UserId");
 
@@ -686,12 +691,20 @@ namespace Practice_team06.Migrations
 
             modelBuilder.Entity("Practice_team06.Models.Booking", b =>
                 {
+                    b.HasOne("Practice_team06.Models.Session", "Session")
+                        .WithMany("Bookings")
+                        .HasForeignKey("SessionId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
                     b.HasOne("Practice_team06.Models.User", "User")
                         .WithMany("Bookings")
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired()
                         .HasConstraintName("FK_BookingsUserId");
+
+                    b.Navigation("Session");
 
                     b.Navigation("User");
                 });
@@ -859,6 +872,8 @@ namespace Practice_team06.Migrations
 
             modelBuilder.Entity("Practice_team06.Models.Session", b =>
                 {
+                    b.Navigation("Bookings");
+
                     b.Navigation("Tickets");
                 });
 

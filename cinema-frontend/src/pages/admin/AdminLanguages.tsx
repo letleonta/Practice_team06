@@ -1,18 +1,18 @@
 ﻿import { useEffect, useState, useMemo } from 'react';
 import { useForm } from 'react-hook-form';
-import { languageService } from '../../services/languageService';
-import type { Language, CreateLanguageDto } from '../../types/language';
+import { LanguageService } from '../../services/language.service.ts';
+import type { LanguageDto, CreateLanguageDto } from '../../types/language';
 import { Globe, Plus, Search, Trash2 } from 'lucide-react';
 
 const AdminLanguages = () => {
     const { register, handleSubmit, reset } = useForm<CreateLanguageDto>();
-    const [languages, setLanguages] = useState<Language[]>([]);
+    const [languages, setLanguages] = useState<LanguageDto[]>([]);
     const [searchTerm, setSearchTerm] = useState('');
     const [loading, setLoading] = useState(false);
 
     const loadData = async () => {
         try {
-            const data = await languageService.getAll();
+            const data = await LanguageService.getAll();
             setLanguages(data);
         } catch (err) { console.error(err); }
     };
@@ -22,7 +22,7 @@ const AdminLanguages = () => {
     const onSubmit = async (data: CreateLanguageDto) => {
         setLoading(true);
         try {
-            await languageService.create(data);
+            await LanguageService.create(data);
             reset();
             loadData();
         } catch (err) { alert("Помилка додавання"); }
@@ -32,7 +32,7 @@ const AdminLanguages = () => {
     const handleDelete = async (id: number) => {
         if (!confirm('Видалити цю мову?')) return;
         try {
-            await languageService.delete(id);
+            await LanguageService.delete(id);
             loadData();
         } catch (err) { alert("Помилка видалення"); }
     };

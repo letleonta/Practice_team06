@@ -1,21 +1,25 @@
-﻿import { useEffect, useState, useMemo } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { useForm } from 'react-hook-form';
-import { sessionService } from '../../services/sessionService';
-import { movieService } from '../../services/movieService';
-import type { CreateSessionDto, SessionDto, HallDto, LanguageDto } from '../../types/session';
-import type { Movie } from '../../types/movie';
+import { SessionService } from '../../services/session.service';
+import { MovieService } from '../../services/movie.service';
+import type { CreateSessionDto, SessionDto} from '../../types/session';
+import type { MovieDto } from '../../types/movie';
 import {Calendar, Film, MapPin, Plus, Search, Trash2, Languages, Loader2, Clock} from 'lucide-react';
+import type {HallDto} from "../../types/hall.ts";
+import type {LanguageDto} from "../../types/language.ts";
+import {HallService} from "../../services/hall.service.ts";
+import {LanguageService} from "../../services/language.service.ts";
 
 const AdminSessions = () => {
     const { register, handleSubmit, reset } = useForm<CreateSessionDto>();
 
     // --- ДАНІ ---
-    const [movies, setMovies] = useState<Movie[]>([]);
+    const [movies, setMovies] = useState<MovieDto[]>([]);
     const [halls, setHalls] = useState<HallDto[]>([]);
     const [languages, setLanguages] = useState<LanguageDto[]>([]);
 
     // --- СТАН ---
-    const [selectedMovie, setSelectedMovie] = useState<Movie | null>(null);
+    const [selectedMovie, setSelectedMovie] = useState<MovieDto | null>(null);
     const [sessions, setSessions] = useState<SessionDto[]>([]);
     const [movieSearch, setMovieSearch] = useState('');
     const [loadingSessions, setLoadingSessions] = useState(false);
@@ -27,9 +31,9 @@ const AdminSessions = () => {
             setIsLoadingData(true);
             try {
                 const [m, h, l] = await Promise.all([
-                    movieService.getAll(),
-                    sessionService.getHalls(),
-                    sessionService.getLanguages()
+                    MovieService.getAll(),
+                    HallService.getAll(),
+                    LanguageService.getAll()
                 ]);
                 setMovies(m);
                 setHalls(h);
@@ -48,7 +52,7 @@ const AdminSessions = () => {
     useEffect(() => {
         if (selectedMovie) {
             setLoadingSessions(true);
-            sessionService.getByMovie(selectedMovie.id)
+            SessionService.getByMovieId(selectedMovie.id)
                 .then(setSessions)
                 .catch(console.error)
                 .finally(() => setLoadingSessions(false));
@@ -68,10 +72,10 @@ const AdminSessions = () => {
                 startTime: data.startTime
             };
 
-            await sessionService.create(formattedData);
+            await SessionService.create(formattedData);
             alert('Сеанс створено!');
             reset();
-            const updatedSessions = await sessionService.getByMovie(selectedMovie.id);
+            const updatedSessions = await SessionService.getByMovieId(selectedMovie.id);
             setSessions(updatedSessions);
         } catch (err: any) {
             alert('Помилка: ' + (err.response?.data?.message || 'Накладання часу або помилка сервера'));
@@ -81,9 +85,9 @@ const AdminSessions = () => {
     const handleDelete = async (id: number) => {
         if (!confirm('Видалити цей сеанс?')) return;
         try {
-            await sessionService.delete(id);
+            await SessionService.delete(id);
             if (selectedMovie) {
-                const updated = await sessionService.getByMovie(selectedMovie.id);
+                const updated = await SessionService.getByMovieId(selectedMovie.id);
                 setSessions(updated);
             }
         } catch (err) { alert('Не вдалося видалити'); }

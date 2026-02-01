@@ -1,6 +1,6 @@
-﻿import { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
-import { actorService } from '../../services/actorService';
+import { ActorService } from '../../services/actor.service.ts';
 import type { CreateActorDto, ActorDto } from '../../types/actor';
 import { UserPlus, Image, Trash2, Users, Search, X } from 'lucide-react';
 
@@ -12,7 +12,7 @@ const AdminActors = () => {
 
     const loadActors = async () => {
         try {
-            const data = await actorService.getAll();
+            const data = await ActorService.getAll();
             setActors(data);
         } catch (err) {
             console.error("Не вдалося завантажити акторів", err);
@@ -26,7 +26,7 @@ const AdminActors = () => {
     const onSubmit = async (data: CreateActorDto) => {
         setLoading(true);
         try {
-            await actorService.create(data);
+            await ActorService.create(data);
             reset();
             loadActors();
         } catch (err: any) {
@@ -38,7 +38,7 @@ const AdminActors = () => {
 
     const handleDelete = async (id: number) => {
         if (window.confirm('Видалити цього актора?')) {
-            await actorService.delete(id);
+            await ActorService.delete(id);
             loadActors();
         }
     };
