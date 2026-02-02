@@ -6,7 +6,6 @@ import { Star, Clock, Ticket, Search, Filter, CalendarDays } from 'lucide-react'
 import {getAgeRestrictionText} from "../utils/formatAgeRestriction.ts";
 
 const Home = () => {
-    // const { user } = useAuthStore(); // user тут більше не потрібен, бо він в шапці Layout
     const [nowPlayingMovies, setNowPlayingMovies] = useState<MovieDto[]>([]);
     const [upcomingMovies, setUpcomingMovies] = useState<MovieDto[]>([]);
     const [loading, setLoading] = useState(true);
