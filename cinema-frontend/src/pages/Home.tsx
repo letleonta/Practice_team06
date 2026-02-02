@@ -1,6 +1,6 @@
 import { useEffect, useState, useMemo } from 'react';
 import { Link } from 'react-router-dom';
-import api from '../api/axiosInstance';
+import { MovieService } from '../services/movie.service';
 import type { MovieDto } from '../types/movie';
 import { Star, Clock, Ticket, Search, Filter, CalendarDays } from 'lucide-react';
 import {getAgeRestrictionText} from "../utils/formatAgeRestriction.ts";
@@ -9,7 +9,7 @@ const Home = () => {
     const [nowPlayingMovies, setNowPlayingMovies] = useState<MovieDto[]>([]);
     const [upcomingMovies, setUpcomingMovies] = useState<MovieDto[]>([]);
     const [loading, setLoading] = useState(true);
-
+    const [expandedMovies, setExpandedMovies] = useState<Record<number, boolean>>({});
     const [activeTab, setActiveTab] = useState<'now' | 'soon'>('now');
 
     const [searchTerm, setSearchTerm] = useState('');
@@ -17,12 +17,12 @@ const Home = () => {
 
     useEffect(() => {
         Promise.all([
-            api.get<MovieDto[]>('/movies/now-playing'),
-            api.get<MovieDto[]>('/movies/upcoming')
+            MovieService.getNowPlaying(),
+            MovieService.getUpcoming()
         ])
             .then(([nowRes, upRes]) => {
-                setNowPlayingMovies(nowRes.data);
-                setUpcomingMovies(upRes.data);
+                setNowPlayingMovies(nowRes);
+                setUpcomingMovies(upRes);
             })
             .catch((err) => {
                 console.error("Помилка завантаження фільмів:", err);
@@ -215,10 +215,42 @@ const Home = () => {
                                         {movie.title}
                                     </h3>
 
-                                    <div className="flex gap-2 text-[10px] text-gray-500 font-bold uppercase">
-                                        {movie.genres.slice(0, 2).map(g => (
-                                            <span key={g} className="bg-gray-800/50 px-2 py-0.5 rounded border border-gray-700/50">{g}</span>
+                                    <div className="flex flex-wrap gap-2 text-[10px] text-gray-500 font-bold uppercase relative z-30">
+                                        {/* Логіка: показуємо або перші два, або всі, якщо натиснуто "+X" */}
+                                        {(expandedMovies[movie.id] ? movie.genres : movie.genres.slice(0, 2)).map(g => (
+                                            <span
+                                                key={g}
+                                                className="bg-gray-800/50 px-2 py-0.5 rounded border border-gray-700/50 whitespace-nowrap">{g}
+                                            </span>
                                         ))}
+
+                                        {/* Показуємо кнопку "+X" тільки якщо жанрів більше 2 і вони ще не розгорнуті */}
+                                        {movie.genres.length > 2 && !expandedMovies[movie.id] && (
+                                            <button
+                                                onClick={(e) => {
+                                                    e.preventDefault(); // Зупиняє перехід по посиланню Link
+                                                    e.stopPropagation(); // Зупиняє передачу кліку батьківським елементам
+                                                    setExpandedMovies(prev => ({ ...prev, [movie.id]: true }));
+                                                }}
+                                                className="bg-red-600/20 text-red-500 px-2 py-0.5 rounded border border-red-600/30 hover:bg-red-600 hover:text-white transition-colors cursor-pointer"
+                                            >
+                                                +{movie.genres.length - 2}
+                                            </button>
+                                        )}
+
+                                        {/* Опціонально: Кнопка згорнути назад */}
+                                        {expandedMovies[movie.id] && (
+                                            <button
+                                                onClick={(e) => {
+                                                    e.preventDefault();
+                                                    e.stopPropagation();
+                                                    setExpandedMovies(prev => ({ ...prev, [movie.id]: false }));
+                                                }}
+                                                className="text-gray-400 hover:text-white ml-1 underline decoration-dotted"
+                                            >
+                                                згорнути
+                                            </button>
+                                        )}
                                     </div>
 
                                     <div className="flex items-center justify-between pt-2">
