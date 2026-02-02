@@ -6,6 +6,7 @@
     releaseDate?: string;
     basePrice: number;
     rating?: number;
+    trailerUri?: string;
     posterUri?: string;
     ageRestriction: string;
     startDate?: string;
