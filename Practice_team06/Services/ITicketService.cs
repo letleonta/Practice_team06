@@ -10,6 +10,5 @@ public interface ITicketService
     Task<List<AdminTicketDto>> GetAllTicketsAsync();
     Task<AdminTicketDto> GetTicketByIdAsync(int ticketId);
     Task<TicketDto> GetTicketForUserByIdAsync(int userId, int ticketId);
-    Task<TicketDto> CreateTicketAsync(int userId, int bookingId, CreateTicketDto dto);
     Task DeleteTicketAsync(int ticketId);
 }

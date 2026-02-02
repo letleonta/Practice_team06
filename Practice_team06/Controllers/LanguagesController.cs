@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using Practice_team06.DTOs.Language;
 using Practice_team06.Services;
 
@@ -14,8 +15,8 @@ public class LanguagesController : ControllerBase
     {
         _service = service;
     }
-
     [HttpGet]
+    [Authorize(Roles = "Admin, Customer, Manager")]
     public async Task<IActionResult> GetLanguages(
         [FromQuery] string? search,
         [FromQuery] string? sortBy,
@@ -26,6 +27,7 @@ public class LanguagesController : ControllerBase
     }
 
     [HttpGet("{id:int}")]
+    [Authorize(Roles = "Admin, Customer, Manager")]
     public async Task<IActionResult> GetLanguage(int id)
     {
         var language = await _service.GetByIdAsync(id);
@@ -35,6 +37,7 @@ public class LanguagesController : ControllerBase
     }
 
     [HttpPost]
+    [Authorize(Roles = "Admin, Manager")]
     public async Task<IActionResult> CreateLanguage([FromBody] CreateLanguageDto dto)
     {
         var created = await _service.CreateAsync(dto);
@@ -42,6 +45,7 @@ public class LanguagesController : ControllerBase
     }
 
     [HttpPost("range")]
+    [Authorize(Roles = "Admin, Manager")]
     public async Task<IActionResult> CreateLanguages([FromBody] IEnumerable<CreateLanguageDto> dto)
     {
         var created = await _service.CreateRangeAsync(dto);
@@ -49,6 +53,7 @@ public class LanguagesController : ControllerBase
     }
 
     [HttpPut("{id:int}")]
+    [Authorize(Roles = "Admin, Manager")]
     public async Task<IActionResult> UpdateLanguage(int id, [FromBody] CreateLanguageDto dto)
     {
         var updated = await _service.UpdateAsync(id, dto);
@@ -58,6 +63,7 @@ public class LanguagesController : ControllerBase
     }
 
     [HttpDelete("{id:int}")]
+    [Authorize(Roles = "Admin, Manager")]
     public async Task<IActionResult> DeleteLanguage(int id)
     {
         var deleted = await _service.DeleteAsync(id);

@@ -91,7 +91,8 @@ public class MovieService : IMovieService
             PosterUri = dto.PosterUri,
             TrailerUri = dto.TrailerUri,
             DirectorId = dto.DirectorId, 
-            AgeRestriction = dto.AgeRestriction
+            AgeRestriction = dto.AgeRestriction,
+            Rating = dto.Rating 
         };
         // ЛОГІКА РЕЖИСЕРА, якщо ID передали, перевіряємо чи він існує
         if (dto.DirectorId.HasValue)
@@ -169,6 +170,7 @@ public class MovieService : IMovieService
     movie.PosterUri = dto.PosterUri;
     movie.TrailerUri = dto.TrailerUri;
     movie.AgeRestriction = dto.AgeRestriction;
+    movie.Rating = dto.Rating;
     
     // Скидаємо старого
     movie.DirectorId = null; 
@@ -240,7 +242,7 @@ public class MovieService : IMovieService
             DurationMin = m.DurationMin,
             ReleaseDate = m.ReleaseDate,
             BasePrice = m.BasePrice,
-            Rating = (double?)m.Rating,
+            Rating = m.Rating.HasValue ? (double)m.Rating.Value : 0.0,
             PosterUri = m.PosterUri,
             AgeRestriction = m.AgeRestriction.ToString(),
             // Якщо режисера немає - Unknown

@@ -23,15 +23,10 @@ builder.Services.AddIdentity<User, IdentityRole<int>>(options =>
         options.Password.RequireNonAlphanumeric = true;
         options.Password.RequireUppercase = true;
         options.Password.RequiredLength = 6;
-        options.Password.RequiredUniqueChars = 1;
         
+        options.User.RequireUniqueEmail = false;
         options.Lockout.DefaultLockoutTimeSpan = TimeSpan.FromMinutes(5);
         options.Lockout.MaxFailedAccessAttempts = 5;
-        options.Lockout.AllowedForNewUsers = true;
-        
-        options.User.AllowedUserNameCharacters =
-            "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-._@+";
-        options.User.RequireUniqueEmail = false;
     })
     .AddEntityFrameworkStores<PostgresContext>()
     .AddDefaultTokenProviders();
@@ -62,7 +57,7 @@ builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowReactApp", policy =>
     {
-        policy.WithOrigins("http://localhost:5173")
+        policy.WithOrigins("http://localhost:5173") 
               .AllowAnyHeader()
               .AllowAnyMethod()
               .AllowCredentials();
@@ -70,21 +65,17 @@ builder.Services.AddCors(options =>
 });
 
 builder.Services.AddScoped<IAuthService, AuthService>();
-
 builder.Services.AddScoped<IActorService, ActorService>();
 builder.Services.AddScoped<IDirectorService, DirectorService>();
-
 builder.Services.AddScoped<ISeatService, SeatService>();
 builder.Services.AddScoped<IHallService, HallService>();
-
 builder.Services.AddScoped<IBookingService, BookingService>();
 builder.Services.AddScoped<ITicketService, TicketService>();
-
 builder.Services.AddScoped<IGenreService, GenreService>();
 builder.Services.AddScoped<ILanguageService, LanguageService>();
-
 builder.Services.AddScoped<ISessionService, SessionService>();
 builder.Services.AddScoped<IMovieService, MovieService>();
+builder.Services.AddScoped<IUserService, UserService>();
 
 builder.Services.AddControllers()
     .AddJsonOptions(options =>
@@ -110,33 +101,18 @@ using (var scope = app.Services.CreateScope())
         
         if (!await userManager.Users.AnyAsync())
         {
-            var user1 = new User
+            var testUsers = new List<User>
             {
-                UserName = "alice",
-                Email = "alice@example.com",
-                FirstName = "Alice",
-                LastName = "Smith",
-                BirthDate = new DateTime(1995, 5, 1),
-                PhoneNumber = "1234567890",
-                EmailConfirmed = true
+                new() { UserName = "alice", Email = "alice@example.com", FirstName = "Alice", LastName = "Smith", EmailConfirmed = true },
+                new() { UserName = "bob", Email = "bob@example.com", FirstName = "Bob", LastName = "Johnson", EmailConfirmed = true }
             };
 
-            var user2 = new User
+            foreach (var user in testUsers)
             {
-                UserName = "bob",
-                Email = "bob@example.com",
-                FirstName = "Bob",
-                LastName = "Johnson",
-                BirthDate = new DateTime(1990, 3, 15),
-                PhoneNumber = "0987654321",
-                EmailConfirmed = true
-            };
-            await userManager.CreateAsync(user1, "Password123!");
-            await userManager.AddToRoleAsync(user1, "Customer");
-            await userManager.CreateAsync(user2, "Password123!");
-            await userManager.AddToRoleAsync(user2, "Customer"); 
+                await userManager.CreateAsync(user, "Password123!");
+                await userManager.AddToRoleAsync(user, "Customer");
+            }
         }
-        
         await DbInitializer.SeedDataAsync(context);
     }
     catch (Exception ex)
@@ -145,11 +121,16 @@ using (var scope = app.Services.CreateScope())
         logger.LogError(ex, "Помилка під час ініціалізації бази.");
     }
 }
+
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
     app.UseSwaggerUI();
 }
+
+app.UseHttpsRedirection();
+app.UseStaticFiles();
+app.UseRouting(); 
 
 app.UseCors("AllowReactApp"); 
 

@@ -17,7 +17,7 @@ public class DirectorsController : ControllerBase
     }
     
     [HttpGet] 
-    [Authorize(Roles = "Admin, Customer")]
+    [Authorize(Roles = "Admin, Customer, Manager")]
     public async Task<ActionResult<IEnumerable<DirectorDto>>> GetDirectors([FromQuery] DirectorFilterDto filter)
     {
         var directors = await _directorService.GetAllAsync(filter);
@@ -26,7 +26,7 @@ public class DirectorsController : ControllerBase
     }
 
     [HttpGet("{id}")] 
-    [Authorize(Roles = "Admin, Customer")]
+    [Authorize(Roles = "Admin, Customer, Manager")]
     public async Task<ActionResult<DirectorDto>> GetDirector(int id) 
     {
         var director = await _directorService.GetByIdAsync(id);
@@ -35,7 +35,7 @@ public class DirectorsController : ControllerBase
     }
 
     [HttpPost]
-    [Authorize(Roles = "Admin")]
+    [Authorize(Roles = "Admin, Manager")]
     public async Task<ActionResult<DirectorDto>> CreateDirector(CreateDirectorDto directorDto)
     {
         var createdDirector = await _directorService.CreateAsync(directorDto);
@@ -49,7 +49,7 @@ public class DirectorsController : ControllerBase
     }
     
     [HttpPost("bulk")] 
-    [Authorize(Roles = "Admin")]
+    [Authorize(Roles = "Admin, Manager")]
     public async Task<ActionResult<IEnumerable<DirectorDto>>> CreateDirectors(IEnumerable<CreateDirectorDto>? directorsDto)
     {
         var directorsList = directorsDto?.ToList();
@@ -63,7 +63,7 @@ public class DirectorsController : ControllerBase
     }
 
     [HttpGet("{id}/movies")]
-    [Authorize(Roles = "Admin, Customer")]
+    [Authorize(Roles = "Admin, Customer, Manager")]
     public async Task<ActionResult<IEnumerable<DirectorMovieDto>>> GetDirectorMovies(int id)
     {
         var movies = await _directorService.GetDirectorMoviesAsync(id);
@@ -71,7 +71,7 @@ public class DirectorsController : ControllerBase
     }
     
     [HttpPut("{id}")] 
-    [Authorize(Roles = "Admin")]
+    [Authorize(Roles = "Admin, Manager")]
     public async Task<IActionResult> UpdateDirector(int id, CreateDirectorDto directorDto)
     {
         var result = await _directorService.UpdateAsync(id, directorDto);
@@ -80,7 +80,7 @@ public class DirectorsController : ControllerBase
     }
 
     [HttpDelete("{id}")]
-    [Authorize(Roles = "Admin")]
+    [Authorize(Roles = "Admin, Manager")]
     public async Task<IActionResult> DeleteDirector(int id)
     {
         var result = await _directorService.DeleteAsync(id);

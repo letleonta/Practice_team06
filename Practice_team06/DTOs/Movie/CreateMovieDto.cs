@@ -20,6 +20,7 @@ public class CreateMovieDto
     public DateOnly? StartDate { get; set; }
     public DateOnly? EndDate { get; set; }
     
+    public decimal? Rating { get; set; }
     public string? PosterUri { get; set; }
     public string? TrailerUri { get; set; }
     

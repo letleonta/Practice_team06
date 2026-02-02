@@ -17,7 +17,7 @@ public class ActorsController : ControllerBase
     }
 
     [HttpGet]
-    [Authorize(Roles = "Admin, Customer")]
+    [Authorize(Roles = "Admin, Customer, Manager")]
     public async Task<ActionResult<IEnumerable<ActorDto>>> GetActors([FromQuery] ActorFilterDto filter)
     {
         var actors = await _actorService.GetAllAsync(filter);
@@ -26,7 +26,7 @@ public class ActorsController : ControllerBase
     }
 
     [HttpGet("{id}")]
-    [Authorize(Roles = "Admin, Customer")]
+    [Authorize(Roles = "Admin, Customer, Manager")]
     public async Task<ActionResult<ActorDto>> GetActor(int id) 
     {
         var actor = await _actorService.GetByIdAsync(id);
@@ -35,7 +35,7 @@ public class ActorsController : ControllerBase
     }
 
     [HttpPost]
-    [Authorize(Roles = "Admin")]
+    [Authorize(Roles = "Admin, Manager")]
     public async Task<ActionResult<ActorDto>> CreateActor(CreateActorDto actorDto)
     {
         var createdActor = await _actorService.CreateAsync(actorDto);
@@ -43,7 +43,7 @@ public class ActorsController : ControllerBase
     }
     
     [HttpPost("bulk")] 
-    [Authorize(Roles = "Admin")]
+    [Authorize(Roles = "Admin, Manager")]
     public async Task<ActionResult<IEnumerable<ActorDto>>> CreateActors(IEnumerable<CreateActorDto>? actorsDto)
     {
         var actorsList = actorsDto?.ToList();
@@ -57,7 +57,7 @@ public class ActorsController : ControllerBase
     }
     
     [HttpGet("{id}/movies")]
-    [Authorize(Roles = "Admin, Customer")]
+    [Authorize(Roles = "Admin, Customer, Manager")]
     public async Task<ActionResult<IEnumerable<ActorMovieDto>>> GetActorMovies(int id)
     {
         var movies = await _actorService.GetActorMoviesAsync(id);
@@ -65,7 +65,7 @@ public class ActorsController : ControllerBase
     }
 
     [HttpPut("{id}")] 
-    [Authorize(Roles = "Admin")]
+    [Authorize(Roles = "Admin, Manager")]
     public async Task<IActionResult> UpdateActor(int id, CreateActorDto actorDto)
     {
         var result = await _actorService.UpdateAsync(id, actorDto);
@@ -74,7 +74,7 @@ public class ActorsController : ControllerBase
     }
 
     [HttpDelete("{id}")] 
-    [Authorize(Roles = "Admin")]
+    [Authorize(Roles = "Admin, Manager")]
     public async Task<IActionResult> DeleteActor(int id)
     {
         var result = await _actorService.DeleteAsync(id);

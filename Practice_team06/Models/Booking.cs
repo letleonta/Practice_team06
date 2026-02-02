@@ -8,6 +8,8 @@ public partial class Booking
     [Required]
     public int UserId { get; set; }
     [Required]
+    public int SessionId { get; set; }
+    [Required]
     [DataType(DataType.DateTime)]
     public DateTime BookingTime { get; set; }
     [Required]
@@ -16,5 +18,7 @@ public partial class Booking
     public virtual User User { get; set; } = null!;
 
     public virtual ICollection<Ticket> Tickets { get; set; } = new List<Ticket>();
+    
+    public virtual Session Session { get; set; } = null!;
 }
 public enum BookingStatus { Inprogress, Paid, Cancelled }

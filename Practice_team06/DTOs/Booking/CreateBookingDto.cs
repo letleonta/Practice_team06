@@ -1,11 +1,11 @@
 ﻿using System.ComponentModel.DataAnnotations;
 
-namespace Practice_team06.DTOs.Ticket;
+namespace Practice_team06.DTOs.Booking;
 
-public class CreateTicketDto
+public class CreateBookingDto
 {
     [Required]
     public int SessionId { get; set; }
     [Required]
-    public int SeatId { get; set; }
+    public List<int> SeatIds { get; set; }
 }
