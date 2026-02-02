@@ -246,6 +246,8 @@ public class MovieService : IMovieService
             PosterUri = m.PosterUri,
             TrailerUri = m.TrailerUri,
             AgeRestriction = m.AgeRestriction.ToString(),
+            StartDate = m.StartDate,
+            EndDate = m.EndDate,
             // Якщо режисера немає - Unknown
             DirectorName = m.Director != null 
                 ? $"{m.Director.FirstName} {m.Director.LastName}" 
