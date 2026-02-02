@@ -33,7 +33,7 @@ public class AuthController : ControllerBase
         if (result.Succeeded)
         {
             // Повертаємо токен відразу після реєстрації
-            return Ok(result.Response);
+            return Ok(result);
         }
 
         return BadRequest(new { errors = result.Errors });
