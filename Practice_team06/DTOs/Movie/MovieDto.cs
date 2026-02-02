@@ -10,6 +10,7 @@ public class MovieDto
     public decimal BasePrice { get; set; }
     public double? Rating { get; set; }
     public string? PosterUri { get; set; }
+    public string? TrailerUri { get; set; }
     public string AgeRestriction  { get; set; } = null!;
     public DateOnly? StartDate { get; set; }
     public DateOnly? EndDate { get; set; }
