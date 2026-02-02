@@ -99,20 +99,37 @@ using (var scope = app.Services.CreateScope())
         
         await DbInitializer.SeedRolesAndAdminAsync(services);
         
-        if (!await userManager.Users.AnyAsync())
+        if (!await userManager.Users.AnyAsync(u => u.Email == "alice@example.com"))
         {
-            var testUsers = new List<User>
+            var user1 = new User
             {
-                new() { UserName = "alice", Email = "alice@example.com", FirstName = "Alice", LastName = "Smith", EmailConfirmed = true },
-                new() { UserName = "bob", Email = "bob@example.com", FirstName = "Bob", LastName = "Johnson", EmailConfirmed = true }
+                UserName = "alice@example.com",
+                Email = "alice@example.com",
+                FirstName = "Alice",
+                LastName = "Smith",
+                BirthDate = new DateTime(1995, 5, 1), 
+                EmailConfirmed = true
             };
 
-            foreach (var user in testUsers)
+            var user2 = new User
             {
-                await userManager.CreateAsync(user, "Password123!");
-                await userManager.AddToRoleAsync(user, "Customer");
-            }
+                UserName = "bob@example.com",
+                Email = "bob@example.com",
+                FirstName = "Bob",
+                LastName = "Johnson",
+                BirthDate = new DateTime(1990, 3, 15),
+                EmailConfirmed = true
+            };
+            
+            var result1 = await userManager.CreateAsync(user1, "Password123!");
+            if (result1.Succeeded) await userManager.AddToRoleAsync(user1, "Customer");
+            
+            var result2 = await userManager.CreateAsync(user2, "Password123!");
+            if (result2.Succeeded) await userManager.AddToRoleAsync(user2, "Customer");
+            
+            Console.WriteLine("Тестові користувачі Alice та Bob успішно додані.");
         }
+        
         await DbInitializer.SeedDataAsync(context);
     }
     catch (Exception ex)
