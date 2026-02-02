@@ -1,8 +1,9 @@
 ﻿import { useEffect, useState, useMemo } from 'react';
 import { useForm } from 'react-hook-form';
 import api from '../../api/axiosInstance';
+import { MovieService } from '../../services/movie.service'; // Використовуємо ваш сервіс
 import type { CreateMovieDto, MovieDto } from '../../types/movie';
-import { Film, Image, Info, Search, Users, Edit, Trash2, ListFilter, Calendar, DollarSign, Clock, Plus, ArrowLeft, Save, Star } from 'lucide-react';
+import { Film, Image, Info, Search, Users, Edit, Trash2, ListFilter, X, Calendar, DollarSign, Clock, Plus, ArrowLeft, Save, Star, PlayCircle } from 'lucide-react';
 
 const AdminMovies = () => {
     const { register, handleSubmit, reset, setValue, watch, formState: { errors } } = useForm<CreateMovieDto>();
@@ -12,7 +13,7 @@ const AdminMovies = () => {
     const [genres, setGenres] = useState<{id: number, name: string}[]>([]);
     const [directors, setDirectors] = useState<{id: number, firstName: string, lastName: string}[]>([]);
     const [actors, setActors] = useState<{id: number, firstName: string, lastName: string}[]>([]);
-    const [languages, setLanguages] = useState<{id: number, name: string}[]>([]); // НОВЕ
+    const [languages, setLanguages] = useState<{id: number, name: string}[]>([]);
     const [movies, setMovies] = useState<MovieDto[]>([]);
 
     const [isFormOpen, setIsFormOpen] = useState(false);
@@ -22,20 +23,19 @@ const AdminMovies = () => {
     const [directorSearch, setDirectorSearch] = useState('');
     const [actorSearch, setActorSearch] = useState('');
     const [genreSearch, setGenreSearch] = useState('');
-    const [languageSearch, setLanguageSearch] = useState(''); // НОВЕ
+    const [languageSearch, setLanguageSearch] = useState('');
     const [movieSearch, setMovieSearch] = useState('');
 
     const loadMovies = async () => {
         try {
-            const res = await api.get<MovieDto[]>('/movies');
-            setMovies(res.data);
+            const data = await MovieService.getAll();
+            setMovies(data);
         } catch (err) { console.error(err); }
     };
 
     useEffect(() => {
         const fetchData = async () => {
             try {
-                // Додано завантаження мов
                 const [g, d, a, l] = await Promise.all([
                     api.get('/genres'),
                     api.get('/directors'),
@@ -62,6 +62,7 @@ const AdminMovies = () => {
     const openCreateForm = () => { setEditingId(null); reset(); setValue('directorId', undefined); setIsFormOpen(true); };
     const closeForm = () => { setEditingId(null); reset(); setIsFormOpen(false); };
 
+    // --- ВИПРАВЛЕНА ЛОГІКА РЕДАГУВАННЯ ---
     const handleEditMovie = (movie: MovieDto) => {
         setEditingId(movie.id);
         setValue('title', movie.title);
@@ -69,15 +70,18 @@ const AdminMovies = () => {
         setValue('durationMin', movie.durationMin || 0);
         setValue('basePrice', movie.basePrice);
         setValue('posterUri', movie.posterUri || '');
+        setValue('trailerUri', movie.trailerUri || ''); // Тепер трейлер підставляється
         setValue('rating', movie.rating || 0);
 
-        const ageMatch = movie.ageRestriction.match(/\d+/);
-        setValue('ageRestriction', ageMatch ? parseInt(ageMatch[0]) : 0);
+        // Мапінг AgeRestriction (string -> number)
+        const ageMap: Record<string, number> = { "ZeroPlus": 0, "TwelvePlus": 1, "SixteenPlus": 2, "EighteenPlus": 3 };
+        setValue('ageRestriction', ageMap[movie.ageRestriction] ?? 0);
 
+        // Форматування дат для input type="date" (YYYY-MM-DD)
         const formatDate = (dateStr?: string) => dateStr ? dateStr.split('T')[0] : '';
         setValue('releaseDate', formatDate(movie.releaseDate));
-        setValue('startDate', formatDate(movie.startDate));
-        setValue('endDate', formatDate(movie.endDate));
+        setValue('startDate', formatDate(movie.startDate)); // Час початку прокату
+        setValue('endDate', formatDate(movie.endDate));     // Час кінця прокату
 
         const foundDirector = directors.find(d => movie.directorName.includes(d.lastName));
         if (foundDirector) setValue('directorId', foundDirector.id);
@@ -88,7 +92,11 @@ const AdminMovies = () => {
         const foundActorIds = actors.filter(a => movie.actors.some(an => an.includes(a.lastName))).map(a => a.id);
         setValue('actorIds', foundActorIds);
 
+        // Мови
+        setValue('languageIds', movie.languageIds || []);
+
         setIsFormOpen(true);
+        window.scrollTo({ top: 0, behavior: 'smooth' });
     };
 
     const onSubmit = async (data: any) => {
@@ -97,19 +105,22 @@ const AdminMovies = () => {
                 ...data,
                 durationMin: Number(data.durationMin),
                 basePrice: Number(data.basePrice),
-                rating: Number(data.rating), // НОВЕ
+                rating: Number(data.rating),
                 ageRestriction: Number(data.ageRestriction),
                 directorId: data.directorId ? Number(data.directorId) : null,
                 genreIds: data.genreIds ? data.genreIds.map(Number) : [],
                 actorIds: data.actorIds ? data.actorIds.map(Number) : [],
-                languageIds: data.languageIds ? data.languageIds.map(Number) : [], // НОВЕ
+                languageIds: data.languageIds ? data.languageIds.map(Number) : [],
+                trailerUri: data.trailerUri || '', // Збереження трейлера
+                startDate: data.startDate || null,
+                endDate: data.endDate || null
             };
 
             if (editingId) {
-                await api.put(`/movies/${editingId}`, formattedData);
+                await MovieService.update(editingId, formattedData);
                 alert(`Фільм оновлено!`);
             } else {
-                await api.post('/movies', formattedData);
+                await MovieService.create(formattedData);
                 alert('Фільм додано!');
             }
             loadMovies(); closeForm();
@@ -121,14 +132,13 @@ const AdminMovies = () => {
 
     const handleDeleteMovie = async (id: number) => {
         if (window.confirm('Видалити цей фільм?')) {
-            await api.delete(`/movies/${id}`);
+            await MovieService.delete(id);
             loadMovies();
         }
     };
 
     return (
         <div className="max-w-7xl mx-auto pb-20 text-white">
-            {/* РЕЖИМ СПИСКУ (без змін) */}
             {!isFormOpen && (
                 <div className="animate-fade-in">
                     <div className="flex flex-col md:flex-row justify-between items-center mb-8 gap-4">
@@ -141,7 +151,6 @@ const AdminMovies = () => {
                     </div>
 
                     <div className="bg-[#1a1d26] rounded-[32px] border border-gray-800 shadow-2xl overflow-hidden">
-                        {/* ... таблиця ... */}
                         <div className="p-6 border-b border-gray-800 bg-gray-900/30 flex flex-col md:flex-row md:items-center justify-between gap-4">
                             <div className="flex items-center gap-2">
                                 <ListFilter className="text-gray-400" size={20} />
@@ -149,7 +158,7 @@ const AdminMovies = () => {
                             </div>
                             <div className="relative w-full md:w-80">
                                 <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500" size={18} />
-                                <input type="text" placeholder="Пошук фільму..." value={movieSearch} onChange={(e) => setMovieSearch(e.target.value)} className="w-full bg-gray-900 border border-gray-700 rounded-xl py-3 pl-12 pr-10 outline-none focus:border-red-500 text-sm transition-all" />
+                                <input type="text" placeholder="Пошук фільму..." value={movieSearch} onChange={(e) => setMovieSearch(e.target.value)} className="w-full bg-gray-900 border border-gray-700 rounded-xl py-3 pl-12 pr-10 outline-none focus:border-red-500 text-sm transition-all shadow-inner" />
                             </div>
                         </div>
                         <div className="overflow-x-auto">
@@ -175,17 +184,15 @@ const AdminMovies = () => {
                                             <div className="font-bold text-lg text-white mb-1 line-clamp-1">{movie.title}</div>
                                             <div className="flex items-center gap-3">
                                                 <div className="text-xs text-gray-500 font-mono uppercase tracking-wider">ID: {movie.id}</div>
-
-                                                {/* ВИПРАВЛЕНИЙ БЛОК РЕЙТИНГУ */}
                                                 <div className="flex items-center gap-1 text-yellow-500 text-xs font-black bg-yellow-500/10 px-2 py-0.5 rounded-md border border-yellow-500/20">
                                                     <Star size={12} fill="currentColor" />
-                                                    <span>{movie.rating !== undefined && movie.rating !== null ? movie.rating.toFixed(1) : "0.0"}</span>
+                                                    <span>{movie.rating?.toFixed(1) || "0.0"}</span>
                                                 </div>
                                             </div>
                                         </td>
                                         <td className="p-4 hidden md:table-cell">
                                             <div className="flex flex-wrap gap-1">
-                                                {movie.genres.map(g => <span key={g} className="text-[10px] bg-gray-800 px-2 py-1 rounded text-gray-400 border border-gray-700/50">{g}</span>)}
+                                                {movie.genres.map(g => <span key={g} className="text-[10px] bg-gray-800 px-2 py-1 rounded text-gray-400 border border-gray-700/50 uppercase font-bold">{g}</span>)}
                                             </div>
                                         </td>
                                         <td className="p-4 hidden sm:table-cell text-sm text-gray-400">
@@ -193,9 +200,9 @@ const AdminMovies = () => {
                                             <div className="flex items-center gap-2 text-white font-bold"><DollarSign size={14} className="text-green-500"/> {movie.basePrice} ₴</div>
                                         </td>
                                         <td className="p-4 text-right">
-                                            <div className="flex justify-end gap-2">
-                                                <button onClick={() => handleEditMovie(movie)} className="p-3 bg-gray-800 hover:bg-blue-600 hover:text-white text-blue-500 rounded-xl transition-all"><Edit size={18} /></button>
-                                                <button onClick={() => handleDeleteMovie(movie.id)} className="p-3 bg-gray-800 hover:bg-red-600 hover:text-white text-red-500 rounded-xl transition-all"><Trash2 size={18} /></button>
+                                            <div className="flex justify-end gap-2 opacity-0 group-hover:opacity-100 transition-all">
+                                                <button onClick={() => handleEditMovie(movie)} className="p-3 bg-gray-800 hover:bg-blue-600 hover:text-white text-blue-500 rounded-xl transition-all shadow-inner"><Edit size={20} /></button>
+                                                <button onClick={() => handleDeleteMovie(movie.id)} className="p-3 bg-gray-800 hover:bg-red-600 hover:text-white text-red-500 rounded-xl transition-all shadow-inner"><Trash2 size={20} /></button>
                                             </div>
                                         </td>
                                     </tr>
@@ -207,7 +214,6 @@ const AdminMovies = () => {
                 </div>
             )}
 
-            {/* РЕЖИМ ФОРМИ */}
             {isFormOpen && (
                 <div className="animate-fade-in-up">
                     <div className="flex items-center justify-between mb-8">
@@ -236,9 +242,9 @@ const AdminMovies = () => {
                                         <label className="block text-xs text-gray-500 font-bold mb-2 ml-1 uppercase tracking-wider">Віковий ценз</label>
                                         <select {...register('ageRestriction')} className="w-full p-4 bg-gray-900 border border-gray-700 rounded-2xl outline-none focus:border-red-500 text-white shadow-inner cursor-pointer appearance-none">
                                             <option value="0">0+ (G)</option>
-                                            <option value="12">12+ (PG-13)</option>
-                                            <option value="16">16+ (R)</option>
-                                            <option value="18">18+ (NC-17)</option>
+                                            <option value="1">12+ (PG-13)</option>
+                                            <option value="2">16+ (R)</option>
+                                            <option value="3">18+ (NC-17)</option>
                                         </select>
                                     </div>
                                     <div>
@@ -269,9 +275,17 @@ const AdminMovies = () => {
                                     <h3 className="text-sm font-black uppercase tracking-[0.2em]">Медіа та Дати</h3>
                                 </div>
                                 <div>
-                                    <label className="block text-xs text-gray-500 font-bold mb-2 ml-1 uppercase tracking-wider">URL Постера</label>
-                                    <input {...register('posterUri')} className="w-full p-4 bg-gray-900 border border-gray-700 rounded-2xl outline-none focus:border-red-500 text-white shadow-inner placeholder-gray-600" placeholder="https://..." />
+                                    <label className="block text-xs text-gray-500 font-bold mb-2 ml-1 uppercase tracking-wider text-amber-500">URL Постера</label>
+                                    <input {...register('posterUri')} className="w-full p-4 bg-gray-900 border border-gray-700 rounded-2xl outline-none focus:border-amber-500 text-white shadow-inner placeholder-gray-600" placeholder="https://..." />
                                 </div>
+
+                                <div>
+                                    <label className="block text-xs text-gray-500 font-bold mb-2 ml-1 uppercase tracking-wider flex items-center gap-2 text-blue-400">
+                                        <PlayCircle size={14}/> URL Трейлера
+                                    </label>
+                                    <input {...register('trailerUri')} className="w-full p-4 bg-gray-900 border border-gray-700 rounded-2xl outline-none focus:border-blue-500 text-white shadow-inner placeholder-gray-600" placeholder="YouTube link..." />
+                                </div>
+
                                 <div className="grid grid-cols-1 gap-4 p-5 bg-gray-900 rounded-3xl border border-gray-800 shadow-inner">
                                     <div>
                                         <label className="block text-[10px] text-gray-500 font-bold mb-1 uppercase tracking-wider flex items-center gap-2"><Calendar size={12}/> Дата прем'єри</label>
@@ -280,11 +294,11 @@ const AdminMovies = () => {
                                     <div className="grid grid-cols-2 gap-2">
                                         <div>
                                             <label className="block text-[10px] text-gray-500 font-bold mb-1 uppercase tracking-wider text-green-500 flex items-center gap-2"><Calendar size={12}/> Початок прокату</label>
-                                            <input {...register('startDate', { required: true })} type="date" className="w-full p-3 bg-gray-800 border border-gray-700 rounded-xl outline-none focus:border-red-500 text-white" />
+                                            <input {...register('startDate')} type="date" className="w-full p-3 bg-gray-800 border border-gray-700 rounded-xl outline-none focus:border-green-500 text-white" />
                                         </div>
                                         <div>
                                             <label className="block text-[10px] text-gray-500 font-bold mb-1 uppercase tracking-wider text-red-500 flex items-center gap-2"><Calendar size={12}/> Кінець прокату</label>
-                                            <input {...register('endDate', { required: true })} type="date" className="w-full p-3 bg-gray-800 border border-gray-700 rounded-xl outline-none focus:border-red-500 text-white" />
+                                            <input {...register('endDate')} type="date" className="w-full p-3 bg-gray-800 border border-gray-700 rounded-xl outline-none focus:border-red-500 text-white" />
                                         </div>
                                     </div>
                                 </div>
@@ -293,9 +307,9 @@ const AdminMovies = () => {
                                     <label className="block text-xs text-gray-500 font-bold mb-2 ml-1 uppercase tracking-wider flex items-center gap-2"><Users size={14}/> Режисер</label>
                                     <div className="relative mb-2">
                                         <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" size={16} />
-                                        <input type="text" placeholder="Знайти..." className="w-full pl-10 pr-4 py-2 bg-gray-900 border border-gray-700 rounded-xl text-xs outline-none focus:border-red-500 text-white placeholder-gray-600" value={directorSearch} onChange={(e) => setDirectorSearch(e.target.value)} />
+                                        <input type="text" placeholder="Знайти режисера..." className="w-full pl-10 pr-4 py-2 bg-gray-900 border border-gray-700 rounded-xl text-xs outline-none focus:border-red-500 text-white placeholder-gray-600" value={directorSearch} onChange={(e) => setDirectorSearch(e.target.value)} />
                                     </div>
-                                    <div className="w-full bg-gray-900 border border-gray-700 rounded-2xl overflow-hidden h-[150px] overflow-y-auto custom-scrollbar">
+                                    <div className="w-full bg-gray-900 border border-gray-700 rounded-2xl overflow-hidden h-[120px] overflow-y-auto custom-scrollbar">
                                         {filteredDirectors.map(d => (
                                             <button key={d.id} type="button" onClick={() => setValue('directorId', d.id)} className={`w-full text-left p-3 text-xs font-bold transition-all border-b border-gray-800 last:border-0 flex justify-between items-center ${selectedDirectorId === d.id ? 'bg-red-600 text-white' : 'text-gray-400 hover:bg-gray-800 hover:text-white'}`}>
                                                 <span>{d.firstName.toUpperCase()} {d.lastName.toUpperCase()}</span>
@@ -313,7 +327,7 @@ const AdminMovies = () => {
                             {/* Жанри */}
                             <div className="bg-[#1a1d26] p-6 rounded-[32px] border border-gray-800 shadow-2xl flex flex-col h-[350px]">
                                 <div className="flex justify-between mb-4 items-center">
-                                    <h3 className="text-xs font-black uppercase text-red-500">Жанри</h3>
+                                    <h3 className="text-xs font-black uppercase text-red-500 tracking-widest">Жанри</h3>
                                     <input type="text" placeholder="Шукати..." className="w-24 pl-2 py-1 bg-gray-900 border border-gray-700 rounded-lg text-[10px] outline-none text-white focus:border-red-500" value={genreSearch} onChange={(e) => setGenreSearch(e.target.value)} />
                                 </div>
                                 <div className="grid grid-cols-1 gap-2 overflow-y-auto pr-2 custom-scrollbar">
@@ -329,7 +343,7 @@ const AdminMovies = () => {
                             {/* Актори */}
                             <div className="bg-[#1a1d26] p-6 rounded-[32px] border border-gray-800 shadow-2xl flex flex-col h-[350px]">
                                 <div className="flex justify-between mb-4 items-center">
-                                    <h3 className="text-xs font-black uppercase text-red-500">Актори</h3>
+                                    <h3 className="text-xs font-black uppercase text-red-500 tracking-widest">Актори</h3>
                                     <input type="text" placeholder="Шукати..." className="w-24 pl-2 py-1 bg-gray-900 border border-gray-700 rounded-lg text-[10px] outline-none text-white focus:border-red-500" value={actorSearch} onChange={(e) => setActorSearch(e.target.value)} />
                                 </div>
                                 <div className="grid grid-cols-1 gap-2 overflow-y-auto pr-2 custom-scrollbar">
@@ -342,10 +356,10 @@ const AdminMovies = () => {
                                 </div>
                             </div>
 
-                            {/* Мови - НОВЕ */}
+                            {/* Мови */}
                             <div className="bg-[#1a1d26] p-6 rounded-[32px] border border-gray-800 shadow-2xl flex flex-col h-[350px]">
                                 <div className="flex justify-between mb-4 items-center">
-                                    <h3 className="text-xs font-black uppercase text-red-500">Мови</h3>
+                                    <h3 className="text-xs font-black uppercase text-red-500 tracking-widest">Мови</h3>
                                     <input type="text" placeholder="Шукати..." className="w-24 pl-2 py-1 bg-gray-900 border border-gray-700 rounded-lg text-[10px] outline-none text-white focus:border-red-500" value={languageSearch} onChange={(e) => setLanguageSearch(e.target.value)} />
                                 </div>
                                 <div className="grid grid-cols-1 gap-2 overflow-y-auto pr-2 custom-scrollbar">
@@ -359,9 +373,9 @@ const AdminMovies = () => {
                             </div>
                         </div>
 
-                        <div className="flex gap-4 pt-4 border-t border-gray-800">
-                            <button type="button" onClick={closeForm} className="flex-1 bg-gray-800 hover:bg-gray-700 text-white py-4 rounded-2xl font-bold transition-all uppercase tracking-wider text-xs">Скасувати</button>
-                            <button type="submit" className={`flex-[2] text-white font-black py-4 rounded-2xl transition-all shadow-xl uppercase tracking-widest flex items-center justify-center gap-2 ${editingId ? 'bg-yellow-600 hover:bg-yellow-700 shadow-yellow-600/30' : 'bg-red-600 hover:bg-red-700 shadow-red-600/30'}`}>
+                        <div className="flex gap-4 pt-6 border-t border-gray-800">
+                            <button type="button" onClick={closeForm} className="flex-1 bg-gray-800 hover:bg-gray-700 text-white py-5 rounded-3xl font-black uppercase tracking-widest text-xs">Скасувати</button>
+                            <button type="submit" className={`flex-[2] text-white font-black py-5 rounded-3xl transition-all shadow-xl uppercase tracking-widest flex items-center justify-center gap-2 ${editingId ? 'bg-yellow-600 hover:bg-yellow-700' : 'bg-red-600 hover:bg-red-700'}`}>
                                 <Save size={20} /> {editingId ? 'Зберегти зміни' : 'Створити фільм'}
                             </button>
                         </div>
