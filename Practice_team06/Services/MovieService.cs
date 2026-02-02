@@ -244,6 +244,7 @@ public class MovieService : IMovieService
             BasePrice = m.BasePrice,
             Rating = m.Rating.HasValue ? (double)m.Rating.Value : 0.0,
             PosterUri = m.PosterUri,
+            TrailerUri = m.TrailerUri,
             AgeRestriction = m.AgeRestriction.ToString(),
             // Якщо режисера немає - Unknown
             DirectorName = m.Director != null 
