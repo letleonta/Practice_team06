@@ -159,7 +159,10 @@ public class BookingService : IBookingService
     
         if (session == null)
             throw new KeyNotFoundException($"Session with ID {dto.SessionId} not found");
-    
+
+        if (session.StartTime < DateTime.Now)
+            throw new InvalidOperationException($"Session with ID {dto.SessionId} has already past");
+        
         var seats = await _context.Seats
             .Where(s => dto.SeatIds.Contains(s.Id))
             .ToListAsync();
