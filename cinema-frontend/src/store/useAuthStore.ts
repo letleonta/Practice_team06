@@ -3,7 +3,8 @@ import { jwtDecode } from 'jwt-decode';
 
 interface UserInfo {
     email: string;
-    role: string | string[]; // В .NET може бути одна роль або масив
+    name: string;
+    role: string | string[];
     id: string;
 }
 
@@ -18,6 +19,8 @@ interface AuthState {
 // Константи для клеймів .NET Identity
 const ROLE_CLAIM = "http://schemas.microsoft.com/ws/2008/06/identity/claims/role";
 const ID_CLAIM = "http://schemas.microsoft.com/ws/2008/06/identity/claims/nameidentifier";
+const EMAIL_CLAIM = "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/emailaddress";
+const NAME_CLAIM = "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/name";
 
 const getInitialState = () => {
     const token = localStorage.getItem('token');
@@ -32,12 +35,17 @@ const getInitialState = () => {
             return { user: null, token: null, isAuth: false };
         }
 
+        const role = decoded[ROLE_CLAIM] || decoded.role || 'User';
+        const email = decoded[EMAIL_CLAIM] || decoded.email || '';
+        const name = decoded[NAME_CLAIM] || decoded.name || '';
+
         return {
             token,
             isAuth: true,
             user: {
-                email: decoded.email || decoded.sub || decoded.name,
-                role: decoded[ROLE_CLAIM] || 'User',
+                email: email,
+                name: name,
+                role: role,
                 id: decoded[ID_CLAIM]
             }
         };
@@ -53,10 +61,14 @@ export const useAuthStore = create<AuthState>((set) => ({
     setAuth: (token: string) => {
         try {
             const decoded: any = jwtDecode(token);
+            const role = decoded[ROLE_CLAIM] || decoded.role || 'User';
+            const email = decoded[EMAIL_CLAIM] || decoded.email || '';
+            const name = decoded[NAME_CLAIM] || decoded.name || '';
 
             const user = {
-                email: decoded.email || decoded.sub || decoded.name,
-                role: decoded[ROLE_CLAIM] || 'User',
+                email: email,
+                name: name,
+                role: role,
                 id: decoded[ID_CLAIM]
             };
 

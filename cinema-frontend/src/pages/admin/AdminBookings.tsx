@@ -1,0 +1,516 @@
+import { useEffect, useState, useCallback, useMemo } from 'react';
+import {
+    Search, Filter, ArrowUpDown, X, Eye,
+    Calendar, Clock, User, Film, Ticket as TicketIcon,
+    ArrowLeft, ArrowRight, Loader2, TrendingDown, TrendingUp, ChevronDown
+} from 'lucide-react';
+import { getStatusColor, getStatusText } from '../../utils/formatBookingStatus';
+import { getAgeRestrictionText } from '../../utils/formatAgeRestriction';
+import { BookingStatus } from "../../types/booking.ts";
+import type { AdminBookingDto, BookingFilterDto } from "../../types/booking.ts";
+import { BookingService } from "../../services/booking.service";
+import { formatDate, formatTime } from "../../utils/formatTime";
+
+type StatusFilter = BookingStatus | 'ALL';
+type SortField   = 'date' | 'status' | 'userId';
+
+//  main
+const AdminBookingsPage = () => {
+    //  filter state
+    const [statusFilter,    setStatusFilter]    = useState<StatusFilter>('ALL');
+    const [sessionFrom,     setSessionFrom]     = useState('');
+    const [sessionTo,       setSessionTo]       = useState('');
+    const [bookingFrom,     setBookingFrom]     = useState('');
+    const [bookingTo,       setBookingTo]       = useState('');
+    const [userIdInput,     setUserIdInput]     = useState('');
+
+    //  sort state
+    const [sortBy,  setSortBy]  = useState<SortField>('date');
+    const [isDesc,  setIsDesc]  = useState(true);
+
+    //  ui state
+    const [bookings,        setBookings]        = useState<AdminBookingDto[]>([]);
+    const [loading,         setLoading]         = useState(true);
+    const [search,          setSearch]          = useState('');
+    const [filtersOpen,     setFiltersOpen]     = useState(false);
+    const [page,            setPage]            = useState(1);
+    const [selectedBooking, setSelectedBooking] = useState<AdminBookingDto | null>(null);
+
+    const PAGE_SIZE = 12;
+
+    //  fetch
+    const fetchBookings = useCallback(async () => {
+        setLoading(true);
+        try {
+            const filter: BookingFilterDto = {
+                Status:            statusFilter !== 'ALL' ? statusFilter : undefined,
+                SessionFromDate:   sessionFrom || undefined,
+                SessionToDate:     sessionTo   || undefined,
+                BookingFromDate:   bookingFrom || undefined,
+                BookingToDate:     bookingTo   || undefined,
+                UserId:            userIdInput && !isNaN(Number(userIdInput)) ? Number(userIdInput) : undefined,
+                SortBy:            sortBy,
+                IsDescending:      isDesc,
+            };
+
+            const data = await BookingService.getAllBookings(filter);
+            setBookings(data);
+            setPage(1);
+        } catch (e) {
+            console.error('Fetch error', e);
+        } finally {
+            setLoading(false);
+        }
+    }, [statusFilter, sessionFrom, sessionTo, bookingFrom, bookingTo, userIdInput, sortBy, isDesc]);
+
+    useEffect(() => { fetchBookings(); }, [fetchBookings]);
+
+    //  client search (по ID/назві)
+    const filtered = useMemo(() => {
+        if (!search) return bookings;
+        const q = search.toLowerCase();
+        return bookings.filter(b =>
+            String(b.id).includes(q) ||
+            (b.title || '').toLowerCase().includes(q)
+        );
+    }, [bookings, search]);
+
+    //  pagination
+    const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+    const paginated  = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+
+    //  stats
+    const stats = useMemo(() => ({
+        total:      bookings.length,
+        inprogress: bookings.filter(b => b.status === BookingStatus.Inprogress).length,
+        paid:       bookings.filter(b => b.status === BookingStatus.Paid).length,
+        cancelled:  bookings.filter(b => b.status === BookingStatus.Cancelled).length,
+    }), [bookings]);
+
+    //  sort
+    const toggleSort = (field: SortField) => {
+        if (sortBy === field) setIsDesc(d => !d);
+        else { setSortBy(field); setIsDesc(true); }
+    };
+
+    const SortIcon = ({ field }: { field: SortField }) => {
+        if (sortBy !== field) return <ArrowUpDown size={14} className="text-gray-600" />;
+        return isDesc
+            ? <TrendingDown size={14} className="text-red-500" />
+            : <TrendingUp size={14} className="text-red-500" />;
+    };
+
+    //  helpers
+    const hasActiveFilters = statusFilter !== 'ALL' || sessionFrom || sessionTo || bookingFrom || bookingTo || userIdInput;
+
+    const resetAllFilters = () => {
+        setStatusFilter('ALL');
+        setSessionFrom('');
+        setSessionTo('');
+        setBookingFrom('');
+        setBookingTo('');
+        setUserIdInput('');
+        setPage(1);
+    };
+
+    //  status pills config
+    const STATUS_PILLS: { value: StatusFilter; label: string; color: string }[] = [
+        { value: 'ALL',                      label: 'Усі',         color: 'text-white' },
+        { value: BookingStatus.Inprogress,   label: 'В процесі',   color: 'text-emerald-400' },
+        { value: BookingStatus.Paid,         label: 'Оплачені',    color: 'text-blue-400' },
+        { value: BookingStatus.Cancelled,    label: 'Скасовані',   color: 'text-red-400' },
+    ];
+
+    //  render
+    return (
+        <div className="min-h-screen text-white font-sans">
+            <div className="max-w-7xl mx-auto px-4 py-8 space-y-6">
+                {/*  Status pills  */}
+                <div className="flex flex-wrap gap-2">
+                    {STATUS_PILLS.map(pill => {
+                        const active = statusFilter === pill.value;
+                        return (
+                            <button
+                                key={pill.value}
+                                onClick={() => { setStatusFilter(pill.value); setPage(1); }}
+                                className={`px-5 py-2 rounded-full text-sm font-semibold transition-all duration-200
+                                    ${active
+                                    ? 'bg-red-600 text-white shadow-lg shadow-red-600/25 scale-105'
+                                    : 'bg-[#1a1d26] border border-gray-700 hover:border-red-600/50 hover:text-white ' + pill.color
+                                }`}
+                            >
+                                {pill.label}
+                                {/* count badge */}
+                                <span className={`ml-2 text-xs ${active ? 'text-red-200' : 'text-gray-600'}`}>
+                                    {pill.value === 'ALL'
+                                        ? stats.total
+                                        : pill.value === BookingStatus.Inprogress ? stats.inprogress
+                                            : pill.value === BookingStatus.Paid      ? stats.paid
+                                                : stats.cancelled
+                                    }
+                                </span>
+                            </button>
+                        );
+                    })}
+                </div>
+
+                {/*  Search + Filters toggle  */}
+                <div className="flex flex-col sm:flex-row gap-3">
+                    {/* search */}
+                    <div className="relative flex-1">
+                        <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-600" />
+                        <input
+                            type="text"
+                            placeholder="Пошук за ID або назвою фільму…"
+                            value={search}
+                            onChange={e => { setSearch(e.target.value); setPage(1); }}
+                            className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-[#1a1d26] border border-gray-700 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-red-600/50 transition-colors"
+                        />
+                        {search && (
+                            <button onClick={() => setSearch('')} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-600 hover:text-white transition-colors">
+                                <X size={16} />
+                            </button>
+                        )}
+                    </div>
+
+                    {/* filters toggle button */}
+                    <button
+                        onClick={() => setFiltersOpen(o => !o)}
+                        className={`flex items-center gap-2 px-4 py-2.5 rounded-xl border text-sm font-semibold transition-all
+                            ${filtersOpen
+                            ? 'bg-red-600/15 border-red-600/40 text-red-400'
+                            : 'bg-[#1a1d26] border-gray-700 text-gray-400 hover:border-red-600/40 hover:text-white'
+                        }`}
+                    >
+                        <Filter size={16} /> Фільтри
+                        <ChevronDown size={14} className={`transition-transform ${filtersOpen ? 'rotate-180' : ''}`} />
+                        {hasActiveFilters && !filtersOpen && (
+                            <span className="ml-1 w-2 h-2 rounded-full bg-red-600 inline-block" />
+                        )}
+                    </button>
+
+                    {hasActiveFilters && (
+                        <button
+                            onClick={resetAllFilters}
+                            className="px-4 py-2.5 rounded-xl border border-gray-700 bg-[#1a1d26] text-xs text-gray-500 hover:text-red-400 hover:border-red-600/40 transition-all"
+                        >
+                            Скинути все
+                        </button>
+                    )}
+                </div>
+
+                {/*  Filters panel  */}
+                {filtersOpen && (
+                    <div className="bg-[#1a1d26] border border-gray-800 rounded-2xl p-5 animate-[fadeDown_0.2s_ease]">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-4 gap-y-5">
+
+                            {/* User ID */}
+                            <div className="flex flex-col gap-1.5">
+                                <label className="text-xs text-gray-500 uppercase tracking-wider">User ID</label>
+                                <div className="relative">
+                                    <User size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-600" />
+                                    <input
+                                        type="number"
+                                        placeholder="Введіть ID"
+                                        value={userIdInput}
+                                        onChange={e => { setUserIdInput(e.target.value); setPage(1); }}
+                                        className="w-full pl-8 pr-3 py-2 rounded-lg bg-gray-800 border border-gray-700 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-red-600/50 transition-colors"
+                                    />
+                                </div>
+                            </div>
+
+                            {/* Сеанс від */}
+                            <div className="flex flex-col gap-1.5">
+                                <label className="text-xs text-gray-500 uppercase tracking-wider">Сеанс від</label>
+                                <input
+                                    type="date"
+                                    value={sessionFrom}
+                                    onChange={e => { setSessionFrom(e.target.value); setPage(1); }}
+                                    className="px-3 py-2 rounded-lg bg-gray-800 border border-gray-700 text-sm text-white focus:outline-none focus:border-red-600/50 transition-colors"
+                                />
+                            </div>
+
+                            {/* Сеанс до */}
+                            <div className="flex flex-col gap-1.5">
+                                <label className="text-xs text-gray-500 uppercase tracking-wider">Сеанс до</label>
+                                <input
+                                    type="date"
+                                    value={sessionTo}
+                                    onChange={e => { setSessionTo(e.target.value); setPage(1); }}
+                                    className="px-3 py-2 rounded-lg bg-gray-800 border border-gray-700 text-sm text-white focus:outline-none focus:border-red-600/50 transition-colors"
+                                />
+                            </div>
+
+                            {/* Бронь від */}
+                            <div className="flex flex-col gap-1.5">
+                                <label className="text-xs text-gray-500 uppercase tracking-wider">Бронь від</label>
+                                <input
+                                    type="date"
+                                    value={bookingFrom}
+                                    onChange={e => { setBookingFrom(e.target.value); setPage(1); }}
+                                    className="px-3 py-2 rounded-lg bg-gray-800 border border-gray-700 text-sm text-white focus:outline-none focus:border-red-600/50 transition-colors"
+                                />
+                            </div>
+
+                            {/* Бронь до */}
+                            <div className="flex flex-col gap-1.5">
+                                <label className="text-xs text-gray-500 uppercase tracking-wider">Бронь до</label>
+                                <input
+                                    type="date"
+                                    value={bookingTo}
+                                    onChange={e => { setBookingTo(e.target.value); setPage(1); }}
+                                    className="px-3 py-2 rounded-lg bg-gray-800 border border-gray-700 text-sm text-white focus:outline-none focus:border-red-600/50 transition-colors"
+                                />
+                            </div>
+                        </div>
+                    </div>
+                )}
+
+                {/*  Table  */}
+                <div className="bg-[#1a1d26] border border-gray-800 rounded-2xl overflow-hidden shadow-xl">
+                    <div className="overflow-x-auto">
+                        <table className="w-full text-sm">
+                            <thead>
+                            <tr className="border-b border-gray-800 bg-[#161820]">
+                                <th className="text-left px-4 py-3 text-gray-500 font-semibold uppercase text-xs tracking-wider w-24">№</th>
+                                <th className="text-left px-4 py-3 text-gray-500 font-semibold uppercase text-xs tracking-wider">Фільм</th>
+                                <th className="text-left px-4 py-3 text-gray-500 font-semibold uppercase text-xs tracking-wider">
+                                    <button onClick={() => toggleSort('userId')} className="flex items-center gap-1.5 hover:text-white transition-colors">
+                                        User ID <SortIcon field="userId" />
+                                    </button>
+                                </th>
+                                <th className="text-left px-4 py-3 text-gray-500 font-semibold uppercase text-xs tracking-wider">Сеанс</th>
+                                <th className="text-left px-4 py-3 text-gray-500 font-semibold uppercase text-xs tracking-wider">
+                                    <button onClick={() => toggleSort('date')} className="flex items-center gap-1.5 hover:text-white transition-colors">
+                                        Час броні <SortIcon field="date" />
+                                    </button>
+                                </th>
+                                <th className="text-left px-4 py-3 text-gray-500 font-semibold uppercase text-xs tracking-wider">
+                                    <button onClick={() => toggleSort('status')} className="flex items-center gap-1.5 hover:text-white transition-colors">
+                                        Статус <SortIcon field="status" />
+                                    </button>
+                                </th>
+                                <th className="text-right px-4 py-3 text-gray-500 font-semibold uppercase text-xs tracking-wider">Сума</th>
+                                <th className="px-4 py-3 w-12" />
+                            </tr>
+                            </thead>
+                            <tbody>
+                            {loading ? (
+                                <tr>
+                                    <td colSpan={8} className="py-16 text-center">
+                                        <Loader2 size={32} className="animate-spin text-red-600 mx-auto mb-3" />
+                                        <p className="text-gray-500">Завантаження…</p>
+                                    </td>
+                                </tr>
+                            ) : paginated.length === 0 ? (
+                                <tr>
+                                    <td colSpan={8} className="py-16 text-center">
+                                        <TicketIcon size={40} className="text-gray-700 mx-auto mb-3" />
+                                        <p className="text-gray-500">Немає бронювань</p>
+                                    </td>
+                                </tr>
+                            ) : paginated.map((b) => (
+                                <tr
+                                    key={b.id}
+                                    className="border-b border-gray-800/60 hover:bg-[#22252f] transition-colors group cursor-pointer"
+                                    onClick={() => setSelectedBooking(b)}
+                                >
+                                    <td className="px-4 py-3 text-red-600 font-bold">#{b.id}</td>
+                                    <td className="px-4 py-3">
+                                        <div className="flex items-center gap-3">
+                                            {b.posterUri ? (
+                                                <img src={b.posterUri} alt={b.title} className="w-8 h-12 object-cover rounded bg-gray-900" />
+                                            ) : (
+                                                <div className="w-8 h-12 bg-gray-800 rounded flex items-center justify-center">
+                                                    <Film size={14} className="text-gray-600" />
+                                                </div>
+                                            )}
+                                            <div>
+                                                <p className="text-white font-semibold">{b.title}</p>
+                                                {b.ageRestriction && (
+                                                    <span className="text-xs bg-red-600/20 text-red-400 px-2 py-0.5 rounded-full">
+                                                            {getAgeRestrictionText(b.ageRestriction)}
+                                                        </span>
+                                                )}
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td className="px-4 py-3 text-gray-400 font-mono">{b.userId}</td>
+                                    <td className="px-4 py-3 text-gray-300 whitespace-nowrap">
+                                        <p>{formatDate(b.startTime)}</p>
+                                        <p className="text-gray-600 text-xs">{formatTime(b.startTime)}</p>
+                                    </td>
+                                    <td className="px-4 py-3 text-gray-300 whitespace-nowrap">
+                                        <p>{formatDate(b.bookingTime)}</p>
+                                        <p className="text-gray-600 text-xs">{formatTime(b.bookingTime)}</p>
+                                    </td>
+                                    <td className="px-4 py-3">
+                                            <span className={`inline-block px-3 py-1 rounded-full text-xs font-semibold border ${getStatusColor(b.status)}`}>
+                                                {getStatusText(b.status)}
+                                            </span>
+                                    </td>
+                                    <td className="px-4 py-3 text-right text-red-500 font-black">{b.totalPrice}₴</td>
+                                    <td className="px-4 py-3 text-center opacity-0 group-hover:opacity-100 transition-opacity">
+                                        <button
+                                            onClick={e => { e.stopPropagation(); setSelectedBooking(b); }}
+                                            className="text-gray-500 hover:text-red-500 transition-colors"
+                                        >
+                                            <Eye size={18} />
+                                        </button>
+                                    </td>
+                                </tr>
+                            ))}
+                            </tbody>
+                        </table>
+                    </div>
+
+                    {/* Pagination */}
+                    {totalPages > 1 && (
+                        <div className="flex items-center justify-between px-4 py-3 border-t border-gray-800 bg-[#161820]">
+                            <span className="text-xs text-gray-500">
+                                {((page - 1) * PAGE_SIZE) + 1}–{Math.min(page * PAGE_SIZE, filtered.length)} з {filtered.length}
+                            </span>
+                            <div className="flex items-center gap-1">
+                                <button
+                                    disabled={page === 1}
+                                    onClick={() => setPage(p => p - 1)}
+                                    className="p-1.5 rounded-lg text-gray-500 hover:text-white hover:bg-gray-800 disabled:opacity-30 disabled:cursor-not-allowed transition-all"
+                                >
+                                    <ArrowLeft size={16} />
+                                </button>
+                                {Array.from({ length: totalPages }, (_, i) => i + 1)
+                                    .filter(n => n === 1 || n === totalPages || Math.abs(n - page) <= 1)
+                                    .reduce<(number | '…')[]>((acc, n, idx, arr) => {
+                                        if (idx > 0 && n - (arr[idx - 1] as number) > 1) acc.push('…');
+                                        acc.push(n);
+                                        return acc;
+                                    }, [])
+                                    .map((n, i) =>
+                                        n === '…' ? (
+                                            <span key={`e${i}`} className="text-gray-600 px-1">…</span>
+                                        ) : (
+                                            <button
+                                                key={n}
+                                                onClick={() => setPage(n as number)}
+                                                className={`w-8 h-8 rounded-lg text-xs font-semibold transition-all
+                                                    ${page === n
+                                                    ? 'bg-red-600 text-white shadow-md shadow-red-600/30'
+                                                    : 'text-gray-400 hover:bg-gray-800 hover:text-white'
+                                                }`}
+                                            >
+                                                {n}
+                                            </button>
+                                        )
+                                    )}
+                                <button
+                                    disabled={page === totalPages}
+                                    onClick={() => setPage(p => p + 1)}
+                                    className="p-1.5 rounded-lg text-gray-500 hover:text-white hover:bg-gray-800 disabled:opacity-30 disabled:cursor-not-allowed transition-all"
+                                >
+                                    <ArrowRight size={16} />
+                                </button>
+                            </div>
+                        </div>
+                    )}
+                </div>
+            </div>
+
+            {/*  Detail Modal  */}
+            {selectedBooking && (
+                <div
+                    className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm px-4"
+                    onClick={() => setSelectedBooking(null)}
+                >
+                    <div
+                        className="bg-[#1a1d26] border border-gray-800 rounded-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto shadow-2xl"
+                        onClick={e => e.stopPropagation()}
+                    >
+                        <div className="flex items-center justify-between p-5 border-b border-gray-800 bg-gradient-to-r from-red-600/10 to-transparent rounded-t-2xl">
+                            <h2 className="text-lg font-black">
+                                Бронювання <span className="text-red-600">#{selectedBooking.id}</span>
+                            </h2>
+                            <div className="flex items-center gap-3">
+                                <span className={`px-3 py-0.5 rounded-full text-xs font-semibold border ${getStatusColor(selectedBooking.status)}`}>
+                                    {getStatusText(selectedBooking.status)}
+                                </span>
+                                <button onClick={() => setSelectedBooking(null)} className="text-gray-500 hover:text-white transition-colors">
+                                    <X size={20} />
+                                </button>
+                            </div>
+                        </div>
+
+                        <div className="p-5 space-y-5">
+                            <div className="flex gap-4">
+                                {selectedBooking.posterUri ? (
+                                    <img src={selectedBooking.posterUri} alt={selectedBooking.title} className="w-20 h-32 object-cover rounded-lg bg-gray-900 shrink-0" />
+                                ) : (
+                                    <div className="w-20 h-32 bg-gray-800 rounded-lg flex items-center justify-center shrink-0">
+                                        <Film size={28} className="text-gray-600" />
+                                    </div>
+                                )}
+                                <div className="flex flex-col justify-between py-1">
+                                    <div>
+                                        <h3 className="text-white font-bold text-lg">{selectedBooking.title}</h3>
+                                        {selectedBooking.ageRestriction && (
+                                            <span className="text-xs bg-red-600/20 text-red-400 px-2 py-0.5 rounded-full">
+                                                {getAgeRestrictionText(selectedBooking.ageRestriction)}
+                                            </span>
+                                        )}
+                                    </div>
+                                    <div className="space-y-1.5 text-sm">
+                                        <div className="flex items-center gap-2 text-gray-400">
+                                            <User size={14} className="text-red-600" />
+                                            <span>User ID: <span className="text-gray-200 font-mono">{selectedBooking.userId}</span></span>
+                                        </div>
+                                        <div className="flex items-center gap-2 text-gray-400">
+                                            <Calendar size={14} className="text-red-600" />
+                                            <span>Сеанс: <span className="text-gray-200">{formatDate(selectedBooking.startTime)} в {formatTime(selectedBooking.startTime)}</span></span>
+                                        </div>
+                                        <div className="flex items-center gap-2 text-gray-400">
+                                            <Clock size={14} className="text-red-600" />
+                                            <span>Бронювано: <span className="text-gray-200">{formatDate(selectedBooking.bookingTime)} в {formatTime(selectedBooking.bookingTime)}</span></span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div>
+                                <div className="flex items-center justify-between mb-3">
+                                    <h4 className="text-sm font-semibold text-gray-300 flex items-center gap-2">
+                                        <TicketIcon size={15} className="text-red-600" /> Квитки
+                                    </h4>
+                                    <span className="text-xs text-gray-600">{selectedBooking.tickets.length} шт.</span>
+                                </div>
+                                <div className="grid grid-cols-2 gap-2">
+                                    {selectedBooking.tickets.map((t, i) => (
+                                        <div key={i} className="bg-gray-800/60 border border-gray-700 rounded-xl p-3 flex items-center justify-between">
+                                            <div>
+                                                <p className="text-xs text-gray-500">Ряд {t.rowNumber} · Місце {t.seatNumber}</p>
+                                                <p className="text-white font-semibold text-sm mt-0.5">Квиток #{i + 1}</p>
+                                            </div>
+                                            <span className="text-red-500 font-black text-base">{t.actualPrice}₴</span>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+
+                            <div className="flex items-center justify-between pt-4 border-t border-gray-700">
+                                <span className="text-gray-500 text-sm">Загальна сума</span>
+                                <span className="text-3xl font-black text-red-600">{selectedBooking.totalPrice}₴</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            <style>{`
+                @keyframes fadeDown {
+                    from { opacity: 0; transform: translateY(-8px); }
+                    to   { opacity: 1; transform: translateY(0); }
+                }
+            `}</style>
+        </div>
+    );
+};
+
+export default AdminBookingsPage;

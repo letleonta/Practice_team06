@@ -38,8 +38,6 @@ public class SessionsController : ControllerBase
     }
 
     //АДМІН ЧАСТИНА 
-
-    
     [HttpPost]
     [Authorize(Roles = "Admin, Manager")]
     public async Task<ActionResult<SessionDto>> Create([FromBody] CreateSessionDto dto)

@@ -1,9 +1,10 @@
 export interface TicketDto {
-    bookingId: number;
-    sessionId: number;
+    id: number;
     seatId: number;
     actualPrice: number;
     isActive: boolean;
+    rowNumber?: number;
+    seatNumber?: number;
 }
 
 export interface TicketBookingDto {
@@ -14,6 +15,8 @@ export interface TicketBookingDto {
     seatId: number;
     actualPrice: number;
     isActive: boolean;
+    rowNumber?: number;
+    seatNumber?: number;
 }
 
 export interface AdminTicketDto extends TicketBookingDto {

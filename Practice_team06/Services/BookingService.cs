@@ -313,7 +313,7 @@ public class BookingService : IBookingService
                 ? query.OrderByDescending(booking => booking.Status)
                 : query.OrderBy(booking => booking.Status),
 
-            "userid" => isDescending
+            "userId" => isDescending
                 ? query.OrderByDescending(booking => booking.UserId)
                 : query.OrderBy(booking => booking.UserId),
 
