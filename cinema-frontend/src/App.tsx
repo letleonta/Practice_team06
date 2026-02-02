@@ -1,6 +1,7 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import Login from './pages/Login';
 import Home from './pages/Home';
+import MoviePage from './pages/MoviePage';
 import Register from './pages/Register';
 import AdminDashboard from "./pages/admin/AdminDashboard.tsx";
 import MyBookingsPage from './pages/MyBookingsPage.tsx';
@@ -30,6 +31,9 @@ function App() {
                     <Route
                         path="/"
                         element={<Home />}
+                    />
+                    <Route path="/movie/:id"
+                           element={<MoviePage />}
                     />
                     <Route
                         path="/bookings/my"

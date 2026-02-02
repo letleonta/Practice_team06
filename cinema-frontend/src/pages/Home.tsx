@@ -1,10 +1,12 @@
 import { useEffect, useState, useMemo } from 'react';
+import { Link } from 'react-router-dom';
 import api from '../api/axiosInstance';
 import type { MovieDto } from '../types/movie';
 import { Star, Clock, Ticket, Search, Filter, CalendarDays } from 'lucide-react';
 import {getAgeRestrictionText} from "../utils/formatAgeRestriction.ts";
 
 const Home = () => {
+    // const { user } = useAuthStore(); // user тут більше не потрібен, бо він в шапці Layout
     const [nowPlayingMovies, setNowPlayingMovies] = useState<MovieDto[]>([]);
     const [upcomingMovies, setUpcomingMovies] = useState<MovieDto[]>([]);
     const [loading, setLoading] = useState(true);
@@ -50,7 +52,6 @@ const Home = () => {
         });
     }, [currentList, searchTerm, selectedGenre]);
 
-    // Скидаємо жанр при перемиканні табів (щоб не застрягти на жанрі, якого немає в іншому списку)
     const handleTabChange = (tab: 'now' | 'soon') => {
         setActiveTab(tab);
         setSelectedGenre('Всі');
@@ -87,8 +88,8 @@ const Home = () => {
                                 <span className={`text-lg sm:text-2xl font-bold -translate-y-1 ${
                                     activeTab === 'now' ? 'text-gray-500' : 'text-gray-800 group-hover:text-gray-600'
                                 }`}>
-                {nowPlayingMovies.length}
-            </span>
+                                    {nowPlayingMovies.length}
+                                </span>
 
                                 {activeTab === 'now' && <div className="absolute bottom-0 left-0 w-full h-1 bg-red-600 rounded-t-full shadow-[0_-2px_10px_rgba(220,38,38,0.5)]"></div>}
                             </button>
@@ -105,8 +106,8 @@ const Home = () => {
                                 <span className={`text-lg sm:text-2xl font-bold -translate-y-1 ${
                                     activeTab === 'soon' ? 'text-gray-500' : 'text-gray-800 group-hover:text-gray-600'
                                 }`}>
-                {upcomingMovies.length}
-            </span>
+                                    {upcomingMovies.length}
+                                </span>
 
                                 {activeTab === 'soon' && <div className="absolute bottom-0 left-0 w-full h-1 bg-red-600 rounded-t-full shadow-[0_-2px_10px_rgba(220,38,38,0.5)]"></div>}
                             </button>
@@ -165,7 +166,7 @@ const Home = () => {
                 ) : (
                     <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-y-12 gap-x-8">
                         {filteredMovies.map(movie => (
-                            <div key={movie.id} className="group cursor-pointer">
+                            <Link to={`/movie/${movie.id}`} key={movie.id} className="group cursor-pointer block">
                                 {/* Poster Image */}
                                 <div className="relative aspect-[2/3] rounded-3xl overflow-hidden shadow-2xl border border-gray-800 group-hover:border-red-600/50 transition-all duration-500">
                                     {movie.posterUri ? (
@@ -185,7 +186,7 @@ const Home = () => {
                                         </div>
                                     </div>
 
-                                    {/* Відображаємо рейтинг тільки для фільмів, що вже вийшли */}
+                                    {/* Rating */}
                                     {activeTab === 'now' && movie.rating && (
                                         <div className="absolute bottom-4 left-4 bg-yellow-500 text-black px-2 py-1 rounded-lg text-xs font-black flex items-center gap-1 shadow-lg">
                                             <Star size={12} fill="black" />
@@ -193,13 +194,13 @@ const Home = () => {
                                         </div>
                                     )}
 
-                                    {/* РІЗНІ КНОПКИ ДЛЯ "ЗАРАЗ" І "СКОРО" */}
+                                    {/* Buttons */}
                                     <div className="absolute inset-0 bg-gradient-to-t from-black via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-end p-4">
                                         {activeTab === 'now' ? (
-                                            <button className="w-full bg-white text-black font-black py-3 rounded-2xl flex items-center justify-center gap-2 transform translate-y-4 group-hover:translate-y-0 transition-transform duration-300 shadow-2xl hover:bg-gray-100">
+                                            <div className="w-full bg-white text-black font-black py-3 rounded-2xl flex items-center justify-center gap-2 transform translate-y-4 group-hover:translate-y-0 transition-transform duration-300 shadow-2xl hover:bg-gray-100">
                                                 <Ticket size={18} />
                                                 КУПИТИ КВИТОК
-                                            </button>
+                                            </div>
                                         ) : (
                                             <div className="w-full bg-gray-900/80 backdrop-blur text-white font-bold py-3 rounded-2xl flex items-center justify-center gap-2 transform translate-y-4 group-hover:translate-y-0 transition-transform duration-300 border border-gray-700">
                                                 <CalendarDays size={18} className="text-red-500" />
@@ -226,13 +227,13 @@ const Home = () => {
                                             <Clock size={14} className="text-red-600" />
                                             <span>{movie.durationMin} хв</span>
                                         </div>
-                                        {/* Показуємо ціну тільки для активних фільмів */}
+                                        {/* Price */}
                                         {activeTab === 'now' && (
                                             <span className="text-gray-200 font-black text-sm">{movie.basePrice} ₴</span>
                                         )}
                                     </div>
                                 </div>
-                            </div>
+                            </Link>
                         ))}
                     </div>
                 )}
