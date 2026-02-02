@@ -4,6 +4,7 @@ import { MovieService } from '../services/movie.service';
 import type { MovieDto } from '../types/movie';
 // 👇 Залишили тільки ті іконки, які використовуються в картках і фільтрах
 import { Star, Clock, Ticket, Search, Filter, CalendarDays } from 'lucide-react';
+import {getAgeRestrictionText} from "../utils/formatAgeRestriction.ts";
 
 const Home = () => {
     const [nowPlayingMovies, setNowPlayingMovies] = useState<MovieDto[]>([]);
@@ -181,7 +182,7 @@ const Home = () => {
                                     {/* Labels */}
                                     <div className="absolute top-4 left-4 flex flex-col gap-2">
                                         <div className="bg-black/70 backdrop-blur-md px-3 py-1 rounded-lg text-[10px] font-black border border-white/10 w-fit">
-                                            {movie.ageRestriction}
+                                            {getAgeRestrictionText(movie.ageRestriction)}
                                         </div>
                                     </div>
 

@@ -38,7 +38,7 @@ public static class DbInitializer
                 EmailConfirmed = true
             };
 
-            var result = await userManager.CreateAsync(admin, "Admin123!"); // Використовуй складний пароль
+            var result = await userManager.CreateAsync(admin, "Admin123!");
             if (result.Succeeded)
             {
                 await userManager.AddToRoleAsync(admin, "Manager");
@@ -123,6 +123,8 @@ public static class DbInitializer
         StartDate = new DateOnly(2026, 1, 1),
         EndDate = new DateOnly(2026, 3, 1),
         Rating = 8.6m,
+        PosterUri = "https://promopuff.com.ua/catalog/wp-content/uploads/2024/04/1_0021_sloi-40.jpg",
+        TrailerUri = "https://youtu.be/DtR76pz517E?si=vw4dJ8D9Za9cX_jr",
         AgeRestriction = AgeRestriction.SixteenPlus, 
         DirectorId = nolan.Id
     };
@@ -136,6 +138,8 @@ public static class DbInitializer
         StartDate = new DateOnly(2026, 1, 1),
         EndDate = new DateOnly(2026, 4, 1),
         Rating = 8.9m,
+        PosterUri = "https://upload.wikimedia.org/wikipedia/ru/6/61/%D0%94%D1%8E%D0%BD%D0%B0_%E2%80%94_%D0%A7%D0%B0%D1%81%D1%82%D1%8C_%D0%B2%D1%82%D0%BE%D1%80%D0%B0%D1%8F_%28%D0%BF%D0%BE%D1%81%D1%82%D0%B5%D1%80%29.jpg",
+        TrailerUri = "https://youtu.be/DtR76pz517E?si=vw4dJ8D9Za9cX_jr",
         AgeRestriction = AgeRestriction.TwelvePlus, 
         DirectorId = villeneuve.Id
     };
