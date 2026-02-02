@@ -2,7 +2,6 @@ import { useEffect, useState, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { MovieService } from '../services/movie.service';
 import type { MovieDto } from '../types/movie';
-// 👇 Залишили тільки ті іконки, які використовуються в картках і фільтрах
 import { Star, Clock, Ticket, Search, Filter, CalendarDays } from 'lucide-react';
 import {getAgeRestrictionText} from "../utils/formatAgeRestriction.ts";
 

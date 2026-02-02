@@ -1,7 +1,7 @@
 ﻿import { useEffect, useState } from 'react';
 import { useParams, useNavigate} from 'react-router-dom';
 import api from '../api/axiosInstance';
-import { MovieService } from '../services/movie.service'; // 👇 Використовуємо твій сервіс
+import { MovieService } from '../services/movie.service';
 import type { MovieDto } from '../types/movie';
 import type { SessionDto } from '../types/session';
 import { Clock, Calendar, Star, Ticket, ArrowLeft, PlayCircle } from 'lucide-react';
@@ -20,7 +20,6 @@ const MoviePage = () => {
         const fetchData = async () => {
             setLoading(true);
             try {
-                // 👇 Лаконічне використання сервісу
                 const movieData = await MovieService.getById(Number(id));
                 const sessionRes = await api.get<SessionDto[]>(`/sessions/by-movie/${id}`);
 
