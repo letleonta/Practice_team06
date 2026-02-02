@@ -39,7 +39,7 @@ public class HallsController : ControllerBase
 
     [HttpGet("{id}")]
     [Authorize(Roles = "Admin, Customer, Manager")]
-    public async Task<IActionResult> GetById(short id)
+    public async Task<IActionResult> GetById(int id)
     {
         var hall = await _hallService.GetByIdAsync(id);
         return hall == null ? NotFound() : Ok(hall);

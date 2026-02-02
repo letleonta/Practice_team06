@@ -38,7 +38,7 @@ public static class DbInitializer
                 EmailConfirmed = true
             };
 
-            var result = await userManager.CreateAsync(admin, "Admin123!"); // Використовуй складний пароль
+            var result = await userManager.CreateAsync(admin, "Admin123!");
             if (result.Succeeded)
             {
                 await userManager.AddToRoleAsync(admin, "Manager");

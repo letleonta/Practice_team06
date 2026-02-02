@@ -17,7 +17,6 @@ public class ActorsController : ControllerBase
     }
 
     [HttpGet]
-    [Authorize(Roles = "Admin, Customer, Manager")]
     public async Task<ActionResult<IEnumerable<ActorDto>>> GetActors([FromQuery] ActorFilterDto filter)
     {
         var actors = await _actorService.GetAllAsync(filter);
@@ -26,7 +25,6 @@ public class ActorsController : ControllerBase
     }
 
     [HttpGet("{id}")]
-    [Authorize(Roles = "Admin, Customer, Manager")]
     public async Task<ActionResult<ActorDto>> GetActor(int id) 
     {
         var actor = await _actorService.GetByIdAsync(id);
@@ -57,7 +55,6 @@ public class ActorsController : ControllerBase
     }
     
     [HttpGet("{id}/movies")]
-    [Authorize(Roles = "Admin, Customer, Manager")]
     public async Task<ActionResult<IEnumerable<ActorMovieDto>>> GetActorMovies(int id)
     {
         var movies = await _actorService.GetActorMoviesAsync(id);
