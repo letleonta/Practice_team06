@@ -4,6 +4,8 @@ import api from '../api/axiosInstance';
 import type { MovieDto } from '../types/movie';
 import type { SessionDto } from '../types/session';
 import { Clock, Calendar, Star, Ticket, ArrowLeft, PlayCircle } from 'lucide-react';
+import {formatDate, formatTime} from "../utils/formatTime.ts";
+import {getAgeRestrictionText} from "../utils/formatAgeRestriction.ts";
 
 const MoviePage = () => {
     const { id } = useParams<{ id: string }>();
@@ -28,27 +30,6 @@ const MoviePage = () => {
 
     const handleBuyTicket = (sessionId: number) => {
         navigate(`/sessions/${sessionId}`);
-    };
-
-    const formatDate = (dateStr?: string) => {
-        if (!dateStr) return '';
-        return new Date(dateStr).toLocaleDateString('uk-UA', {
-            day: 'numeric', month: 'long', year: 'numeric'
-        });
-    };
-
-    const formatTime = (dateStr: string) => {
-        return new Date(dateStr).toLocaleTimeString('uk-UA', {
-            hour: '2-digit', minute: '2-digit'
-        });
-    };
-
-    const formatAge = (age: string) => {
-        const map: Record<string, string> = {
-            'ZeroPlus': '0+', 'TwelvePlus': '12+',
-            'SixteenPlus': '16+', 'EighteenPlus': '18+'
-        };
-        return map[age] || age;
     };
 
     // Функція для отримання ID відео з YouTube посилання
@@ -139,7 +120,7 @@ const MoviePage = () => {
                     <div className="flex-1 w-full pt-2 md:pt-24">
                         <div className="flex flex-wrap items-center gap-3 mb-3">
                             <span className="bg-red-600 px-2.5 py-0.5 rounded text-sm font-bold shadow-lg shadow-red-600/20">
-                                {formatAge(movie.ageRestriction)}
+                                {getAgeRestrictionText(movie.ageRestriction)}
                             </span>
                             {movie.genres?.map(g => (
                                 <span key={g} className="bg-gray-800/80 backdrop-blur border border-gray-700 px-2.5 py-0.5 rounded text-xs font-bold text-gray-300 uppercase tracking-wide">
@@ -226,7 +207,6 @@ const MoviePage = () => {
                                 )}
                             </div>
                         </div>
-
                     </div>
                 </div>
             </div>
