@@ -1,8 +1,8 @@
-import { useEffect, useState, useCallback, useMemo } from 'react';
+import { useState, useMemo } from 'react';
 import {
     Search, Filter, ArrowUpDown, X, Eye,
     Calendar, Clock, User, Film, Ticket as TicketIcon,
-    ArrowLeft, ArrowRight, Loader2, TrendingDown, TrendingUp, ChevronDown
+    Loader2, TrendingDown, TrendingUp, ChevronDown
 } from 'lucide-react';
 import { getStatusColor, getStatusText } from '../../utils/formatBookingStatus';
 import { getAgeRestrictionText } from '../../utils/formatAgeRestriction';
@@ -10,62 +10,73 @@ import { BookingStatus } from "../../types/booking.ts";
 import type { AdminBookingDto, BookingFilterDto } from "../../types/booking.ts";
 import { BookingService } from "../../services/booking.service";
 import { formatDateWithYear, formatTime } from "../../utils/formatTime";
+import { Pagination } from "../../components/Pagination";
+import { PaginationInfo } from "../../components/PaginationInfo";
+import {UsePagination} from "../../hooks/UsePagination.ts";
+import {AgeRestrictionBadge} from "../../components/AgeRestrictionBadge.tsx";
 
 type StatusFilter = BookingStatus | 'ALL';
-type SortField   = 'date' | 'status' | 'userId';
+type SortBy = 'date' | 'status' | 'userId';
 
-//  main
+interface SortIconProps {
+    field: SortBy;
+    currentSort: SortBy;
+    isDesc: boolean;
+}
+
 const AdminBookingsPage = () => {
-    //  filter state
-    const [statusFilter,    setStatusFilter]    = useState<StatusFilter>('ALL');
-    const [sessionFrom,     setSessionFrom]     = useState('');
-    const [sessionTo,       setSessionTo]       = useState('');
-    const [bookingFrom,     setBookingFrom]     = useState('');
-    const [bookingTo,       setBookingTo]       = useState('');
-    const [userIdInput,     setUserIdInput]     = useState('');
+    // Filter state
+    const [statusFilter, setStatusFilter] = useState<StatusFilter>('ALL');
+    const [sessionFrom, setSessionFrom] = useState('');
+    const [sessionTo, setSessionTo] = useState('');
+    const [bookingFrom, setBookingFrom] = useState('');
+    const [bookingTo, setBookingTo] = useState('');
+    const [userIdInput, setUserIdInput] = useState('');
 
-    //  sort state
-    const [sortBy,  setSortBy]  = useState<SortField>('date');
-    const [isDesc,  setIsDesc]  = useState(true);
+    // Sort state
+    const [sortBy, setSortBy] = useState<SortBy>('date');
+    const [isDesc, setIsDesc] = useState(true);
 
-    //  ui state
-    const [bookings,        setBookings]        = useState<AdminBookingDto[]>([]);
-    const [loading,         setLoading]         = useState(true);
-    const [search,          setSearch]          = useState('');
-    const [filtersOpen,     setFiltersOpen]     = useState(false);
-    const [page,            setPage]            = useState(1);
+    // UI state
+    const [search, setSearch] = useState('');
+    const [filtersOpen, setFiltersOpen] = useState(false);
     const [selectedBooking, setSelectedBooking] = useState<AdminBookingDto | null>(null);
 
-    const PAGE_SIZE = 12;
+    // Fetch function for pagination hook
+    const fetchBookings = async (page: number, pageSize: number) => {
+        const filter: BookingFilterDto = {
+            Status: statusFilter !== 'ALL' ? statusFilter : undefined,
+            SessionFromDate: sessionFrom || undefined,
+            SessionToDate: sessionTo || undefined,
+            BookingFromDate: bookingFrom || undefined,
+            BookingToDate: bookingTo || undefined,
+            UserId: userIdInput && !isNaN(Number(userIdInput)) ? Number(userIdInput) : undefined,
+            SortBy: sortBy,
+            IsDescending: isDesc,
+            Page: page,
+            PageSize: pageSize,
+        };
 
-    //  fetch
-    const fetchBookings = useCallback(async () => {
-        setLoading(true);
-        try {
-            const filter: BookingFilterDto = {
-                Status:            statusFilter !== 'ALL' ? statusFilter : undefined,
-                SessionFromDate:   sessionFrom || undefined,
-                SessionToDate:     sessionTo   || undefined,
-                BookingFromDate:   bookingFrom || undefined,
-                BookingToDate:     bookingTo   || undefined,
-                UserId:            userIdInput && !isNaN(Number(userIdInput)) ? Number(userIdInput) : undefined,
-                SortBy:            sortBy,
-                IsDescending:      isDesc,
-            };
+        return await BookingService.getAllBookings(filter);
+    };
 
-            const data = await BookingService.getAllBookings(filter);
-            setBookings(data);
-            setPage(1);
-        } catch (e) {
-            console.error('Fetch error', e);
-        } finally {
-            setLoading(false);
-        }
-    }, [statusFilter, sessionFrom, sessionTo, bookingFrom, bookingTo, userIdInput, sortBy, isDesc]);
+    // Use pagination hook
+    const {
+        items: bookings,
+        totalCount,
+        currentPage,
+        totalPages,
+        pageSize,
+        loading,
+        error,
+        goToPage
+    } = UsePagination(
+        fetchBookings,
+        [statusFilter, sessionFrom, sessionTo, bookingFrom, bookingTo, userIdInput, sortBy, isDesc],
+        { pageSize: 6 }
+    );
 
-    useEffect(() => { fetchBookings(); }, [fetchBookings]);
-
-    //  client search (по ID/назві)
+    // Client-side search (по ID/назві)
     const filtered = useMemo(() => {
         if (!search) return bookings;
         const q = search.toLowerCase();
@@ -75,32 +86,26 @@ const AdminBookingsPage = () => {
         );
     }, [bookings, search]);
 
-    //  pagination
-    const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
-    const paginated  = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
-
-    //  stats
-    const stats = useMemo(() => ({
-        total:      bookings.length,
-        inprogress: bookings.filter(b => b.status === BookingStatus.Inprogress).length,
-        paid:       bookings.filter(b => b.status === BookingStatus.Paid).length,
-        cancelled:  bookings.filter(b => b.status === BookingStatus.Cancelled).length,
-    }), [bookings]);
-
-    //  sort
-    const toggleSort = (field: SortField) => {
-        if (sortBy === field) setIsDesc(d => !d);
-        else { setSortBy(field); setIsDesc(true); }
+    // Sort toggle
+    const toggleSort = (field: SortBy) => {
+        if (sortBy === field) {
+            setIsDesc(d => !d);
+        } else {
+            setSortBy(field);
+            setIsDesc(true);
+        }
     };
 
-    const SortIcon = ({ field }: { field: SortField }) => {
-        if (sortBy !== field) return <ArrowUpDown size={14} className="text-gray-600" />;
+    const SortIcon = ({ field, currentSort, isDesc }: SortIconProps) => {
+        if (currentSort !== field) {
+            return <ArrowUpDown size={14} className="text-gray-600" />;
+        }
         return isDesc
             ? <TrendingDown size={14} className="text-red-500" />
             : <TrendingUp size={14} className="text-red-500" />;
     };
 
-    //  helpers
+    // Helpers
     const hasActiveFilters = statusFilter !== 'ALL' || sessionFrom || sessionTo || bookingFrom || bookingTo || userIdInput;
 
     const resetAllFilters = () => {
@@ -110,51 +115,30 @@ const AdminBookingsPage = () => {
         setBookingFrom('');
         setBookingTo('');
         setUserIdInput('');
-        setPage(1);
+        setSearch('');
     };
 
-    //  status pills config
-    const STATUS_PILLS: { value: StatusFilter; label: string; color: string }[] = [
-        { value: 'ALL',                      label: 'Усі',         color: 'text-white' },
-        { value: BookingStatus.Inprogress,   label: 'В процесі',   color: 'text-emerald-400' },
-        { value: BookingStatus.Paid,         label: 'Оплачені',    color: 'text-blue-400' },
-        { value: BookingStatus.Cancelled,    label: 'Скасовані',   color: 'text-red-400' },
-    ];
-
-    //  render
     return (
         <div className="min-h-screen text-white font-sans">
             <div className="max-w-7xl mx-auto px-4 py-8 space-y-6">
-                {/*  Status pills  */}
-                <div className="flex flex-wrap gap-2">
-                    {STATUS_PILLS.map(pill => {
-                        const active = statusFilter === pill.value;
-                        return (
-                            <button
-                                key={pill.value}
-                                onClick={() => { setStatusFilter(pill.value); setPage(1); }}
-                                className={`px-5 py-2 rounded-full text-sm font-semibold transition-all duration-200
-                                    ${active
-                                    ? 'bg-red-600 text-white shadow-lg shadow-red-600/25 scale-105'
-                                    : 'bg-[#1a1d26] border border-gray-700 hover:border-red-600/50 hover:text-white ' + pill.color
-                                }`}
-                            >
-                                {pill.label}
-                                {/* count badge */}
-                                <span className={`ml-2 text-xs ${active ? 'text-red-200' : 'text-gray-600'}`}>
-                                    {pill.value === 'ALL'
-                                        ? stats.total
-                                        : pill.value === BookingStatus.Inprogress ? stats.inprogress
-                                            : pill.value === BookingStatus.Paid      ? stats.paid
-                                                : stats.cancelled
-                                    }
+                {/* Header */}
+                <div className="flex items-center justify-between">
+                    <div>
+                        <h1 className="text-4xl font-black tracking-tight mb-2 uppercase">
+                            Управління бронюваннями
+                        </h1>
+                        <p className="text-gray-500">
+                            Перегляд та керування всіма бронюваннями
+                            {totalCount > 0 && (
+                                <span className="ml-2 text-red-600 font-semibold">
+                                    ({totalCount})
                                 </span>
-                            </button>
-                        );
-                    })}
+                            )}
+                        </p>
+                    </div>
                 </div>
 
-                {/*  Search + Filters toggle  */}
+                {/* Search + Filters toggle */}
                 <div className="flex flex-col sm:flex-row gap-3">
                     {/* search */}
                     <div className="relative flex-1">
@@ -163,11 +147,14 @@ const AdminBookingsPage = () => {
                             type="text"
                             placeholder="Пошук за ID або назвою фільму…"
                             value={search}
-                            onChange={e => { setSearch(e.target.value); setPage(1); }}
+                            onChange={e => setSearch(e.target.value)}
                             className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-[#1a1d26] border border-gray-700 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-red-600/50 transition-colors"
                         />
                         {search && (
-                            <button onClick={() => setSearch('')} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-600 hover:text-white transition-colors">
+                            <button
+                                onClick={() => setSearch('')}
+                                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-600 hover:text-white transition-colors"
+                            >
                                 <X size={16} />
                             </button>
                         )}
@@ -199,11 +186,10 @@ const AdminBookingsPage = () => {
                     )}
                 </div>
 
-                {/*  Filters panel  */}
+                {/* Filters panel */}
                 {filtersOpen && (
                     <div className="bg-[#1a1d26] border border-gray-800 rounded-2xl p-5 animate-[fadeDown_0.2s_ease]">
                         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-4 gap-y-5">
-
                             {/* User ID */}
                             <div className="flex flex-col gap-1.5">
                                 <label className="text-xs text-gray-500 uppercase tracking-wider">User ID</label>
@@ -213,7 +199,7 @@ const AdminBookingsPage = () => {
                                         type="number"
                                         placeholder="Введіть ID"
                                         value={userIdInput}
-                                        onChange={e => { setUserIdInput(e.target.value); setPage(1); }}
+                                        onChange={e => setUserIdInput(e.target.value)}
                                         className="w-full pl-8 pr-3 py-2 rounded-lg bg-gray-800 border border-gray-700 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-red-600/50 transition-colors"
                                     />
                                 </div>
@@ -225,7 +211,7 @@ const AdminBookingsPage = () => {
                                 <input
                                     type="date"
                                     value={sessionFrom}
-                                    onChange={e => { setSessionFrom(e.target.value); setPage(1); }}
+                                    onChange={e => setSessionFrom(e.target.value)}
                                     className="px-3 py-2 rounded-lg bg-gray-800 border border-gray-700 text-sm text-white focus:outline-none focus:border-red-600/50 transition-colors"
                                 />
                             </div>
@@ -236,7 +222,7 @@ const AdminBookingsPage = () => {
                                 <input
                                     type="date"
                                     value={sessionTo}
-                                    onChange={e => { setSessionTo(e.target.value); setPage(1); }}
+                                    onChange={e => setSessionTo(e.target.value)}
                                     className="px-3 py-2 rounded-lg bg-gray-800 border border-gray-700 text-sm text-white focus:outline-none focus:border-red-600/50 transition-colors"
                                 />
                             </div>
@@ -247,7 +233,7 @@ const AdminBookingsPage = () => {
                                 <input
                                     type="date"
                                     value={bookingFrom}
-                                    onChange={e => { setBookingFrom(e.target.value); setPage(1); }}
+                                    onChange={e => setBookingFrom(e.target.value)}
                                     className="px-3 py-2 rounded-lg bg-gray-800 border border-gray-700 text-sm text-white focus:outline-none focus:border-red-600/50 transition-colors"
                                 />
                             </div>
@@ -258,7 +244,7 @@ const AdminBookingsPage = () => {
                                 <input
                                     type="date"
                                     value={bookingTo}
-                                    onChange={e => { setBookingTo(e.target.value); setPage(1); }}
+                                    onChange={e => setBookingTo(e.target.value)}
                                     className="px-3 py-2 rounded-lg bg-gray-800 border border-gray-700 text-sm text-white focus:outline-none focus:border-red-600/50 transition-colors"
                                 />
                             </div>
@@ -266,7 +252,7 @@ const AdminBookingsPage = () => {
                     </div>
                 )}
 
-                {/*  Table  */}
+                {/* Table */}
                 <div className="bg-[#1a1d26] border border-gray-800 rounded-2xl overflow-hidden shadow-xl">
                     <div className="overflow-x-auto">
                         <table className="w-full text-sm">
@@ -276,18 +262,18 @@ const AdminBookingsPage = () => {
                                 <th className="text-left px-4 py-3 text-gray-500 font-semibold uppercase text-xs tracking-wider">Фільм</th>
                                 <th className="text-left px-4 py-3 text-gray-500 font-semibold uppercase text-xs tracking-wider">
                                     <button onClick={() => toggleSort('userId')} className="flex items-center gap-1.5 hover:text-white transition-colors">
-                                        User ID <SortIcon field="userId" />
+                                        User ID <SortIcon field="userId" currentSort={sortBy} isDesc={isDesc} />
                                     </button>
                                 </th>
                                 <th className="text-left px-4 py-3 text-gray-500 font-semibold uppercase text-xs tracking-wider">Сеанс</th>
                                 <th className="text-left px-4 py-3 text-gray-500 font-semibold uppercase text-xs tracking-wider">
                                     <button onClick={() => toggleSort('date')} className="flex items-center gap-1.5 hover:text-white transition-colors">
-                                        Час броні <SortIcon field="date" />
+                                        Час броні <SortIcon field="date" currentSort={sortBy} isDesc={isDesc} />
                                     </button>
                                 </th>
                                 <th className="text-left px-4 py-3 text-gray-500 font-semibold uppercase text-xs tracking-wider">
                                     <button onClick={() => toggleSort('status')} className="flex items-center gap-1.5 hover:text-white transition-colors">
-                                        Статус <SortIcon field="status" />
+                                        Статус <SortIcon field="status" currentSort={sortBy} isDesc={isDesc} />
                                     </button>
                                 </th>
                                 <th className="text-right px-4 py-3 text-gray-500 font-semibold uppercase text-xs tracking-wider">Сума</th>
@@ -302,120 +288,108 @@ const AdminBookingsPage = () => {
                                         <p className="text-gray-500">Завантаження…</p>
                                     </td>
                                 </tr>
-                            ) : paginated.length === 0 ? (
+                            ) : error ? (
+                                <tr>
+                                    <td colSpan={8} className="py-16 text-center">
+                                        <p className="text-red-500 text-xl mb-4">{error}</p>
+                                        <button
+                                            onClick={() => window.location.reload()}
+                                            className="bg-red-600 hover:bg-red-700 text-white px-6 py-3 rounded-xl font-semibold transition-all"
+                                        >
+                                            Спробувати знову
+                                        </button>
+                                    </td>
+                                </tr>
+                            ) : filtered.length === 0 ? (
                                 <tr>
                                     <td colSpan={8} className="py-16 text-center">
                                         <TicketIcon size={40} className="text-gray-700 mx-auto mb-3" />
                                         <p className="text-gray-500">Немає бронювань</p>
                                     </td>
                                 </tr>
-                            ) : paginated.map((b) => (
-                                <tr
-                                    key={b.id}
-                                    className="border-b border-gray-800/60 hover:bg-[#22252f] transition-colors group cursor-pointer"
-                                    onClick={() => setSelectedBooking(b)}
-                                >
-                                    <td className="px-4 py-3 text-red-600 font-bold">#{b.id}</td>
-                                    <td className="px-4 py-3">
-                                        <div className="flex items-center gap-3">
-                                            {b.posterUri ? (
-                                                <img src={b.posterUri} alt={b.title} className="w-8 h-12 object-cover rounded bg-gray-900" />
-                                            ) : (
-                                                <div className="w-8 h-12 bg-gray-800 rounded flex items-center justify-center">
-                                                    <Film size={14} className="text-gray-600" />
+                            ) : (
+                                filtered.map((b) => (
+                                    <tr
+                                        key={b.id}
+                                        className="border-b border-gray-800/60 hover:bg-[#22252f] transition-colors group cursor-pointer"
+                                        onClick={() => setSelectedBooking(b)}
+                                    >
+                                        <td className="px-4 py-3 text-red-600 font-bold">#{b.id}</td>
+                                        <td className="px-4 py-3">
+                                            <div className="flex items-center gap-3">
+                                                <div className="flex-shrink-0">
+                                                    {b.posterUri ? (
+                                                        <img src={b.posterUri} alt={b.title} className="w-8 h-12 object-cover rounded bg-gray-900" />
+                                                    ) : (
+                                                        <div className="w-8 h-12 bg-gray-800 rounded flex items-center justify-center">
+                                                            <Film size={14} className="text-gray-600" />
+                                                        </div>
+                                                    )}
                                                 </div>
-                                            )}
-                                            <div>
-                                                <p className="text-white font-semibold">{b.title}</p>
-                                                {b.ageRestriction && (
-                                                    <span className="text-xs bg-red-600/20 text-red-400 px-2 py-0.5 rounded-full">
-                                                            {getAgeRestrictionText(b.ageRestriction)}
-                                                        </span>
-                                                )}
+
+                                                <div className="flex flex-col items-start gap-1">
+                                                    <p className="text-white font-semibold leading-tight line-clamp-1">
+                                                        {b.title}
+                                                    </p>
+                                                    <AgeRestrictionBadge
+                                                        restriction={b.ageRestriction}
+                                                        className="bg-red-600/20 text-red-400 border border-red-600/30 px-1.5 py-0.5 rounded text-[10px]"
+                                                    />
+                                                </div>
                                             </div>
-                                        </div>
-                                    </td>
-                                    <td className="px-4 py-3 text-gray-400 font-mono">{b.userId}</td>
-                                    <td className="px-4 py-3 text-gray-300 whitespace-nowrap">
-                                        <p>{formatDateWithYear(b.startTime)}</p>
-                                        <p className="text-gray-600 text-xs">{formatTime(b.startTime)}</p>
-                                    </td>
-                                    <td className="px-4 py-3 text-gray-300 whitespace-nowrap">
-                                        <p>{formatDateWithYear(b.bookingTime)}</p>
-                                        <p className="text-gray-600 text-xs">{formatTime(b.bookingTime)}</p>
-                                    </td>
-                                    <td className="px-4 py-3">
-                                            <span className={`inline-block px-3 py-1 rounded-full text-xs font-semibold border ${getStatusColor(b.status)}`}>
-                                                {getStatusText(b.status)}
-                                            </span>
-                                    </td>
-                                    <td className="px-4 py-3 text-right text-red-500 font-black">{b.totalPrice}₴</td>
-                                    <td className="px-4 py-3 text-center opacity-0 group-hover:opacity-100 transition-opacity">
-                                        <button
-                                            onClick={e => { e.stopPropagation(); setSelectedBooking(b); }}
-                                            className="text-gray-500 hover:text-red-500 transition-colors"
-                                        >
-                                            <Eye size={18} />
-                                        </button>
-                                    </td>
-                                </tr>
-                            ))}
+                                        </td>
+                                        <td className="px-4 py-3 text-gray-400 font-mono">{b.userId}</td>
+                                        <td className="px-4 py-3 text-gray-300 whitespace-nowrap">
+                                            <p>{formatDateWithYear(b.startTime)}</p>
+                                            <p className="text-gray-600 text-xs">{formatTime(b.startTime)}</p>
+                                        </td>
+                                        <td className="px-4 py-3 text-gray-300 whitespace-nowrap">
+                                            <p>{formatDateWithYear(b.bookingTime)}</p>
+                                            <p className="text-gray-600 text-xs">{formatTime(b.bookingTime)}</p>
+                                        </td>
+                                        <td className="px-4 py-3">
+                                                <span className={`inline-block px-3 py-1 rounded-full text-xs font-semibold border ${getStatusColor(b.status)}`}>
+                                                    {getStatusText(b.status)}
+                                                </span>
+                                        </td>
+                                        <td className="px-4 py-3 text-right text-red-500 font-black">{b.totalPrice}₴</td>
+                                        <td className="px-4 py-3 text-center opacity-0 group-hover:opacity-100 transition-opacity">
+                                            <button
+                                                onClick={e => { e.stopPropagation(); setSelectedBooking(b); }}
+                                                className="text-gray-500 hover:text-red-500 transition-colors"
+                                            >
+                                                <Eye size={18} />
+                                            </button>
+                                        </td>
+                                    </tr>
+                                )))}
                             </tbody>
                         </table>
                     </div>
 
                     {/* Pagination */}
-                    {totalPages > 1 && (
-                        <div className="flex items-center justify-between px-4 py-3 border-t border-gray-800 bg-[#161820]">
-                            <span className="text-xs text-gray-500">
-                                {((page - 1) * PAGE_SIZE) + 1}–{Math.min(page * PAGE_SIZE, filtered.length)} з {filtered.length}
-                            </span>
-                            <div className="flex items-center gap-1">
-                                <button
-                                    disabled={page === 1}
-                                    onClick={() => setPage(p => p - 1)}
-                                    className="p-1.5 rounded-lg text-gray-500 hover:text-white hover:bg-gray-800 disabled:opacity-30 disabled:cursor-not-allowed transition-all"
-                                >
-                                    <ArrowLeft size={16} />
-                                </button>
-                                {Array.from({ length: totalPages }, (_, i) => i + 1)
-                                    .filter(n => n === 1 || n === totalPages || Math.abs(n - page) <= 1)
-                                    .reduce<(number | '…')[]>((acc, n, idx, arr) => {
-                                        if (idx > 0 && n - (arr[idx - 1] as number) > 1) acc.push('…');
-                                        acc.push(n);
-                                        return acc;
-                                    }, [])
-                                    .map((n, i) =>
-                                        n === '…' ? (
-                                            <span key={`e${i}`} className="text-gray-600 px-1">…</span>
-                                        ) : (
-                                            <button
-                                                key={n}
-                                                onClick={() => setPage(n as number)}
-                                                className={`w-8 h-8 rounded-lg text-xs font-semibold transition-all
-                                                    ${page === n
-                                                    ? 'bg-red-600 text-white shadow-md shadow-red-600/30'
-                                                    : 'text-gray-400 hover:bg-gray-800 hover:text-white'
-                                                }`}
-                                            >
-                                                {n}
-                                            </button>
-                                        )
-                                    )}
-                                <button
-                                    disabled={page === totalPages}
-                                    onClick={() => setPage(p => p + 1)}
-                                    className="p-1.5 rounded-lg text-gray-500 hover:text-white hover:bg-gray-800 disabled:opacity-30 disabled:cursor-not-allowed transition-all"
-                                >
-                                    <ArrowRight size={16} />
-                                </button>
+                    {!loading && !error && totalPages > 0 && (
+                        <div className="border-t border-gray-800 bg-[#161820] p-4">
+                            <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+                                <PaginationInfo
+                                    currentPage={currentPage}
+                                    pageSize={pageSize}
+                                    totalCount={totalCount}
+                                    itemName="бронювання"
+                                    className="text-xs"
+                                />
+                                <Pagination
+                                    currentPage={currentPage}
+                                    totalPages={totalPages}
+                                    onPageChange={goToPage}
+                                />
                             </div>
                         </div>
                     )}
                 </div>
             </div>
 
-            {/*  Detail Modal  */}
+            {/* Detail Modal */}
             {selectedBooking && (
                 <div
                     className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm px-4"
