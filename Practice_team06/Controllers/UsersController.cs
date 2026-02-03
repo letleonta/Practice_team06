@@ -29,7 +29,7 @@ public class UsersController(IUserService userService, UserManager<User> userMan
             FirstName = user.FirstName,
             LastName = user.LastName,
             BirthDate = user.BirthDate,
-            AvatarUrl = user.AvatarUrl
+            AvatarUrl = user.AvatarUri
         });
     }
     
