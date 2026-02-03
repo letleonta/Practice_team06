@@ -1,15 +1,15 @@
 ﻿import { useEffect, useState, useMemo } from 'react';
 import { useForm } from 'react-hook-form';
 import api from '../../api/axiosInstance';
-import { MovieService } from '../../services/movie.service'; // Використовуємо ваш сервіс
+import { MovieService } from '../../services/movie.service';
 import type { CreateMovieDto, MovieDto } from '../../types/movie';
-import { Film, Image, Info, Search, Users, Edit, Trash2, ListFilter, X, Calendar, DollarSign, Clock, Plus, ArrowLeft, Save, Star, PlayCircle } from 'lucide-react';
+import { Film, Image, Info, Search, Users, Edit, Trash2, ListFilter, Calendar, DollarSign, Clock, Plus, ArrowLeft, Save, Star, PlayCircle } from 'lucide-react';
 
 const AdminMovies = () => {
     const { register, handleSubmit, reset, setValue, watch, formState: { errors } } = useForm<CreateMovieDto>();
     const selectedDirectorId = watch('directorId');
 
-    // --- СТЕЙТИ ---
+    //  СТЕЙТИ 
     const [genres, setGenres] = useState<{id: number, name: string}[]>([]);
     const [directors, setDirectors] = useState<{id: number, firstName: string, lastName: string}[]>([]);
     const [actors, setActors] = useState<{id: number, firstName: string, lastName: string}[]>([]);
@@ -52,7 +52,7 @@ const AdminMovies = () => {
         fetchData();
     }, []);
 
-    // --- ФІЛЬТРАЦІЯ ---
+    //  ФІЛЬТРАЦІЯ 
     const filteredDirectors = useMemo(() => directors.filter(d => `${d.firstName} ${d.lastName}`.toLowerCase().includes(directorSearch.toLowerCase())), [directors, directorSearch]);
     const filteredActors = useMemo(() => actors.filter(a => `${a.firstName} ${a.lastName}`.toLowerCase().includes(actorSearch.toLowerCase())), [actors, actorSearch]);
     const filteredGenres = useMemo(() => genres.filter(g => g.name.toLowerCase().includes(genreSearch.toLowerCase())), [genres, genreSearch]);
@@ -62,7 +62,7 @@ const AdminMovies = () => {
     const openCreateForm = () => { setEditingId(null); reset(); setValue('directorId', undefined); setIsFormOpen(true); };
     const closeForm = () => { setEditingId(null); reset(); setIsFormOpen(false); };
 
-    // --- ВИПРАВЛЕНА ЛОГІКА РЕДАГУВАННЯ ---
+    //  ВИПРАВЛЕНА ЛОГІКА РЕДАГУВАННЯ 
     const handleEditMovie = (movie: MovieDto) => {
         setEditingId(movie.id);
         setValue('title', movie.title);
@@ -241,10 +241,10 @@ const AdminMovies = () => {
                                     <div>
                                         <label className="block text-xs text-gray-500 font-bold mb-2 ml-1 uppercase tracking-wider">Віковий ценз</label>
                                         <select {...register('ageRestriction')} className="w-full p-4 bg-gray-900 border border-gray-700 rounded-2xl outline-none focus:border-red-500 text-white shadow-inner cursor-pointer appearance-none">
-                                            <option value="0">0+ (G)</option>
-                                            <option value="1">12+ (PG-13)</option>
-                                            <option value="2">16+ (R)</option>
-                                            <option value="3">18+ (NC-17)</option>
+                                            <option value="0">0+ </option>
+                                            <option value="1">12+ </option>
+                                            <option value="2">16+ </option>
+                                            <option value="3">18+ </option>
                                         </select>
                                     </div>
                                     <div>
