@@ -27,7 +27,10 @@ const Navbar = () => {
                 {/* Навігація зі зміненим шрифтом */}
                 <div className="hidden md:flex gap-8">
                     <Link to="/movies" className="text-[14px] font-extrabold uppercase tracking-[0.2em] text-gray-400 hover:text-white transition-colors">
-                        Фільми
+                        В прокаті
+                    </Link>
+                    <Link to="/movies" className="text-[14px] font-extrabold uppercase tracking-[0.2em] text-gray-400 hover:text-white transition-colors">
+                        Скоро в кіно
                     </Link>
                     {user && (user.role === 'Customer' || user.role === 'Admin') && (
                         <Link to="/bookings/my" className="text-[14px] font-extrabold uppercase tracking-[0.2em] text-gray-400 hover:text-white transition-colors">

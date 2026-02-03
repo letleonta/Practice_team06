@@ -4,7 +4,7 @@ import { Ticket, Calendar, Clock, Film, ChevronRight } from 'lucide-react';
 import {type BookingDto, type BookingFilterDto, BookingStatus} from "../types/booking.ts";
 import BookingFilterBar, {type FilterStatus} from "../components/BookingFilterBar.tsx";
 import {getStatusColor, getStatusText} from "../utils/formatBookingStatus.ts";
-import {formatDate, formatTime} from "../utils/formatTime.ts";
+import {formatDateWithYear, formatTime} from "../utils/formatTime.ts";
 import {BookingService} from "../services/booking.service.ts";
 import {AgeRestrictionBadge} from "../components/AgeRestrictionBadge.tsx";
 
@@ -140,7 +140,7 @@ const MyBookingsPage = () => {
                                         <div className="flex items-center gap-2 text-sm">
                                             <Calendar size={16} className="text-red-600 flex-shrink-0" />
                                             <span className="text-gray-400">
-                                                {formatDate(booking.startTime)}
+                                                {formatDateWithYear(booking.startTime)}
                                             </span>
                                         </div>
 

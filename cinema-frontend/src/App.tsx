@@ -1,6 +1,7 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import Login from './pages/Login';
-import Home from './pages/Home';
+import NowPlayingPage from './pages/NowPlayingPage.tsx';
+import UpcomingPage from './pages/UpcomingPage.tsx';
 import MoviePage from './pages/MoviePage';
 import Register from './pages/Register';
 import AdminDashboard from "./pages/admin/AdminDashboard.tsx";
@@ -48,7 +49,11 @@ function App() {
                 <Route element={<MainLayout />}>
                     <Route
                         path="/"
-                        element={<Home />}
+                        element={<NowPlayingPage />}
+                    />
+                    <Route
+                        path="/upcoming"
+                        element={<UpcomingPage />}
                     />
                     <Route path="/movie/:id"
                            element={<MoviePage />}
