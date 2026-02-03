@@ -7,6 +7,7 @@ import type { SessionDto } from '../types/session';
 import { Clock, Calendar, Star, Ticket, ArrowLeft, PlayCircle } from 'lucide-react';
 import {formatDate, formatTime} from "../utils/formatTime.ts";
 import {getAgeRestrictionText} from "../utils/formatAgeRestriction.ts";
+import {AgeRestrictionBadge} from "../components/AgeRestrictionBadge.tsx";
 
 const MoviePage = () => {
     const { id } = useParams<{ id: string }>();
@@ -110,9 +111,9 @@ const MoviePage = () => {
                     {/* Назва, Метрики, Режисер та Актори */}
                     <div className="flex-1 w-full pt-2">
                         <div className="flex flex-wrap items-center gap-3 mb-3">
-                            <span className="bg-red-600 px-2.5 py-0.5 rounded text-sm font-bold shadow-lg shadow-red-600/20">
-                                {getAgeRestrictionText(movie.ageRestriction)}
-                            </span>
+                            <AgeRestrictionBadge
+                                restriction={movie.ageRestriction}
+                            />
                             {movie.genres?.map(g => (
                                 <span key={g} className="bg-white/10 border border-white/20 px-3 py-1 rounded text-xs font-bold text-white uppercase tracking-wide">
                                     {g}

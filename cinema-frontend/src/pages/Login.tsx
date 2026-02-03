@@ -53,7 +53,7 @@ const Login = () => {
                 <h2 className="text-xl font-bold text-white mb-6">Вхід в акаунт</h2>
 
                 {error && (
-                    <div className="bg-red-500/10 border border-red-500/50 text-red-500 p-3 rounded-xl mb-6 text-sm text-center animate-pulse font-medium">
+                    <div className="bg-red-500/10 border border-red-500/50 text-red-500 p-3 rounded-xl mb-6 text-sm text-center font-medium">
                         {error}
                     </div>
                 )}
