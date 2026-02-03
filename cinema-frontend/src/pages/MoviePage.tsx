@@ -5,8 +5,7 @@ import { MovieService } from '../services/movie.service';
 import type { MovieDto } from '../types/movie';
 import type { SessionDto } from '../types/session';
 import { Clock, Calendar, Star, Ticket, ArrowLeft, PlayCircle } from 'lucide-react';
-import {formatDate, formatTime} from "../utils/formatTime.ts";
-import {getAgeRestrictionText} from "../utils/formatAgeRestriction.ts";
+import {formatDateWithYear, formatTime} from "../utils/formatTime.ts";
 import {AgeRestrictionBadge} from "../components/AgeRestrictionBadge.tsx";
 
 const MoviePage = () => {
@@ -127,7 +126,7 @@ const MoviePage = () => {
 
                         <div className="flex flex-wrap items-center gap-6 text-gray-200 mb-10 font-medium text-base">
                             <div className="flex items-center gap-2 bg-black/40 px-4 py-2 rounded-xl backdrop-blur-md border border-white/10"><Clock className="text-red-500" size={20} /> <span>{movie.durationMin} хв</span></div>
-                            <div className="flex items-center gap-2 bg-black/40 px-4 py-2 rounded-xl backdrop-blur-md border border-white/10"><Calendar className="text-red-500" size={20} /> <span>{formatDate(movie.releaseDate)}</span></div>
+                            <div className="flex items-center gap-2 bg-black/40 px-4 py-2 rounded-xl backdrop-blur-md border border-white/10"><Calendar className="text-red-500" size={20} /> <span>{formatDateWithYear(movie.releaseDate)}</span></div>
                             {movie.rating && (<div className="flex items-center gap-2 text-yellow-400 bg-black/40 px-4 py-2 rounded-xl backdrop-blur-md border border-white/10"><Star fill="currentColor" size={20} /> <span className="text-white font-bold text-lg">{movie.rating.toFixed(1)}</span></div>)}
                         </div>
 
