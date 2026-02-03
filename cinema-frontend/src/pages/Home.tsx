@@ -78,7 +78,7 @@ const Home = () => {
                             {/* КНОПКА "ЗАРАЗ У КІНО" */}
                             <button
                                 onClick={() => handleTabChange('now')}
-                                className={`group text-3xl sm:text-5xl font-black italic tracking-tight transition-all pb-3 relative flex items-baseline gap-2 ${
+                                className={`group text-3xl sm:text-5xl font-black tracking-tight transition-all pb-3 relative flex items-baseline gap-2 ${
                                     activeTab === 'now' ? 'text-white' : 'text-gray-600 hover:text-gray-400'
                                 }`}
                             >
@@ -96,7 +96,7 @@ const Home = () => {
                             {/* КНОПКА "СКОРО" */}
                             <button
                                 onClick={() => handleTabChange('soon')}
-                                className={`group text-3xl sm:text-5xl font-black italic tracking-tight transition-all pb-3 relative flex items-baseline gap-2 ${
+                                className={`group text-3xl sm:text-5xl font-black tracking-tight transition-all pb-3 relative flex items-baseline gap-2 ${
                                     activeTab === 'soon' ? 'text-white' : 'text-gray-600 hover:text-gray-400'
                                 }`}
                             >
