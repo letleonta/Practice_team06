@@ -10,6 +10,7 @@ import SessionPage from "./pages/SessionPage.tsx";
 import MainLayout from "./layouts/MainLayout.tsx";
 import {Profile} from "./pages/Profile.tsx";
 import { useAuthStore } from './store/useAuthStore';
+import { Toaster } from 'react-hot-toast';
 
 function App() {
     const { user, token } = useAuthStore();
@@ -18,6 +19,7 @@ function App() {
 
     return (
         <BrowserRouter>
+            <Toaster position="top-center" />
             <Routes>
                 <Route
                     path="/login"
