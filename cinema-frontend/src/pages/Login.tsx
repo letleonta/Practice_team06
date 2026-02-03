@@ -46,7 +46,7 @@ const Login = () => {
         <div className="min-h-screen flex items-center justify-center bg-[#0f1117] px-4 font-sans">
             <div className="max-w-md w-full bg-[#1a1d26] p-8 rounded-2xl shadow-2xl border border-gray-800">
                 <div className="text-center mb-8">
-                    <h1 className="text-3xl font-black text-red-600 tracking-tighter mb-2 italic">CINEMA_PRO</h1>
+                    <h1 className="text-3xl font-black text-red-600 tracking-tighter mb-2">CINEMA</h1>
                     <p className="text-gray-400 text-sm font-medium">Увійдіть, щоб бронювати квитки</p>
                 </div>
 

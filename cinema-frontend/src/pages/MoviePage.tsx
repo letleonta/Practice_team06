@@ -1,10 +1,12 @@
 ﻿import { useEffect, useState } from 'react';
-import { useParams, useNavigate} from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import api from '../api/axiosInstance';
 import { MovieService } from '../services/movie.service';
 import type { MovieDto } from '../types/movie';
 import type { SessionDto } from '../types/session';
 import { Clock, Calendar, Star, Ticket, ArrowLeft, PlayCircle } from 'lucide-react';
+import {formatDate, formatTime} from "../utils/formatTime.ts";
+import {getAgeRestrictionText} from "../utils/formatAgeRestriction.ts";
 
 const MoviePage = () => {
     const { id } = useParams<{ id: string }>();
@@ -39,27 +41,7 @@ const MoviePage = () => {
         navigate(`/sessions/${sessionId}`);
     };
 
-    const formatDate = (dateStr?: string) => {
-        if (!dateStr) return '';
-        return new Date(dateStr).toLocaleDateString('uk-UA', {
-            day: 'numeric', month: 'long', year: 'numeric'
-        });
-    };
-
-    const formatTime = (dateStr: string) => {
-        return new Date(dateStr).toLocaleTimeString('uk-UA', {
-            hour: '2-digit', minute: '2-digit'
-        });
-    };
-
-    const formatAge = (age: string) => {
-        const map: Record<string, string> = {
-            'ZeroPlus': '0+', 'TwelvePlus': '12+',
-            'SixteenPlus': '16+', 'EighteenPlus': '18+'
-        };
-        return map[age] || age;
-    };
-
+    // Функція для отримання ID відео з YouTube посилання
     const getYouTubeId = (url?: string) => {
         if (!url) return null;
         const regExp = /^.*(?:youtu.be\/|v\/|e\/|u\/\w\/|embed\/|v=)([^#&?]*).*/;
@@ -127,9 +109,9 @@ const MoviePage = () => {
 
                     {/* Назва, Метрики, Режисер та Актори */}
                     <div className="flex-1 w-full pt-2">
-                        <div className="flex flex-wrap items-center gap-3 mb-4">
-                            <span className="bg-red-600 px-3 py-1 rounded text-sm font-bold shadow-lg shadow-red-600/30">
-                                {formatAge(movie.ageRestriction)}
+                        <div className="flex flex-wrap items-center gap-3 mb-3">
+                            <span className="bg-red-600 px-2.5 py-0.5 rounded text-sm font-bold shadow-lg shadow-red-600/20">
+                                {getAgeRestrictionText(movie.ageRestriction)}
                             </span>
                             {movie.genres?.map(g => (
                                 <span key={g} className="bg-white/10 border border-white/20 px-3 py-1 rounded text-xs font-bold text-white uppercase tracking-wide">
@@ -138,7 +120,6 @@ const MoviePage = () => {
                             ))}
                         </div>
 
-                        {/* Назва без italic */}
                         <h1 className="text-5xl md:text-7xl font-black tracking-tighter mb-6 leading-none text-white drop-shadow-2xl">
                             {movie.title}
                         </h1>

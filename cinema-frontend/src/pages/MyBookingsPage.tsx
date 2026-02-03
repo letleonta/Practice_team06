@@ -24,6 +24,7 @@ const MyBookingsPage = () => {
                         filter.SessionToDate = new Date().toISOString();
                     } else if (activeFilter === 'ACTIVE') {
                         filter.SessionFromDate = new Date().toISOString();
+                        filter.Status = BookingStatus.Paid;
                     } else if (activeFilter === 'CANCELLED') {
                         filter.Status = BookingStatus.Cancelled;
                     }
