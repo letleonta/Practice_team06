@@ -69,4 +69,21 @@ public class UsersController(IUserService userService, UserManager<User> userMan
         var result = await userManager.UpdateAsync(user);
         return result.Succeeded ? Ok("Профіль оновлено") : BadRequest(result.Errors);
     }
+    
+    [HttpDelete("avatar")]
+    public async Task<IActionResult> DeleteAvatar()
+    {
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (userId == null) return Unauthorized();
+
+        try
+        {
+            await userService.DeleteAvatarAsync(int.Parse(userId));
+            return Ok(new { message = "Аватар видалено" });
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+    }
 }

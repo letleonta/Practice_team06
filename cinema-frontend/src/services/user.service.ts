@@ -2,19 +2,16 @@
 import type { UserDto, UpdateProfileDto } from "../types/user";
 
 export const UserService = {
-    // Отримати профіль поточного юзера
     async getProfile() {
         const response = await api.get<UserDto>("/users/profile");
         return response.data;
     },
 
-    // Оновити персональні дані
     async updateProfile(data: UpdateProfileDto) {
         const response = await api.put("/users/profile", data);
         return response.data;
     },
 
-    // Завантажити аватарку
     async uploadAvatar(file: File) {
         const formData = new FormData();
         formData.append("file", file); // Назва 'file' має збігатися з параметром у C#
@@ -25,5 +22,9 @@ export const UserService = {
             },
         });
         return response.data;
+    },
+
+    async deleteAvatar() {
+        await api.delete("/users/avatar");
     }
 };

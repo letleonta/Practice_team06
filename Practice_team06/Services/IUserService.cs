@@ -3,4 +3,5 @@
 public interface IUserService
 {
     Task<string> UploadAvatarAsync(int userId, IFormFile file);
+    Task DeleteAvatarAsync(int userId);
 }
