@@ -9,7 +9,7 @@ import { getAgeRestrictionText } from '../../utils/formatAgeRestriction';
 import { BookingStatus } from "../../types/booking.ts";
 import type { AdminBookingDto, BookingFilterDto } from "../../types/booking.ts";
 import { BookingService } from "../../services/booking.service";
-import { formatDate, formatTime } from "../../utils/formatTime";
+import { formatDateWithYear, formatTime } from "../../utils/formatTime";
 
 type StatusFilter = BookingStatus | 'ALL';
 type SortField   = 'date' | 'status' | 'userId';
@@ -337,11 +337,11 @@ const AdminBookingsPage = () => {
                                     </td>
                                     <td className="px-4 py-3 text-gray-400 font-mono">{b.userId}</td>
                                     <td className="px-4 py-3 text-gray-300 whitespace-nowrap">
-                                        <p>{formatDate(b.startTime)}</p>
+                                        <p>{formatDateWithYear(b.startTime)}</p>
                                         <p className="text-gray-600 text-xs">{formatTime(b.startTime)}</p>
                                     </td>
                                     <td className="px-4 py-3 text-gray-300 whitespace-nowrap">
-                                        <p>{formatDate(b.bookingTime)}</p>
+                                        <p>{formatDateWithYear(b.bookingTime)}</p>
                                         <p className="text-gray-600 text-xs">{formatTime(b.bookingTime)}</p>
                                     </td>
                                     <td className="px-4 py-3">
@@ -464,11 +464,11 @@ const AdminBookingsPage = () => {
                                         </div>
                                         <div className="flex items-center gap-2 text-gray-400">
                                             <Calendar size={14} className="text-red-600" />
-                                            <span>Сеанс: <span className="text-gray-200">{formatDate(selectedBooking.startTime)} в {formatTime(selectedBooking.startTime)}</span></span>
+                                            <span>Сеанс: <span className="text-gray-200">{formatDateWithYear(selectedBooking.startTime)} в {formatTime(selectedBooking.startTime)}</span></span>
                                         </div>
                                         <div className="flex items-center gap-2 text-gray-400">
                                             <Clock size={14} className="text-red-600" />
-                                            <span>Бронювано: <span className="text-gray-200">{formatDate(selectedBooking.bookingTime)} в {formatTime(selectedBooking.bookingTime)}</span></span>
+                                            <span>Бронювано: <span className="text-gray-200">{formatDateWithYear(selectedBooking.bookingTime)} в {formatTime(selectedBooking.bookingTime)}</span></span>
                                         </div>
                                     </div>
                                 </div>

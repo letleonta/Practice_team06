@@ -2,11 +2,11 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Ticket, Calendar, Clock, Film, ChevronRight } from 'lucide-react';
 import {type BookingDto, type BookingFilterDto, BookingStatus} from "../types/booking.ts";
-import {getAgeRestrictionText} from "../utils/formatAgeRestriction.ts";
 import BookingFilterBar, {type FilterStatus} from "../components/BookingFilterBar.tsx";
 import {getStatusColor, getStatusText} from "../utils/formatBookingStatus.ts";
-import {formatDate, formatTime} from "../utils/formatTime.ts";
+import {formatDateWithYear, formatTime} from "../utils/formatTime.ts";
 import {BookingService} from "../services/booking.service.ts";
+import {AgeRestrictionBadge} from "../components/AgeRestrictionBadge.tsx";
 
 const MyBookingsPage = () => {
     const [bookings, setBookings] = useState<BookingDto[]>([]);
@@ -113,12 +113,10 @@ const MyBookingsPage = () => {
                                         </div>
                                     )}
 
-                                    {/* Age Restriction Badge */}
-                                    {booking.ageRestriction && (
-                                        <div className="absolute top-3 left-3 bg-red-600 text-white font-bold px-2.5 py-1 rounded-lg text-xs shadow-lg">
-                                            {getAgeRestrictionText(booking.ageRestriction)}
-                                        </div>
-                                    )}
+                                    <AgeRestrictionBadge
+                                        restriction={booking.ageRestriction}
+                                        className="absolute top-3 left-3"
+                                    />
 
                                     {/* Status Badge */}
                                     <div className={`absolute top-3 right-3 px-3 py-1 rounded-full text-xs font-semibold border backdrop-blur-sm ${getStatusColor(booking.status)}`}>
@@ -142,7 +140,7 @@ const MyBookingsPage = () => {
                                         <div className="flex items-center gap-2 text-sm">
                                             <Calendar size={16} className="text-red-600 flex-shrink-0" />
                                             <span className="text-gray-400">
-                                                {formatDate(booking.startTime)}
+                                                {formatDateWithYear(booking.startTime)}
                                             </span>
                                         </div>
 
