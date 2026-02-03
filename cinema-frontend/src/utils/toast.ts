@@ -16,7 +16,7 @@ export const notify = {
         toast.success(message, {
             style: toastStyle,
             iconTheme: {
-                primary: '#ef4444', // Твій червоний
+                primary: '#14b817', // Твій червоний
                 secondary: '#fff',
             },
         }),
