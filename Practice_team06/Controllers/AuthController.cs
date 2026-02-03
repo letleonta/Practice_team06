@@ -1,10 +1,7 @@
 ﻿using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 using Practice_team06.DTOs.Auth;
-using Practice_team06.Models;
 using Practice_team06.Services;
 
 namespace Practice_team06.Controllers;
@@ -78,6 +75,27 @@ public class AuthController : ControllerBase
         }
 
         return BadRequest(result.Errors);
+    }
+    /// <summary>
+    /// Зміна електронної пошти користувача.
+    /// Повертає новий JWT токен.
+    /// </summary>
+    [Authorize]
+    [HttpPost("change-email")]
+    public async Task<IActionResult> ChangeEmail([FromBody] ChangeEmailDto dto)
+    {
+        var userIdClaim = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (userIdClaim == null) return Unauthorized();
+
+        try
+        {
+            var response = await _authService.ChangeEmailAsync(int.Parse(userIdClaim), dto);
+            return Ok(response);
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
     }
 
     /// <summary>

@@ -48,4 +48,23 @@ public class UserService : IUserService
 
         return dbPath;
     }
+    
+    public async Task DeleteAvatarAsync(int userId)
+    {
+        var user = await _userManager.FindByIdAsync(userId.ToString());
+        if (user == null) throw new Exception("Користувача не знайдено");
+
+        if (!string.IsNullOrEmpty(user.AvatarUrl))
+        {
+            var filePath = Path.Combine(_environment.WebRootPath, user.AvatarUrl.TrimStart('/'));
+            
+            if (File.Exists(filePath))
+            {
+                File.Delete(filePath);
+            }
+            
+            user.AvatarUrl = null;
+            await _userManager.UpdateAsync(user);
+        }
+    }
 }
