@@ -41,4 +41,6 @@ export interface BookingFilterDto {
     SessionToDate?: string | null;
     SortBy?: SortBy;
     IsDescending?: boolean;
+    Page?: number;
+    PageSize?: number;
 }
