@@ -1,11 +1,14 @@
 ﻿import { create } from 'zustand';
 import { jwtDecode } from 'jwt-decode';
 
+// 1. Оновлюємо інтерфейс користувача
 interface UserInfo {
     email: string;
     name: string;
     role: string | string[];
     id: string;
+    firstName?: string;  // Додано
+    avatarUrl?: string;  // Додано
 }
 
 interface AuthState {
@@ -13,6 +16,8 @@ interface AuthState {
     token: string | null;
     isAuth: boolean;
     setAuth: (token: string) => void;
+    // 2. Метод для оновлення даних "на льоту" (для синхронізації з Navbar)
+    updateUser: (data: Partial<UserInfo>) => void;
     logout: () => void;
 }
 
@@ -46,7 +51,10 @@ const getInitialState = () => {
                 email: email,
                 name: name,
                 role: role,
-                id: decoded[ID_CLAIM]
+                id: decoded[ID_CLAIM],
+                // Навіть якщо в токені їх немає, TypeScript тепер знає про ці поля
+                firstName: name,
+                avatarUrl: undefined
             }
         };
     } catch (error) {
@@ -69,7 +77,8 @@ export const useAuthStore = create<AuthState>((set) => ({
                 email: email,
                 name: name,
                 role: role,
-                id: decoded[ID_CLAIM]
+                id: decoded[ID_CLAIM],
+                firstName: name,
             };
 
             localStorage.setItem('token', token);
@@ -78,6 +87,11 @@ export const useAuthStore = create<AuthState>((set) => ({
             console.error("Помилка декодування токена:", error);
         }
     },
+
+    // 3. Додаємо реалізацію оновлення користувача
+    updateUser: (data) => set((state) => ({
+        user: state.user ? { ...state.user, ...data } : null
+    })),
 
     logout: () => {
         localStorage.removeItem('token');
