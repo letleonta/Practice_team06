@@ -54,16 +54,16 @@ public class UserService : IUserService
         var user = await _userManager.FindByIdAsync(userId.ToString());
         if (user == null) throw new Exception("Користувача не знайдено");
 
-        if (!string.IsNullOrEmpty(user.AvatarUrl))
+        if (!string.IsNullOrEmpty(user.AvatarUri))
         {
-            var filePath = Path.Combine(_environment.WebRootPath, user.AvatarUrl.TrimStart('/'));
+            var filePath = Path.Combine(_environment.WebRootPath, user.AvatarUri.TrimStart('/'));
             
             if (File.Exists(filePath))
             {
                 File.Delete(filePath);
             }
             
-            user.AvatarUrl = null;
+            user.AvatarUri = null;
             await _userManager.UpdateAsync(user);
         }
     }
