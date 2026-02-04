@@ -48,7 +48,7 @@ const AdminLanguages = () => {
                 <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
                     <input {...register('name', { required: true })} className="w-full p-4 bg-gray-900 border border-gray-700 rounded-2xl outline-none focus:border-red-500 text-white" placeholder="Напр. Українська" />
                     <button disabled={loading} className="w-full bg-red-600 hover:bg-red-700 text-white py-4 rounded-2xl font-black uppercase transition-all shadow-lg shadow-red-600/20 active:scale-95">
-                        {loading ? '...' : 'ЗБЕРЕГТИ'}
+                        {loading ? '...' : 'Додати мову'}
                     </button>
                 </form>
             </div>
