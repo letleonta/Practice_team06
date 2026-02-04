@@ -10,7 +10,7 @@ export const SimpleBarChart = ({ data, dataKey, nameKey, color, chartName }: any
             <h3 className="text-xs text-gray-500 uppercase font-black tracking-[0.2em] mb-6 shrink-0">
                 {chartName}
             </h3>
-            <div className="flex-1 w-full min-h-[300px]">
+            <div className="flex-1 w-full min-h-75">
                 <ResponsiveContainer width="100%" height="100%">
                     <BarChart
                         data={data}

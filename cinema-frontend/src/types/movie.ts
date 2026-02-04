@@ -42,3 +42,10 @@ export const AgeRestriction = {
 } as const;
 
 export type AgeRestrictionType = typeof AgeRestriction[keyof typeof AgeRestriction];
+
+export interface MovieFilterDto {
+    title?: string;
+    rating?: number;
+    ageRestrictions?: AgeRestrictionType[];
+    genres?: string[];
+}
