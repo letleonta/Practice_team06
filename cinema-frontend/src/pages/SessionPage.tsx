@@ -11,7 +11,7 @@ import {
     Loader2,
 } from 'lucide-react';
 import type { SessionDto } from "../types/session.ts";
-import { formatDate, formatTime } from "../utils/formatTime.ts";
+import { formatDateWithYear, formatTime } from "../utils/formatTime.ts";
 import { getSeatTypeColor, getSeatTypeLabelColor } from "../utils/formatSeat.ts";
 import { SessionService } from "../services/session.service";
 import { SeatService } from "../services/seat.service";
@@ -144,7 +144,7 @@ const SessionPage = () => {
                     <div className="flex flex-wrap gap-5 text-sm text-gray-400">
                         <div className="flex items-center gap-2">
                             <Calendar size={16} className="text-red-600" />
-                            <span>{formatDate(session.startTime)}</span>
+                            <span>{formatDateWithYear(session.startTime)}</span>
                         </div>
                         <div className="flex items-center gap-2">
                             <Clock size={16} className="text-red-600" />

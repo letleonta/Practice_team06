@@ -28,6 +28,11 @@ export interface ChangePasswordDto {
     newPassword: string;
 }
 
+export interface ChangeEmailDto {
+    newEmail: string;
+    currentPassword: string;
+}
+
 export interface ResetPasswordDto {
     email: string;
     token: string;

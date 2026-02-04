@@ -2,14 +2,22 @@ import { axiosInstance } from "../api/axiosInstance";
 import type {
     BookingDto,
     AdminBookingDto,
-    BookingFilterDto, CreateBookingDto
+    BookingFilterDto, CreateBookingDto, AdminBookingsWithStatsDto
 } from "../types/booking";
+import type {PagedResult} from "../types/pagedResult.ts";
 
 export const BookingService = {
     // --- ДЛЯ АДМІНІСТРАТОРА ---
-    async getAllBookings(filter?: BookingFilterDto) {
-        const response = await axiosInstance.get<AdminBookingDto[]>("/bookings", {
-            params: filter
+    async getAllBookings(filter: BookingFilterDto) {
+        const params = new URLSearchParams();
+
+        Object.entries(filter).forEach(([key, value]) => {
+            if (value !== undefined && value !== null && value !== '') {
+                params.append(key, value.toString());
+            }
+        });
+        const response = await axiosInstance.get<AdminBookingsWithStatsDto>("/bookings", {
+            params: params
         });
         return response.data;
     },
@@ -19,9 +27,16 @@ export const BookingService = {
     },
 
     // --- ДЛЯ КЛІЄНТА (CUSTOMER) ---
-    async getMyBookings(filter?: BookingFilterDto) {
-        const response = await axiosInstance.get<BookingDto[]>("/bookings/my", {
-            params: filter
+    async getMyBookings(filter: BookingFilterDto) {
+        const params = new URLSearchParams();
+
+        Object.entries(filter).forEach(([key, value]) => {
+            if (value !== undefined && value !== null && value !== '') {
+                params.append(key, value.toString());
+            }
+        });
+        const response = await axiosInstance.get<PagedResult<BookingDto>>("/bookings/my", {
+            params: params
         });
         return response.data;
     },

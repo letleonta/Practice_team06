@@ -1,6 +1,7 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import Login from './pages/Login';
-import Home from './pages/Home';
+import NowPlayingPage from './pages/NowPlayingPage.tsx';
+import UpcomingPage from './pages/UpcomingPage.tsx';
 import MoviePage from './pages/MoviePage';
 import Register from './pages/Register';
 import AdminDashboard from "./pages/admin/AdminDashboard.tsx";
@@ -10,14 +11,32 @@ import SessionPage from "./pages/SessionPage.tsx";
 import MainLayout from "./layouts/MainLayout.tsx";
 import {Profile} from "./pages/Profile.tsx";
 import { useAuthStore } from './store/useAuthStore';
+import { Toaster } from 'react-hot-toast';
+import {useEffect} from "react";
+import {UserService} from "./services/user.service.ts";
 
 function App() {
-    const { user, token } = useAuthStore();
+    const { user, token, updateUser } = useAuthStore();
 
     const hasAdminAccess = token && (user?.role === 'Admin' || user?.role === 'Manager');
 
+    useEffect(() => {
+        if (token) {
+            UserService.getProfile()
+                .then(data => {
+                    updateUser({
+                        firstName: data.firstName,
+                        avatarUrl: data.avatarUrl
+                    });
+                })
+                .catch(err => console.error("Помилка синхронізації:", err));
+        }
+    }, [token, updateUser]);
+
+
     return (
         <BrowserRouter>
+            <Toaster position="top-center" />
             <Routes>
                 <Route
                     path="/login"
@@ -30,7 +49,11 @@ function App() {
                 <Route element={<MainLayout />}>
                     <Route
                         path="/"
-                        element={<Home />}
+                        element={<NowPlayingPage />}
+                    />
+                    <Route
+                        path="/upcoming"
+                        element={<UpcomingPage />}
                     />
                     <Route path="/movie/:id"
                            element={<MoviePage />}

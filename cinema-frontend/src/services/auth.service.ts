@@ -1,4 +1,4 @@
-import {axiosInstance} from "../api/axiosInstance";
+import { axiosInstance } from "../api/axiosInstance";
 import type {
     AuthResultDto,
     LoginDto,
@@ -6,7 +6,8 @@ import type {
     RegisterDto,
     ChangePasswordDto,
     ResetPasswordDto,
-    UserDto
+    UserDto,
+    ChangeEmailDto
 } from "../types/auth";
 
 export const AuthService = {
@@ -17,11 +18,17 @@ export const AuthService = {
 
     async login(data: LoginDto): Promise<LoginResponseDto> {
         const response = await axiosInstance.post<LoginResponseDto>("/auth/login", data);
+        console.log(response);
         return response.data;
     },
 
     async changePassword(data: ChangePasswordDto): Promise<void> {
         await axiosInstance.post("/auth/change-password", data);
+    },
+
+    async changeEmail(data: ChangeEmailDto): Promise<LoginResponseDto> {
+        const response = await axiosInstance.post<LoginResponseDto>("/auth/change-email", data);
+        return response.data;
     },
 
     async forgotPassword(email: string): Promise<{ message: string; resetToken?: string }> {

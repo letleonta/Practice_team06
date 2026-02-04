@@ -3,8 +3,8 @@ import { useParams, Link } from 'react-router-dom';
 import { ArrowLeft, Calendar, Clock, Film, Ticket as TicketIcon } from 'lucide-react';
 import type {BookingDto} from "../types/booking.ts";
 import {getStatusColor, getStatusText} from "../utils/formatBookingStatus.ts";
-import {getAgeRestrictionText} from "../utils/formatAgeRestriction.ts";
 import {BookingService} from "../services/booking.service.ts";
+import {AgeRestrictionBadge} from "../components/AgeRestrictionBadge.tsx";
 
 const BookingDetailsPage = () => {
     const { bookingId } = useParams<{ bookingId: string }>();
@@ -107,12 +107,10 @@ const BookingDetailsPage = () => {
                                         <Film size={64} className="text-gray-700" />
                                     </div>
                                 )}
-                                {/* Age Restriction Badge */}
-                                {booking.ageRestriction && (
-                                    <div className="absolute top-4 right-4 bg-red-600 text-white font-bold px-3 py-1 rounded-lg text-sm shadow-lg">
-                                        {getAgeRestrictionText(booking.ageRestriction)}
-                                    </div>
-                                )}
+                                <AgeRestrictionBadge
+                                    restriction={booking.ageRestriction}
+                                    className="absolute top-4 right-4"
+                                />
                             </div>
 
                             {/* Movie Details */}

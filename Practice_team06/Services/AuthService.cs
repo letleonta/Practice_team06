@@ -101,6 +101,38 @@ public class AuthService : IAuthService
         if (user == null) return IdentityResult.Failed(new IdentityError { Description = "Користувача не знайдено" });
         return await _userManager.ChangePasswordAsync(user, dto.OldPassword, dto.NewPassword);
     }
+    public async Task<LoginResponseDto?> ChangeEmailAsync(int userId, ChangeEmailDto dto)
+    {
+        var user = await _userManager.FindByIdAsync(userId.ToString());
+        if (user == null) return null;
+
+        // 1. Перевіряємо, чи пароль вірний
+        var isPasswordValid = await _userManager.CheckPasswordAsync(user, dto.CurrentPassword);
+        if (!isPasswordValid)
+        {
+            throw new Exception("Невірний поточний пароль.");
+        }
+
+        // 2. Перевіряємо, чи новий Email не зайнятий
+        var existingUser = await _userManager.FindByEmailAsync(dto.NewEmail);
+        if (existingUser != null && existingUser.Id != userId)
+        {
+            throw new Exception("Цей Email вже використовується іншим користувачем.");
+        }
+
+        // 3. Оновлюємо пошту та логін
+        user.Email = dto.NewEmail;
+        user.UserName = dto.NewEmail;
+
+        var result = await _userManager.UpdateAsync(user);
+        if (!result.Succeeded)
+        {
+            throw new Exception("Помилка при оновленні профілю.");
+        }
+
+        // 4. Генеруємо новий токен з новими клеймами
+        return await GenerateToken(user);
+    }
 
     public async Task<string?> GeneratePasswordResetTokenAsync(string email)
     {
