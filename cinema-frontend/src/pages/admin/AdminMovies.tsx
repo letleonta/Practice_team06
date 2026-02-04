@@ -1,385 +1,472 @@
-﻿import { useEffect, useState, useMemo } from 'react';
+﻿import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import api from '../../api/axiosInstance';
 import { MovieService } from '../../services/movie.service';
 import type { CreateMovieDto, MovieDto } from '../../types/movie';
-import { Film, Image, Info, Search, Users, Edit, Trash2, ListFilter, Calendar, DollarSign, Clock, Plus, ArrowLeft, Save, Star, PlayCircle } from 'lucide-react';
+import {
+    Film, Search, Edit, Trash2, Clock, Plus,
+    ArrowLeft, Save, Star, PlayCircle, Info, Image, Users,
+    ChevronLeft, ChevronRight, Hash, X, AlertTriangle
+} from 'lucide-react';
+
+// Локальні інтерфейси для типізації
+interface NamedEntity { id: number; name: string; }
+interface PersonEntity { id: number; firstName: string; lastName: string; }
+
+const ageMap: Record<string, number> = { "ZeroPlus": 0, "TwelvePlus": 1, "SixteenPlus": 2, "EighteenPlus": 3 };
 
 const AdminMovies = () => {
-    const { register, handleSubmit, reset, setValue, watch, formState: { errors } } = useForm<CreateMovieDto>();
-    const selectedDirectorId = watch('directorId');
+    const { register, handleSubmit, reset, setValue, watch } = useForm<CreateMovieDto>({
+        defaultValues: {
+            genreIds: [],
+            actorIds: []
+        }
+    });
 
-    //  СТЕЙТИ 
-    const [genres, setGenres] = useState<{id: number, name: string}[]>([]);
-    const [directors, setDirectors] = useState<{id: number, firstName: string, lastName: string}[]>([]);
-    const [actors, setActors] = useState<{id: number, firstName: string, lastName: string}[]>([]);
-    const [languages, setLanguages] = useState<{id: number, name: string}[]>([]);
+    const selectedDirectorId = watch('directorId');
+    const selectedGenreIds = watch('genreIds') || [];
+    const selectedActorIds = watch('actorIds') || [];
+
+    const [genres, setGenres] = useState<NamedEntity[]>([]);
+    const [directors, setDirectors] = useState<PersonEntity[]>([]);
+    const [actors, setActors] = useState<PersonEntity[]>([]);
     const [movies, setMovies] = useState<MovieDto[]>([]);
 
     const [isFormOpen, setIsFormOpen] = useState(false);
     const [editingId, setEditingId] = useState<number | null>(null);
-
-    // Стейт пошуку
-    const [directorSearch, setDirectorSearch] = useState('');
-    const [actorSearch, setActorSearch] = useState('');
-    const [genreSearch, setGenreSearch] = useState('');
-    const [languageSearch, setLanguageSearch] = useState('');
     const [movieSearch, setMovieSearch] = useState('');
+    const [currentPage, setCurrentPage] = useState(1);
 
-    const loadMovies = async () => {
+    const [searchTerms, setSearchTerms] = useState({ director: '', actor: '', genre: '' });
+    const [pages, setPages] = useState({ director: 1, actor: 1, genre: 1 });
+    const innerItemsPerPage = 6;
+
+    const [modal, setModal] = useState({ isOpen: false, type: '', firstName: '', lastName: '', name: '', photoUri: '' });
+    const [deleteConfirm, setDeleteConfirm] = useState<{ isOpen: boolean, movieId: number | null, movieTitle: string }>({
+        isOpen: false, movieId: null, movieTitle: ''
+    });
+
+    const fetchData = async () => {
         try {
-            const data = await MovieService.getAll();
-            setMovies(data);
-        } catch (err) { console.error(err); }
+            const [g, d, a, m] = await Promise.all([
+                api.get('/genres'), api.get('/directors'),
+                api.get('/actors'), MovieService.getAll()
+            ]);
+            setGenres(g.data); setDirectors(d.data);
+            setActors(a.data); setMovies(m);
+        } catch (_err) { console.error("Error loading data"); }
     };
 
-    useEffect(() => {
-        const fetchData = async () => {
-            try {
-                const [g, d, a, l] = await Promise.all([
-                    api.get('/genres'),
-                    api.get('/directors'),
-                    api.get('/actors'),
-                    api.get('/languages')
-                ]);
-                setGenres(g.data);
-                setDirectors(d.data);
-                setActors(a.data);
-                setLanguages(l.data);
-                loadMovies();
-            } catch (err) { console.error(err); }
-        };
-        fetchData();
-    }, []);
+    useEffect(() => { void fetchData(); }, []);
 
-    //  ФІЛЬТРАЦІЯ 
-    const filteredDirectors = useMemo(() => directors.filter(d => `${d.firstName} ${d.lastName}`.toLowerCase().includes(directorSearch.toLowerCase())), [directors, directorSearch]);
-    const filteredActors = useMemo(() => actors.filter(a => `${a.firstName} ${a.lastName}`.toLowerCase().includes(actorSearch.toLowerCase())), [actors, actorSearch]);
-    const filteredGenres = useMemo(() => genres.filter(g => g.name.toLowerCase().includes(genreSearch.toLowerCase())), [genres, genreSearch]);
-    const filteredLanguages = useMemo(() => languages.filter(l => l.name.toLowerCase().includes(languageSearch.toLowerCase())), [languages, languageSearch]);
-    const filteredMovies = useMemo(() => movies.filter(m => m.title.toLowerCase().includes(movieSearch.toLowerCase())), [movies, movieSearch]);
+    const toggleSelection = (id: string, field: 'genreIds' | 'actorIds') => {
+        const currentValues: string[] = (watch(field) as unknown as string[]) || [];
+        const newValues = currentValues.includes(id)
+            ? currentValues.filter(v => v !== id)
+            : [...currentValues, id];
+        setValue(field, newValues as any);
+    };
 
-    const openCreateForm = () => { setEditingId(null); reset(); setValue('directorId', undefined); setIsFormOpen(true); };
-    const closeForm = () => { setEditingId(null); reset(); setIsFormOpen(false); };
+    const handlePageChange = (key: keyof typeof pages, direction: number) => {
+        setPages(prev => ({ ...prev, [key]: prev[key] + direction }));
+    };
 
-    //  ВИПРАВЛЕНА ЛОГІКА РЕДАГУВАННЯ 
+    const handleSearchChange = (key: keyof typeof searchTerms, value: string) => {
+        setSearchTerms(prev => ({ ...prev, [key]: value }));
+        setPages(prev => ({ ...prev, [key]: 1 }));
+    };
+
+    const confirmDelete = async () => {
+        if (!deleteConfirm.movieId) return;
+        try {
+            await MovieService.delete(deleteConfirm.movieId);
+            await fetchData();
+            setDeleteConfirm({ isOpen: false, movieId: null, movieTitle: '' });
+        } catch (_err) { alert('Помилка при видаленні'); }
+    };
+
     const handleEditMovie = (movie: MovieDto) => {
         setEditingId(movie.id);
+        reset();
+        setPages({ director: 1, actor: 1, genre: 1 });
+
         setValue('title', movie.title);
         setValue('description', movie.description || '');
         setValue('durationMin', movie.durationMin || 0);
         setValue('basePrice', movie.basePrice);
-        setValue('posterUri', movie.posterUri || '');
-        setValue('trailerUri', movie.trailerUri || ''); // Тепер трейлер підставляється
         setValue('rating', movie.rating || 0);
-
-        // Мапінг AgeRestriction (string -> number)
-        const ageMap: Record<string, number> = { "ZeroPlus": 0, "TwelvePlus": 1, "SixteenPlus": 2, "EighteenPlus": 3 };
+        setValue('posterUri', movie.posterUri || '');
+        setValue('trailerUri', movie.trailerUri || '');
         setValue('ageRestriction', ageMap[movie.ageRestriction] ?? 0);
 
-        // Форматування дат для input type="date" (YYYY-MM-DD)
-        const formatDate = (dateStr?: string) => dateStr ? dateStr.split('T')[0] : '';
+        const formatDate = (d?: string) => d ? d.split('T')[0] : '';
         setValue('releaseDate', formatDate(movie.releaseDate));
-        setValue('startDate', formatDate(movie.startDate)); // Час початку прокату
-        setValue('endDate', formatDate(movie.endDate));     // Час кінця прокату
+        setValue('startDate', formatDate(movie.startDate));
+        setValue('endDate', formatDate(movie.endDate));
 
-        const foundDirector = directors.find(d => movie.directorName.includes(d.lastName));
-        if (foundDirector) setValue('directorId', foundDirector.id);
+        const foundDir = directors.find(d => movie.directorName.includes(d.lastName));
+        if (foundDir) setValue('directorId', foundDir.id);
 
-        const foundGenreIds = genres.filter(g => movie.genres.includes(g.name)).map(g => g.id);
-        setValue('genreIds', foundGenreIds);
+        const gIds = genres.filter(g => movie.genres.includes(g.name)).map(g => g.id.toString());
+        setValue('genreIds', gIds as any);
 
-        const foundActorIds = actors.filter(a => movie.actors.some(an => an.includes(a.lastName))).map(a => a.id);
-        setValue('actorIds', foundActorIds);
-
-        // Мови
-        setValue('languageIds', movie.languageIds || []);
+        const aIds = actors.filter(a => movie.actors.some(an => an.includes(a.lastName))).map(a => a.id.toString());
+        setValue('actorIds', aIds as any);
 
         setIsFormOpen(true);
-        window.scrollTo({ top: 0, behavior: 'smooth' });
     };
 
-    const onSubmit = async (data: any) => {
+    const onSubmit = async (data: CreateMovieDto) => {
         try {
-            const formattedData = {
+            const formatted = {
                 ...data,
                 durationMin: Number(data.durationMin),
                 basePrice: Number(data.basePrice),
                 rating: Number(data.rating),
                 ageRestriction: Number(data.ageRestriction),
-                directorId: data.directorId ? Number(data.directorId) : null,
                 genreIds: data.genreIds ? data.genreIds.map(Number) : [],
                 actorIds: data.actorIds ? data.actorIds.map(Number) : [],
-                languageIds: data.languageIds ? data.languageIds.map(Number) : [],
-                trailerUri: data.trailerUri || '', // Збереження трейлера
-                startDate: data.startDate || null,
-                endDate: data.endDate || null
+                directorId: data.directorId ? Number(data.directorId) : undefined,
+                languageIds: []
             };
-
-            if (editingId) {
-                await MovieService.update(editingId, formattedData);
-                alert(`Фільм оновлено!`);
-            } else {
-                await MovieService.create(formattedData);
-                alert('Фільм додано!');
-            }
-            loadMovies(); closeForm();
-        } catch (err: any) {
-            console.error(err);
-            alert('Помилка: ' + (err.response?.data?.message || 'Щось пішло не так'));
-        }
+            if (editingId) await MovieService.update(editingId, formatted);
+            else await MovieService.create(formatted);
+            await fetchData();
+            setIsFormOpen(false);
+        } catch (_err) { console.error("Error submitting form"); }
     };
 
-    const handleDeleteMovie = async (id: number) => {
-        if (window.confirm('Видалити цей фільм?')) {
-            await MovieService.delete(id);
-            loadMovies();
-        }
+    const getPaginatedData = <T extends NamedEntity | PersonEntity>(data: T[], term: string, pageKey: keyof typeof pages) => {
+        const filtered = data.filter(item => {
+            const fullName = 'name' in item ? item.name : `${item.firstName} ${item.lastName}`;
+            return fullName.toLowerCase().includes(term.toLowerCase());
+        });
+        const total = Math.ceil(filtered.length / innerItemsPerPage);
+        const paginated = filtered.slice((pages[pageKey] - 1) * innerItemsPerPage, pages[pageKey] * innerItemsPerPage);
+        return { data: paginated, total };
+    };
+
+    const filteredMovies = movies.filter(m => m.title.toLowerCase().includes(movieSearch.toLowerCase()));
+    const totalMainPages = Math.ceil(filteredMovies.length / 8);
+    const currentMovies = filteredMovies.slice((currentPage - 1) * 8, currentPage * 8);
+
+    const MiniPagination = ({ current, total, onPrev, onNext }: { current: number, total: number, onPrev: () => void, onNext: () => void }) => {
+        if (total <= 1) return null;
+        return (
+            <div className="flex items-center gap-2 pt-4">
+                <button type="button" onClick={onPrev} disabled={current === 1} className="p-1.5 bg-gray-900 rounded-lg disabled:opacity-20 hover:bg-gray-800 transition-colors"><ChevronLeft size={14}/></button>
+                <span className="text-[10px] text-gray-500 font-bold uppercase">Стор. {current}</span>
+                <button type="button" onClick={onNext} disabled={current === total} className="p-1.5 bg-gray-900 rounded-lg disabled:opacity-20 hover:bg-gray-800 transition-colors"><ChevronRight size={14}/></button>
+            </div>
+        );
     };
 
     return (
-        <div className="max-w-7xl mx-auto pb-20 text-white">
-            {!isFormOpen && (
-                <div className="animate-fade-in">
-                    <div className="flex flex-col md:flex-row justify-between items-center mb-8 gap-4">
-                        <h2 className="text-3xl font-black flex items-center gap-3 tracking-tighter">
-                            <Film className="text-red-600" size={32} /> КЕРУВАННЯ ФІЛЬМАМИ
-                        </h2>
-                        <button onClick={openCreateForm} className="bg-red-600 hover:bg-red-700 text-white px-6 py-3 rounded-2xl font-bold flex items-center gap-2 shadow-lg shadow-red-600/20 transition-all transform hover:scale-105">
-                            <Plus size={20} /> Додати новий фільм
-                        </button>
-                    </div>
+        <div className="max-w-7xl mx-auto pb-20 text-white p-4 relative">
 
-                    <div className="bg-[#1a1d26] rounded-[32px] border border-gray-800 shadow-2xl overflow-hidden">
-                        <div className="p-6 border-b border-gray-800 bg-gray-900/30 flex flex-col md:flex-row md:items-center justify-between gap-4">
-                            <div className="flex items-center gap-2">
-                                <ListFilter className="text-gray-400" size={20} />
-                                <h3 className="font-bold text-gray-200">Всього фільмів: {filteredMovies.length}</h3>
-                            </div>
-                            <div className="relative w-full md:w-80">
-                                <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500" size={18} />
-                                <input type="text" placeholder="Пошук фільму..." value={movieSearch} onChange={(e) => setMovieSearch(e.target.value)} className="w-full bg-gray-900 border border-gray-700 rounded-xl py-3 pl-12 pr-10 outline-none focus:border-red-500 text-sm transition-all shadow-inner" />
-                            </div>
-                        </div>
-                        <div className="overflow-x-auto">
-                            <table className="w-full border-collapse">
-                                <thead>
-                                <tr className="text-left bg-gray-900/50 text-[10px] uppercase tracking-[0.2em] text-gray-500">
-                                    <th className="p-5 w-24">Постер</th>
-                                    <th className="p-5">Інформація</th>
-                                    <th className="p-5 hidden md:table-cell">Жанри</th>
-                                    <th className="p-5 hidden sm:table-cell">Деталі</th>
-                                    <th className="p-5 text-right">Дії</th>
-                                </tr>
-                                </thead>
-                                <tbody className="divide-y divide-gray-800/50">
-                                {filteredMovies.map(movie => (
-                                    <tr key={movie.id} className="group hover:bg-white/[0.02] transition-colors">
-                                        <td className="p-4 text-center">
-                                            <div className="w-16 h-24 rounded-xl bg-gray-800 border border-gray-700 overflow-hidden shadow-lg mx-auto">
-                                                {movie.posterUri ? <img src={movie.posterUri} alt="" className="w-full h-full object-cover" /> : <Film className="text-gray-600 m-auto mt-8" />}
-                                            </div>
-                                        </td>
-                                        <td className="p-4">
-                                            <div className="font-bold text-lg text-white mb-1 line-clamp-1">{movie.title}</div>
-                                            <div className="flex items-center gap-3">
-                                                <div className="text-xs text-gray-500 font-mono uppercase tracking-wider">ID: {movie.id}</div>
-                                                <div className="flex items-center gap-1 text-yellow-500 text-xs font-black bg-yellow-500/10 px-2 py-0.5 rounded-md border border-yellow-500/20">
-                                                    <Star size={12} fill="currentColor" />
-                                                    <span>{movie.rating?.toFixed(1) || "0.0"}</span>
-                                                </div>
-                                            </div>
-                                        </td>
-                                        <td className="p-4 hidden md:table-cell">
-                                            <div className="flex flex-wrap gap-1">
-                                                {movie.genres.map(g => <span key={g} className="text-[10px] bg-gray-800 px-2 py-1 rounded text-gray-400 border border-gray-700/50 uppercase font-bold">{g}</span>)}
-                                            </div>
-                                        </td>
-                                        <td className="p-4 hidden sm:table-cell text-sm text-gray-400">
-                                            <div className="flex items-center gap-2 mb-1"><Clock size={14}/> {movie.durationMin} хв</div>
-                                            <div className="flex items-center gap-2 text-white font-bold"><DollarSign size={14} className="text-green-500"/> {movie.basePrice} ₴</div>
-                                        </td>
-                                        <td className="p-4 text-right">
-                                            <div className="flex justify-end gap-2 opacity-0 group-hover:opacity-100 transition-all">
-                                                <button onClick={() => handleEditMovie(movie)} className="p-3 bg-gray-800 hover:bg-blue-600 hover:text-white text-blue-500 rounded-xl transition-all shadow-inner"><Edit size={20} /></button>
-                                                <button onClick={() => handleDeleteMovie(movie.id)} className="p-3 bg-gray-800 hover:bg-red-600 hover:text-white text-red-500 rounded-xl transition-all shadow-inner"><Trash2 size={20} /></button>
-                                            </div>
-                                        </td>
-                                    </tr>
-                                ))}
-                                </tbody>
-                            </table>
+            {/* Попап видалення */}
+            {deleteConfirm.isOpen && (
+                <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/95 backdrop-blur-xl p-4 animate-fade-in">
+                    <div className="bg-[#1a1d26] border border-red-900/30 p-10 rounded-[40px] w-full max-w-md shadow-2xl text-center scale-in">
+                        <AlertTriangle size={48} className="mx-auto mb-6 text-red-500" />
+                        <h3 className="text-2xl font-black uppercase mb-2">Видалити фільм?</h3>
+                        <p className="text-gray-400 text-sm mb-8 leading-relaxed">Ви впевнені, що хочете видалити <br/><span className="text-white font-bold">"{deleteConfirm.movieTitle}"</span>?</p>
+                        <div className="flex gap-3">
+                            <button onClick={() => setDeleteConfirm({ isOpen: false, movieId: null, movieTitle: '' })} className="flex-1 py-4 rounded-2xl bg-gray-800 font-black uppercase text-[10px] text-white">Скасувати</button>
+                            <button onClick={() => void confirmDelete()} className="flex-1 py-4 rounded-2xl bg-red-600 font-black uppercase text-[10px] shadow-lg shadow-red-600/20 text-white">Видалити</button>
                         </div>
                     </div>
                 </div>
             )}
 
-            {isFormOpen && (
-                <div className="animate-fade-in-up">
-                    <div className="flex items-center justify-between mb-8">
-                        <button onClick={closeForm} className="flex items-center gap-2 text-gray-400 hover:text-white transition font-bold uppercase tracking-widest text-xs">
-                            <ArrowLeft size={16} /> Назад до списку
-                        </button>
-                        <h2 className="text-2xl font-black uppercase tracking-tighter">
-                            {editingId ? `Редагування: ID ${editingId}` : 'Новий фільм'}
+            {/* Попап додавання */}
+            {modal.isOpen && (
+                <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/90 backdrop-blur-md p-4 animate-fade-in">
+                    <div className="bg-[#1a1d26] border border-gray-800 p-8 rounded-[40px] w-full max-w-lg shadow-2xl scale-in">
+                        <div className="flex justify-between items-center mb-8">
+                            <h3 className="text-xl font-black uppercase">Додати {modal.type}</h3>
+                            <button onClick={() => setModal(p => ({ ...p, isOpen: false }))}><X size={24}/></button>
+                        </div>
+                        <div className="space-y-4">
+                            {['actors', 'directors'].includes(modal.type) ? (
+                                <>
+                                    <input className="w-full bg-gray-900 border border-gray-700 p-4 rounded-2xl outline-none text-white font-bold shadow-inner" placeholder="Ім'я" value={modal.firstName} onChange={e => setModal({...modal, firstName: e.target.value})}/>
+                                    <input className="w-full bg-gray-900 border border-gray-700 p-4 rounded-2xl outline-none text-white font-bold shadow-inner" placeholder="Прізвище" value={modal.lastName} onChange={e => setModal({...modal, lastName: e.target.value})}/>
+                                </>
+                            ) : (
+                                <input className="w-full bg-gray-900 border border-gray-700 p-4 rounded-2xl outline-none text-white font-bold shadow-inner" placeholder="Назва" value={modal.name} onChange={e => setModal({...modal, name: e.target.value})}/>
+                            )}
+                        </div>
+                        <div className="flex gap-4 mt-10">
+                            <button onClick={() => setModal(p => ({ ...p, isOpen: false }))} className="flex-1 py-4 rounded-2xl bg-gray-800 font-black text-xs text-white">Скасувати</button>
+                            <button onClick={async () => {
+                                const p = ['actors', 'directors'].includes(modal.type) ? {firstName: modal.firstName, lastName: modal.lastName} : {name: modal.name};
+                                await api.post(`/${modal.type}`, p);
+                                await fetchData();
+                                setModal(prev => ({...prev, isOpen: false}));
+                            }} className="flex-1 py-4 rounded-2xl bg-red-600 font-black text-xs text-white">Зберегти</button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {!isFormOpen ? (
+                /* ІНТЕРФЕЙС СПИСКУ */
+                <div className="animate-fade-in">
+                    <div className="flex flex-col md:flex-row justify-between items-center mb-10 gap-6">
+                        <h2 className="text-3xl font-black text-white tracking-tighter flex items-center gap-4">
+                            <Film className="text-red-600" size={36}/>
+                            КЕРУВАННЯ ФІЛЬМАМИ
                         </h2>
+                        <button
+                            onClick={() => { setEditingId(null); reset(); setIsFormOpen(true); }}
+                            className="bg-red-600 hover:bg-red-700 text-white px-8 py-4 rounded-2xl font-black uppercase text-[11px] tracking-widest shadow-xl shadow-red-600/20 transition-all active:scale-95"
+                        >
+                            + Додати новий фільм
+                        </button>
                     </div>
 
-                    <form onSubmit={handleSubmit(onSubmit)} className={`space-y-8 ${editingId ? 'ring-2 ring-yellow-500/50 rounded-[40px] p-2' : ''}`}>
-                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                            {/* ЛІВА КОЛОНКА */}
-                            <div className="bg-[#1a1d26] p-8 rounded-[32px] border border-gray-800 shadow-2xl space-y-6">
-                                <div className="flex items-center gap-2 text-red-500 mb-2">
-                                    <Info size={18} />
-                                    <h3 className="text-sm font-black uppercase tracking-[0.2em]">Основна інформація</h3>
-                                </div>
-                                <div>
-                                    <label className="block text-xs text-gray-500 font-bold mb-2 ml-1 uppercase tracking-wider">Назва фільму</label>
-                                    <input {...register('title', { required: true })} className="w-full p-4 bg-gray-900 border border-gray-700 rounded-2xl outline-none focus:border-red-500 text-white transition-all shadow-inner placeholder-gray-600" placeholder="Введіть назву..." />
-                                </div>
-                                <div className="grid grid-cols-2 gap-4">
-                                    <div>
-                                        <label className="block text-xs text-gray-500 font-bold mb-2 ml-1 uppercase tracking-wider">Віковий ценз</label>
-                                        <select {...register('ageRestriction')} className="w-full p-4 bg-gray-900 border border-gray-700 rounded-2xl outline-none focus:border-red-500 text-white shadow-inner cursor-pointer appearance-none">
-                                            <option value="0">0+ </option>
-                                            <option value="1">12+ </option>
-                                            <option value="2">16+ </option>
-                                            <option value="3">18+ </option>
-                                        </select>
-                                    </div>
-                                    <div>
-                                        <label className="block text-xs text-gray-500 font-bold mb-2 ml-1 uppercase tracking-wider flex items-center gap-1"><Star size={12} className="text-yellow-500"/> Рейтинг (0-10)</label>
-                                        <input {...register('rating', { required: true })} type="number" step="0.1" min="0" max="10" className="w-full p-4 bg-gray-900 border border-gray-700 rounded-2xl outline-none focus:border-red-500 text-white shadow-inner" placeholder="8.5" />
-                                    </div>
-                                </div>
-                                <div className="grid grid-cols-2 gap-4">
-                                    <div>
-                                        <label className="block text-xs text-gray-500 font-bold mb-2 ml-1 uppercase tracking-wider flex items-center gap-1"><Clock size={12}/> Тривалість (хв)</label>
-                                        <input {...register('durationMin', { required: true })} type="number" className="w-full p-4 bg-gray-900 border border-gray-700 rounded-2xl outline-none focus:border-red-500 text-white shadow-inner" />
-                                    </div>
-                                    <div>
-                                        <label className="block text-xs text-gray-500 font-bold mb-2 ml-1 uppercase tracking-wider flex items-center gap-1"><DollarSign size={12}/> Ціна (грн)</label>
-                                        <input {...register('basePrice', { required: true })} type="number" step="0.01" className="w-full p-4 bg-gray-900 border border-gray-700 rounded-2xl outline-none focus:border-red-500 text-white shadow-inner" />
-                                    </div>
-                                </div>
-                                <div>
-                                    <label className="block text-xs text-gray-500 font-bold mb-2 ml-1 uppercase tracking-wider">Опис</label>
-                                    <textarea {...register('description')} className="w-full p-4 bg-gray-900 border border-gray-700 rounded-2xl h-32 outline-none focus:border-red-500 text-white resize-none shadow-inner placeholder-gray-600" placeholder="Сюжет..." />
+                    <div className="bg-[#1a1d26]/60 rounded-[40px] border border-gray-800 shadow-2xl backdrop-blur-md overflow-hidden">
+                        <div className="p-8 border-b border-gray-800/50 flex flex-col md:flex-row justify-between items-center gap-6">
+                            <div className="flex items-center gap-4">
+                                <div className="px-4 py-2 bg-gray-900/80 rounded-full border border-gray-800 text-[10px] text-gray-400 font-black uppercase tracking-[0.2em]">
+                                    Всього у базі: {filteredMovies.length}
                                 </div>
                             </div>
+                            <div className="relative w-full md:w-[400px]">
+                                <Search className="absolute left-5 top-1/2 -translate-y-1/2 text-gray-500" size={18}/>
+                                <input
+                                    type="text"
+                                    placeholder="Пошук фільму..."
+                                    value={movieSearch}
+                                    onChange={e => {setMovieSearch(e.target.value); setCurrentPage(1);}}
+                                    className="w-full bg-gray-950 border border-gray-800 rounded-2xl py-4 pl-14 pr-6 outline-none focus:border-red-600 focus:ring-1 focus:ring-red-600/20 transition-all font-bold text-white placeholder:text-gray-600 shadow-inner"
+                                />
+                            </div>
+                        </div>
 
-                            {/* ПРАВА КОЛОНКА */}
-                            <div className="bg-[#1a1d26] p-8 rounded-[32px] border border-gray-800 shadow-2xl space-y-6 flex flex-col">
-                                <div className="flex items-center gap-2 text-red-500 mb-2">
-                                    <Image size={18} />
-                                    <h3 className="text-sm font-black uppercase tracking-[0.2em]">Медіа та Дати</h3>
-                                </div>
-                                <div>
-                                    <label className="block text-xs text-gray-500 font-bold mb-2 ml-1 uppercase tracking-wider text-amber-500">URL Постера</label>
-                                    <input {...register('posterUri')} className="w-full p-4 bg-gray-900 border border-gray-700 rounded-2xl outline-none focus:border-amber-500 text-white shadow-inner placeholder-gray-600" placeholder="https://..." />
-                                </div>
-
-                                <div>
-                                    <label className="block text-xs text-gray-500 font-bold mb-2 ml-1 uppercase tracking-wider flex items-center gap-2 text-blue-400">
-                                        <PlayCircle size={14}/> URL Трейлера
-                                    </label>
-                                    <input {...register('trailerUri')} className="w-full p-4 bg-gray-900 border border-gray-700 rounded-2xl outline-none focus:border-blue-500 text-white shadow-inner placeholder-gray-600" placeholder="YouTube link..." />
-                                </div>
-
-                                <div className="grid grid-cols-1 gap-4 p-5 bg-gray-900 rounded-3xl border border-gray-800 shadow-inner">
-                                    <div>
-                                        <label className="block text-[10px] text-gray-500 font-bold mb-1 uppercase tracking-wider flex items-center gap-2"><Calendar size={12}/> Дата прем'єри</label>
-                                        <input {...register('releaseDate', { required: true })} type="date" className="w-full p-3 bg-gray-800 border border-gray-700 rounded-xl outline-none focus:border-red-500 text-white" />
+                        <div className="p-4 space-y-3">
+                            {currentMovies.map(movie => (
+                                <div
+                                    key={movie.id}
+                                    className="group flex flex-col md:flex-row items-center gap-6 p-5 bg-gray-900/30 hover:bg-white/[0.03] border border-gray-800/40 rounded-[32px] transition-all duration-300"
+                                >
+                                    <div className="relative flex-shrink-0">
+                                        <img
+                                            src={movie.posterUri}
+                                            className="w-24 h-36 rounded-2xl object-cover shadow-2xl border border-gray-800 group-hover:scale-105 transition-transform duration-500"
+                                            alt={movie.title}
+                                        />
                                     </div>
-                                    <div className="grid grid-cols-2 gap-2">
+
+                                    <div className="flex-1 text-center md:text-left space-y-3">
                                         <div>
-                                            <label className="block text-[10px] text-gray-500 font-bold mb-1 uppercase tracking-wider text-green-500 flex items-center gap-2"><Calendar size={12}/> Початок прокату</label>
-                                            <input {...register('startDate')} type="date" className="w-full p-3 bg-gray-800 border border-gray-700 rounded-xl outline-none focus:border-green-500 text-white" />
+                                            <h3 className="text-2xl font-black text-white uppercase tracking-tighter leading-tight transition-colors">
+                                                {movie.title}
+                                            </h3>
+                                            <div className="flex flex-wrap justify-center md:justify-start gap-2 mt-2">
+                                                {movie.genres.map(g => (
+                                                    <span key={g} className="text-[9px] bg-red-900/20 text-red-700 border border-red-900/30 px-3 py-1 rounded-lg font-black uppercase tracking-wider">
+                                                        {g}
+                                                    </span>
+                                                ))}
+                                            </div>
                                         </div>
-                                        <div>
-                                            <label className="block text-[10px] text-gray-500 font-bold mb-1 uppercase tracking-wider text-red-500 flex items-center gap-2"><Calendar size={12}/> Кінець прокату</label>
-                                            <input {...register('endDate')} type="date" className="w-full p-3 bg-gray-800 border border-gray-700 rounded-xl outline-none focus:border-red-500 text-white" />
+
+                                        <div className="flex items-center justify-center md:justify-start gap-4">
+                                            <span className="text-[10px] font-mono text-gray-500 uppercase tracking-widest bg-gray-950 px-2 py-1 rounded">
+                                                ID: {movie.id}
+                                            </span>
+                                            <div className="flex items-center gap-1.5 px-3 py-1 bg-yellow-500/10 text-yellow-500 border border-yellow-500/20 rounded-xl text-[11px] font-black">
+                                                <Star size={12} fill="currentColor"/> {movie.rating?.toFixed(1) || "0.0"}
+                                            </div>
                                         </div>
                                     </div>
-                                </div>
 
-                                <div className="flex-1">
-                                    <label className="block text-xs text-gray-500 font-bold mb-2 ml-1 uppercase tracking-wider flex items-center gap-2"><Users size={14}/> Режисер</label>
-                                    <div className="relative mb-2">
-                                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" size={16} />
-                                        <input type="text" placeholder="Знайти режисера..." className="w-full pl-10 pr-4 py-2 bg-gray-900 border border-gray-700 rounded-xl text-xs outline-none focus:border-red-500 text-white placeholder-gray-600" value={directorSearch} onChange={(e) => setDirectorSearch(e.target.value)} />
+                                    <div className="flex items-center gap-10 px-8 py-4 bg-gray-950/40 rounded-3xl border border-gray-800/30">
+                                        <div className="text-center">
+                                            <p className="text-[9px] text-gray-500 uppercase font-black mb-1">Тривалість</p>
+                                            <div className="flex items-center gap-2 text-gray-300 text-sm font-bold">
+                                                <Clock size={14} className="text-red-600"/> {movie.durationMin} хв
+                                            </div>
+                                        </div>
+                                        <div className="w-px h-8 bg-gray-800"></div>
+                                        <div className="text-center">
+                                            <p className="text-[9px] text-gray-500 uppercase font-black mb-1">Вартість</p>
+                                            <div className="flex items-center gap-1.5 text-xl font-black text-green-500">
+                                                {movie.basePrice} <span className="text-xs font-bold text-green-700">₴</span>
+                                            </div>
+                                        </div>
                                     </div>
-                                    <div className="w-full bg-gray-900 border border-gray-700 rounded-2xl overflow-hidden h-[120px] overflow-y-auto custom-scrollbar">
-                                        {filteredDirectors.map(d => (
-                                            <button key={d.id} type="button" onClick={() => setValue('directorId', d.id)} className={`w-full text-left p-3 text-xs font-bold transition-all border-b border-gray-800 last:border-0 flex justify-between items-center ${selectedDirectorId === d.id ? 'bg-red-600 text-white' : 'text-gray-400 hover:bg-gray-800 hover:text-white'}`}>
-                                                <span>{d.firstName.toUpperCase()} {d.lastName.toUpperCase()}</span>
-                                                {selectedDirectorId === d.id && <div className="w-2 h-2 bg-white rounded-full"></div>}
-                                            </button>
-                                        ))}
+
+                                    <div className="flex gap-3">
+                                        <button
+                                            onClick={() => handleEditMovie(movie)}
+                                            className="p-4 bg-gray-900 text-blue-500 rounded-2xl border border-gray-800 hover:bg-blue-600 hover:text-white hover:border-blue-600 transition-all duration-300 shadow-lg"
+                                        >
+                                            <Edit size={22}/>
+                                        </button>
+                                        <button
+                                            onClick={() => setDeleteConfirm({ isOpen: true, movieId: movie.id, movieTitle: movie.title })}
+                                            className="p-4 bg-gray-900 text-red-500 rounded-2xl border border-gray-800 hover:bg-red-600 hover:text-white hover:border-red-600 transition-all duration-300 shadow-lg"
+                                        >
+                                            <Trash2 size={22}/>
+                                        </button>
                                     </div>
-                                    <input type="hidden" {...register('directorId', { required: true })} />
                                 </div>
-                            </div>
+                            ))}
                         </div>
 
-                        {/* ЖАНРИ, АКТОРИ ТА МОВИ */}
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-                            {/* Жанри */}
-                            <div className="bg-[#1a1d26] p-6 rounded-[32px] border border-gray-800 shadow-2xl flex flex-col h-[350px]">
-                                <div className="flex justify-between mb-4 items-center">
-                                    <h3 className="text-xs font-black uppercase text-red-500 tracking-widest">Жанри</h3>
-                                    <input type="text" placeholder="Шукати..." className="w-24 pl-2 py-1 bg-gray-900 border border-gray-700 rounded-lg text-[10px] outline-none text-white focus:border-red-500" value={genreSearch} onChange={(e) => setGenreSearch(e.target.value)} />
-                                </div>
-                                <div className="grid grid-cols-1 gap-2 overflow-y-auto pr-2 custom-scrollbar">
-                                    {filteredGenres.map(genre => (
-                                        <label key={genre.id} className="flex items-center gap-3 bg-gray-900 p-2 rounded-xl border border-gray-800 cursor-pointer hover:border-red-500/50 transition-all group">
-                                            <input type="checkbox" value={genre.id} {...register('genreIds')} className="w-4 h-4 accent-red-600 rounded cursor-pointer" />
-                                            <span className="text-[10px] text-gray-300 uppercase font-black group-hover:text-white select-none">{genre.name}</span>
-                                        </label>
-                                    ))}
-                                </div>
+                        {totalMainPages > 1 && (
+                            <div className="p-10 border-t border-gray-800/50 flex justify-center items-center gap-3">
+                                {[...Array(totalMainPages)].map((_, i) => (
+                                    <button
+                                        key={i}
+                                        onClick={() => setCurrentPage(i + 1)}
+                                        className={`w-12 h-12 rounded-2xl font-black text-xs transition-all duration-300 ${
+                                            currentPage === i + 1
+                                                ? 'bg-red-600 text-white shadow-xl shadow-red-600/30 scale-110'
+                                                : 'bg-gray-900 text-gray-500 hover:bg-gray-800 hover:text-gray-300'
+                                        }`}
+                                    >
+                                        {i + 1}
+                                    </button>
+                                ))}
                             </div>
+                        )}
+                    </div>
+                </div>
+            ) : (
+                /* --- ФОРМА --- */
+                <div className="animate-fade-in pb-20">
+                    <div className="flex items-center gap-6 mb-10">
+                        <button onClick={() => setIsFormOpen(false)} className="bg-gray-800/50 p-4 rounded-2xl hover:bg-red-600 text-white transition-colors"><ArrowLeft size={24}/></button>
+                        <h2 className="text-3xl font-black text-white tracking-tighter uppercase leading-none">{editingId ? `Редагування: ${watch('title')}` : 'Новий фільм'}</h2>
+                    </div>
 
-                            {/* Актори */}
-                            <div className="bg-[#1a1d26] p-6 rounded-[32px] border border-gray-800 shadow-2xl flex flex-col h-[350px]">
-                                <div className="flex justify-between mb-4 items-center">
-                                    <h3 className="text-xs font-black uppercase text-red-500 tracking-widest">Актори</h3>
-                                    <input type="text" placeholder="Шукати..." className="w-24 pl-2 py-1 bg-gray-900 border border-gray-700 rounded-lg text-[10px] outline-none text-white focus:border-red-500" value={actorSearch} onChange={(e) => setActorSearch(e.target.value)} />
-                                </div>
-                                <div className="grid grid-cols-1 gap-2 overflow-y-auto pr-2 custom-scrollbar">
-                                    {filteredActors.map(actor => (
-                                        <label key={actor.id} className="flex items-center gap-3 bg-gray-900 p-2 rounded-xl border border-gray-800 cursor-pointer hover:border-red-500/50 transition-all group">
-                                            <input type="checkbox" value={actor.id} {...register('actorIds')} className="w-4 h-4 accent-red-600 rounded cursor-pointer" />
-                                            <span className="text-[10px] text-gray-300 uppercase font-black group-hover:text-white select-none">{actor.firstName} {actor.lastName}</span>
-                                        </label>
-                                    ))}
-                                </div>
-                            </div>
+                    <div className="flex flex-col lg:flex-row gap-10 items-start">
+                        <aside className="lg:sticky lg:top-10 w-full lg:w-64 space-y-4">
+                            <nav className="bg-[#1a1d26] p-6 rounded-[40px] border border-gray-800 shadow-xl">
+                                {[{id: 'basic', label: 'Головне', icon: Info}, {id: 'media', label: 'Медіа & Дати', icon: PlayCircle}, {id: 'staff', label: 'Команда', icon: Users}, {id: 'tax', label: 'Жанри', icon: Hash}].map(item => (
+                                    <button key={item.id} type="button" onClick={() => document.getElementById(item.id)?.scrollIntoView({behavior:'smooth', block:'start'})} className="w-full flex items-center gap-3 p-4 rounded-2xl text-xs font-black text-gray-500 hover:bg-white/[0.05] hover:text-white transition-all uppercase text-left group">
+                                        <item.icon size={18} className="group-hover:text-red-600"/> {item.label}
+                                    </button>
+                                ))}
+                            </nav>
+                            <button type="button" onClick={(e) => void handleSubmit(onSubmit)(e)} className="w-full bg-red-600 text-white py-6 rounded-[32px] font-black uppercase text-xs shadow-xl hover:bg-red-700 active:scale-95 transition-all text-white"><Save size={20} className="inline mr-2"/> Зберегти</button>
+                        </aside>
 
-                            {/* Мови */}
-                            <div className="bg-[#1a1d26] p-6 rounded-[32px] border border-gray-800 shadow-2xl flex flex-col h-[350px]">
-                                <div className="flex justify-between mb-4 items-center">
-                                    <h3 className="text-xs font-black uppercase text-red-500 tracking-widest">Мови</h3>
-                                    <input type="text" placeholder="Шукати..." className="w-24 pl-2 py-1 bg-gray-900 border border-gray-700 rounded-lg text-[10px] outline-none text-white focus:border-red-500" value={languageSearch} onChange={(e) => setLanguageSearch(e.target.value)} />
-                                </div>
-                                <div className="grid grid-cols-1 gap-2 overflow-y-auto pr-2 custom-scrollbar">
-                                    {filteredLanguages.map(lang => (
-                                        <label key={lang.id} className="flex items-center gap-3 bg-gray-900 p-2 rounded-xl border border-gray-800 cursor-pointer hover:border-red-500/50 transition-all group">
-                                            <input type="checkbox" value={lang.id} {...register('languageIds')} className="w-4 h-4 accent-red-600 rounded cursor-pointer" />
-                                            <span className="text-[10px] text-gray-300 uppercase font-black group-hover:text-white select-none">{lang.name}</span>
-                                        </label>
-                                    ))}
-                                </div>
-                            </div>
+                        <div className="flex-1 space-y-10 w-full">
+                            <form id="movieForm" className="space-y-10">
+                                <section id="basic" className="bg-[#1a1d26] p-10 rounded-[40px] border border-gray-800 shadow-2xl space-y-8 scroll-mt-10">
+                                    <h3 className="text-white font-black uppercase flex items-center gap-3 border-b border-gray-800 pb-8"><Info className="text-red-600"/> Головне</h3>
+                                    <div className="space-y-6">
+                                        <div><label className="text-[10px] text-gray-500 font-black uppercase mb-3 block">Назва фільму</label><input {...register('title', {required: true})} className="w-full bg-gray-900 border border-gray-700 p-5 rounded-2xl outline-none focus:border-red-600 text-white font-bold text-lg shadow-inner"/></div>
+                                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
+                                            <div><label className="text-[10px] text-yellow-500 font-black mb-3 block uppercase">Рейтинг</label><input type="number" step="0.1" {...register('rating')} className="w-full bg-gray-900 border border-gray-700 p-5 rounded-2xl outline-none text-white font-black shadow-inner"/></div>
+                                            <div><label className="text-[10px] text-blue-400 font-black mb-3 block uppercase">Хвилини</label><input type="number" {...register('durationMin')} className="w-full bg-gray-900 border border-gray-700 p-5 rounded-2xl outline-none text-white font-black shadow-inner"/></div>
+                                            <div><label className="text-[10px] text-green-500 font-black mb-3 block uppercase">Ціна (₴)</label><input type="number" {...register('basePrice')} className="w-full bg-gray-900 border border-gray-700 p-5 rounded-2xl outline-none text-white font-black shadow-inner"/></div>
+                                        </div>
+                                        <div><label className="text-[10px] text-gray-500 font-black mb-3 block uppercase">Віковий ценз</label>
+                                            <select {...register('ageRestriction')} className="w-full bg-gray-900 border border-gray-700 p-5 rounded-2xl outline-none text-white font-black uppercase text-xs cursor-pointer shadow-inner">
+                                                <option value={0}>0+ </option><option value={1}>12+ </option><option value={2}>16+ </option><option value={3}>18+ </option>
+                                            </select>
+                                        </div>
+                                        <div><label className="text-[10px] text-gray-500 font-black mb-3 block uppercase">Опис сюжету</label><textarea {...register('description')} rows={5} className="w-full bg-gray-900 border border-gray-700 p-6 rounded-3xl outline-none focus:border-red-600 text-gray-300 resize-none font-medium leading-relaxed shadow-inner"/></div>
+                                    </div>
+                                </section>
+
+                                <section id="media" className="bg-[#1a1d26] p-10 rounded-[40px] border border-gray-800 shadow-2xl space-y-8 scroll-mt-10">
+                                    <h3 className="text-white font-black uppercase flex items-center gap-3 border-b border-gray-800 pb-8"><Image className="text-blue-500"/> Медіа</h3>
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                                        <div className="space-y-6">
+                                            <div><label className="text-[10px] text-gray-500 font-black uppercase mb-3 block uppercase tracking-widest leading-none">URL Постера</label><input {...register('posterUri')} className="w-full bg-gray-900 border border-gray-700 p-4 rounded-2xl outline-none text-white font-mono text-xs shadow-inner"/></div>
+                                            <div><label className="text-[10px] text-gray-500 font-black uppercase mb-3 block uppercase tracking-widest leading-none">URL Трейлера</label><input {...register('trailerUri')} className="w-full bg-gray-900 border border-gray-700 p-4 rounded-2xl outline-none text-white font-mono text-xs shadow-inner"/></div>
+                                        </div>
+                                        <div className="bg-gray-900/40 p-6 rounded-3xl border border-gray-800 space-y-4 shadow-inner">
+                                            <div><label className="text-[10px] text-gray-400 font-black uppercase block mb-1 uppercase tracking-widest leading-none">Прем'єра</label><input type="date" {...register('releaseDate')} className="w-full bg-gray-900 border border-gray-800 p-3 rounded-xl outline-none text-white font-black shadow-inner"/></div>
+                                            <div className="grid grid-cols-2 gap-3">
+                                                <div><label className="text-[10px] text-green-500 font-black block mb-1 uppercase tracking-widest leading-none">Старт</label><input type="date" {...register('startDate')} className="w-full bg-gray-900 border border-gray-700 p-3 rounded-xl outline-none text-white shadow-inner"/></div>
+                                                <div><label className="text-[10px] text-red-500 font-black block mb-1 uppercase tracking-widest leading-none">Кінець</label><input type="date" {...register('endDate')} className="w-full bg-gray-900 border border-gray-700 p-3 rounded-xl outline-none text-white shadow-inner"/></div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </section>
+
+                                <section id="staff" className="bg-[#1a1d26] p-10 rounded-[40px] border border-gray-800 shadow-2xl space-y-10 scroll-mt-10">
+                                    <h3 className="text-white font-black uppercase flex items-center gap-3 border-b border-gray-800 pb-8 tracking-widest"><Users className="text-amber-500"/> Команда</h3>
+                                    <div className="space-y-6">
+                                        <div className="flex justify-between items-end gap-4">
+                                            <div className="flex-1">
+                                                <label className="text-[10px] text-gray-500 font-black uppercase mb-3 block tracking-widest leading-none">Режисер</label>
+                                                <div className="relative"><Search size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-600"/><input type="text" placeholder="Пошук..." value={searchTerms.director} onChange={(e) => handleSearchChange('director', e.target.value)} className="w-full bg-gray-900 border border-gray-700 pl-12 pr-4 py-4 rounded-2xl text-xs outline-none focus:border-amber-500 text-white font-bold shadow-inner"/></div>
+                                            </div>
+                                            <button type="button" onClick={() => setModal({ isOpen: true, type: 'directors', firstName: '', lastName: '', name: '', photoUri: '' })} className="text-[10px] bg-amber-500 text-white px-6 py-4 rounded-2xl font-black hover:bg-amber-600 transition-all">+ Додати</button>
+                                        </div>
+                                        <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                                            {getPaginatedData(directors, searchTerms.director, 'director').data.map(d => (
+                                                <button key={d.id} type="button" onClick={() => setValue('directorId', d.id)} className={`p-5 rounded-3xl border text-[11px] font-black uppercase transition-all ${selectedDirectorId === d.id ? 'bg-amber-600 border-amber-500 text-white shadow-xl shadow-amber-600/20' : 'bg-gray-900 border-gray-800 text-gray-500 hover:border-gray-600'}`}>{d.firstName} {d.lastName}</button>
+                                            ))}
+                                        </div>
+                                        <MiniPagination current={pages.director} total={getPaginatedData(directors, searchTerms.director, 'director').total} onPrev={() => handlePageChange('director', -1)} onNext={() => handlePageChange('director', 1)}/>
+                                    </div>
+                                    <div className="pt-10 border-t border-gray-800 space-y-6">
+                                        <div className="flex justify-between items-end gap-4">
+                                            <div className="flex-1">
+                                                <label className="text-[10px] text-gray-500 font-black uppercase mb-3 block tracking-widest leading-none">Актори</label>
+                                                <div className="relative"><Search size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-600"/><input type="text" placeholder="Знайти актора..." value={searchTerms.actor} onChange={(e) => handleSearchChange('actor', e.target.value)} className="w-full bg-gray-900 border border-gray-700 pl-12 pr-4 py-4 rounded-2xl text-xs outline-none focus:border-amber-500 text-white font-bold shadow-inner"/></div>
+                                            </div>
+                                            <button type="button" onClick={() => setModal({ isOpen: true, type: 'actors', firstName: '', lastName: '', name: '', photoUri: '' })} className="text-[10px] bg-amber-500 text-white px-6 py-4 rounded-2xl font-black hover:bg-amber-600 transition-all">+ Додати</button>
+                                        </div>
+                                        <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                                            {getPaginatedData(actors, searchTerms.actor, 'actor').data.map(a => {
+                                                const isChecked = selectedActorIds.includes(a.id.toString());
+                                                return (
+                                                    <label
+                                                        key={a.id}
+                                                        className={`flex items-center gap-4 p-5 rounded-3xl border transition-all cursor-pointer group ${isChecked ? 'bg-amber-600 border-amber-500 shadow-lg shadow-amber-600/10' : 'bg-gray-900 border-gray-800'}`}
+                                                        onClick={() => toggleSelection(a.id.toString(), 'actorIds')}
+                                                    >
+                                                        <input type="checkbox" checked={isChecked} readOnly className="w-5 h-5 accent-amber-600 rounded cursor-pointer" />
+                                                        <span className={`text-[11px] font-black uppercase ${isChecked ? 'text-white' : 'text-gray-500 group-hover:text-white'}`}>{a.firstName} {a.lastName}</span>
+                                                    </label>
+                                                );
+                                            })}
+                                        </div>
+                                        <MiniPagination current={pages.actor} total={getPaginatedData(actors, searchTerms.actor, 'actor').total} onPrev={() => handlePageChange('actor', -1)} onNext={() => handlePageChange('actor', 1)}/>
+                                    </div>
+                                </section>
+
+                                <section id="tax" className="bg-[#1a1d26] p-10 rounded-[40px] border border-gray-800 shadow-2xl space-y-10 scroll-mt-10 mb-20">
+                                    <div className="space-y-8">
+                                        <div className="flex justify-between items-end gap-4">
+                                            <div className="flex-1">
+                                                <h3 className="text-purple-500 font-black uppercase text-xs flex items-center gap-3 mb-4 tracking-widest leading-none"><Hash size={20}/> Жанри</h3>
+                                                <div className="relative"><Search size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-700"/><input type="text" placeholder="Пошук жанру..." value={searchTerms.genre} onChange={(e) => handleSearchChange('genre', e.target.value)} className="w-full bg-gray-900 border border-gray-700 pl-12 pr-4 py-4 rounded-2xl text-xs outline-none focus:border-purple-500 text-white font-bold shadow-inner"/></div>
+                                            </div>
+                                            <button type="button" onClick={() => setModal({ isOpen: true, type: 'genres', firstName: '', lastName: '', name: '', photoUri: '' })} className="p-4 bg-purple-500 text-white rounded-2xl hover:bg-purple-600 shadow-lg shadow-purple-500/10 transition-all"><Plus size={18}/></button>
+                                        </div>
+                                        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                                            {getPaginatedData(genres, searchTerms.genre, 'genre').data.map(g => {
+                                                const isChecked = selectedGenreIds.includes(g.id.toString());
+                                                return (
+                                                    <label
+                                                        key={g.id}
+                                                        className={`flex items-center gap-4 p-5 rounded-3xl border transition-all cursor-pointer group ${isChecked ? 'bg-purple-600 border-purple-500 shadow-lg shadow-purple-600/10' : 'bg-gray-900 border-gray-800'}`}
+                                                        onClick={() => toggleSelection(g.id.toString(), 'genreIds')}
+                                                    >
+                                                        <input type="checkbox" checked={isChecked} readOnly className="w-5 h-5 accent-purple-600 rounded cursor-pointer" />
+                                                        <span className={`text-[11px] font-black uppercase tracking-tight ${isChecked ? 'text-white' : 'text-gray-500 group-hover:text-white'}`}>{g.name}</span>
+                                                    </label>
+                                                );
+                                            })}
+                                        </div>
+                                        <MiniPagination current={pages.genre} total={getPaginatedData(genres, searchTerms.genre, 'genre').total} onPrev={() => handlePageChange('genre', -1)} onNext={() => handlePageChange('genre', 1)}/>
+                                    </div>
+                                </section>
+                            </form>
                         </div>
-
-                        <div className="flex gap-4 pt-6 border-t border-gray-800">
-                            <button type="button" onClick={closeForm} className="flex-1 bg-gray-800 hover:bg-gray-700 text-white py-5 rounded-3xl font-black uppercase tracking-widest text-xs">Скасувати</button>
-                            <button type="submit" className={`flex-[2] text-white font-black py-5 rounded-3xl transition-all shadow-xl uppercase tracking-widest flex items-center justify-center gap-2 ${editingId ? 'bg-yellow-600 hover:bg-yellow-700' : 'bg-red-600 hover:bg-red-700'}`}>
-                                <Save size={20} /> {editingId ? 'Зберегти зміни' : 'Створити фільм'}
-                            </button>
-                        </div>
-                    </form>
+                    </div>
                 </div>
             )}
         </div>

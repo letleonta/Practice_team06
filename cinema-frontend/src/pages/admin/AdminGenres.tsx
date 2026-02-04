@@ -82,7 +82,7 @@ const AdminGenres = () => {
                         disabled={loading}
                         className="w-full bg-red-600 hover:bg-red-700 text-white font-black py-4 rounded-2xl transition-all shadow-lg shadow-red-600/20 disabled:opacity-50 uppercase tracking-widest text-xs mt-4"
                     >
-                        {loading ? <Loader2 className="animate-spin mx-auto"/> : 'Додати в базу'}
+                        {loading ? <Loader2 className="animate-spin mx-auto"/> : 'Додати жанр'}
                     </button>
                 </form>
             </div>
