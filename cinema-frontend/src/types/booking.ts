@@ -8,7 +8,7 @@ export const BookingStatus = {
     Cancelled: "Cancelled",
 } as const;
 
-export type SortBy = 'date' | 'status' | 'userId' | null;
+export type SortBy = 'date' | 'status' | 'userEmail' | null;
 
 export type BookingStatus = typeof BookingStatus[keyof typeof BookingStatus];
 
@@ -30,12 +30,12 @@ export interface CreateBookingDto {
 }
 
 export interface AdminBookingDto extends BookingDto {
-    userId: number;
+    userEmail: string;
 }
 
 export interface BookingFilterDto {
     Status?: BookingStatus;
-    UserId?: string | number | null;
+    UserEmail?: string | null;
     SessionId?: string | number | null;
     BookingFromDate?: string | null;
     BookingToDate?: string | null;
