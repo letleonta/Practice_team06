@@ -34,7 +34,6 @@ public partial class PostgresContext : IdentityDbContext<User, IdentityRole<int>
             .HasPostgresEnum("AgeRestrictionLevel", new[] { "0+", "12+", "16+", "18+" })
             .HasPostgresEnum("BookingStatusEnum", new[] { "Inprogress", "Paid", "Cancelled" })
             .HasPostgresEnum("SeatTypeEnum", new[] { "Standard", "VIP" });
-
         
         modelBuilder.Entity<User>(entity =>
         {
@@ -42,8 +41,8 @@ public partial class PostgresContext : IdentityDbContext<User, IdentityRole<int>
             entity.Property(e => e.FirstName).HasMaxLength(50).HasColumnName("FirstName");
             entity.Property(e => e.LastName).HasMaxLength(50).HasColumnName("LastName");
             entity.Property(e => e.BirthDate).HasColumnType("date").HasColumnName("BirthDate");
+            entity.Property(e => e.AvatarUri).HasMaxLength(255).HasColumnName("AvatarUri").IsRequired(false);
         });
-
         
         modelBuilder.Entity<Actor>(entity =>
         {
@@ -72,7 +71,8 @@ public partial class PostgresContext : IdentityDbContext<User, IdentityRole<int>
             
             entity.HasOne(d => d.Session).WithMany(p => p.Bookings)
                 .HasForeignKey(d => d.SessionId)
-                .OnDelete(DeleteBehavior.Restrict);
+                .OnDelete(DeleteBehavior.Restrict)
+                .HasConstraintName("FK_BookingsSessionId");
         });
         
         modelBuilder.Entity<Director>(entity =>
@@ -124,19 +124,32 @@ public partial class PostgresContext : IdentityDbContext<User, IdentityRole<int>
                 .OnDelete(DeleteBehavior.Cascade)
                 .HasConstraintName("FK_SeatsHallId");
         });
-
         
         modelBuilder.Entity<Movie>(entity =>
         {
             entity.HasKey(e => e.Id).HasName("PK_Movies");
             entity.ToTable("Movies");
-            entity.Property(e => e.BasePrice).HasPrecision(6, 2).HasColumnName("BasePrice"); 
-            entity.Property(e => e.Rating).HasPrecision(3, 1).HasColumnName("Rating");
 
-            entity.HasOne(d => d.Director).WithMany(p => p.Movies)
+            entity.Property(e => e.Title).IsRequired().HasMaxLength(255);
+            entity.Property(e => e.Description).HasColumnType("text");
+            entity.Property(e => e.PosterUri).HasMaxLength(255);
+            entity.Property(e => e.TrailerUri).HasMaxLength(255);
+            entity.Property(e => e.BasePrice).HasPrecision(6, 2).IsRequired(); 
+            entity.Property(e => e.Rating).HasPrecision(3, 1);
+            entity.Property(e => e.ReleaseDate) .HasColumnType("date");
+            entity.Property(e => e.StartDate).HasColumnType("date");
+            entity.Property(e => e.EndDate).HasColumnType("date");
+            entity.Property(e => e.DurationMin);
+            entity.Property(e => e.AgeRestriction).IsRequired();
+            
+            entity.HasOne(d => d.Director)
+                .WithMany(p => p.Movies)
                 .HasForeignKey(d => d.DirectorId)
-                .OnDelete(DeleteBehavior.Cascade)
-                .HasConstraintName("FK_MoviesDirectorId");
+                .OnDelete(DeleteBehavior.SetNull)
+                .HasConstraintName("FK_MoviesDirectorId")
+                .IsRequired(false);
+            
+            entity.HasIndex(e => e.DirectorId, "IX_Movies_DirectorId");
         });
 
         modelBuilder.Entity<MovieActor>(entity =>
@@ -161,17 +174,19 @@ public partial class PostgresContext : IdentityDbContext<User, IdentityRole<int>
             entity.ToTable("Sessions");
             entity.Property(e => e.StartTime).HasColumnType("timestamp(0) without time zone")
                 .HasColumnName("StartTime");
-
             
             entity.HasOne(d => d.Movie).WithMany(p => p.Sessions)
                 .HasForeignKey(d => d.MovieId)
-                .OnDelete(DeleteBehavior.Restrict);
+                .OnDelete(DeleteBehavior.Restrict)
+                .HasConstraintName("FK_SessionsMovieId");
             entity.HasOne(d => d.Hall).WithMany(p => p.Sessions)
                 .HasForeignKey(d => d.HallId)
-                .OnDelete(DeleteBehavior.Restrict);
+                .OnDelete(DeleteBehavior.Restrict)
+                .HasConstraintName("FK_SessionsHallId");
             entity.HasOne(d => d.Language).WithMany(p => p.Sessions)
                 .HasForeignKey(d => d.LanguageId)
-                .OnDelete(DeleteBehavior.Restrict);
+                .OnDelete(DeleteBehavior.Restrict)
+                .HasConstraintName("FK_SessionsLanguageId");
         });
         
         modelBuilder.Entity<Ticket>(entity =>
@@ -186,21 +201,18 @@ public partial class PostgresContext : IdentityDbContext<User, IdentityRole<int>
             
             entity.HasOne(d => d.Booking).WithMany(p => p.Tickets)
                 .HasForeignKey(d => d.BookingId)
-                .OnDelete(DeleteBehavior.Cascade);
-            
+                .OnDelete(DeleteBehavior.Cascade)
+                .HasConstraintName("FK_TicketsBookingId");
             entity.HasOne(d => d.Seat).WithMany(p => p.Tickets)
                 .HasForeignKey(d => d.SeatId)
-                .OnDelete(DeleteBehavior.Restrict);
+                .OnDelete(DeleteBehavior.Restrict)
+                .HasConstraintName("FK_TicketsSeatId");
             entity.HasOne(d => d.Session).WithMany(p => p.Tickets)
                 .HasForeignKey(d => d.SessionId)
-                .OnDelete(DeleteBehavior.Restrict);
+                .OnDelete(DeleteBehavior.Restrict)
+                .HasConstraintName("FK_TicketsSessionId");
         });
-
-        modelBuilder.Entity<Genre>().HasData(
-            new Genre { Id = 1, Name = "Бойовик" },
-            new Genre { Id = 2, Name = "Комедія" },
-            new Genre { Id = 3, Name = "Жахи" }
-        );
+        
         OnModelCreatingPartial(modelBuilder);
     }
 

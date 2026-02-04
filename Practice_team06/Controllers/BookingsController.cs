@@ -58,7 +58,7 @@ namespace Practice_team06.Controllers
         [Authorize(Roles = "Admin,Customer, Manager")]
         public async Task<ActionResult<Booking>> GetBooking(int bookingId)
         {
-            if (User.IsInRole("Admin"))
+            if (User.IsInRole("Admin") || User.IsInRole("Manager"))
             {
                 try
                 {

@@ -21,9 +21,9 @@ public class UserService : IUserService
         
         var extension = Path.GetExtension(file.FileName).ToLower();
         
-        if (!string.IsNullOrEmpty(user.AvatarUrl))
+        if (!string.IsNullOrEmpty(user.AvatarUri))
         {
-            var oldFilePath = Path.Combine(_environment.WebRootPath, user.AvatarUrl.TrimStart('/'));
+            var oldFilePath = Path.Combine(_environment.WebRootPath, user.AvatarUri.TrimStart('/'));
             if (File.Exists(oldFilePath))
             {
                 File.Delete(oldFilePath);
@@ -43,7 +43,7 @@ public class UserService : IUserService
             await file.CopyToAsync(stream);
         }
         
-        user.AvatarUrl = dbPath;
+        user.AvatarUri = dbPath;
         await _userManager.UpdateAsync(user);
 
         return dbPath;
