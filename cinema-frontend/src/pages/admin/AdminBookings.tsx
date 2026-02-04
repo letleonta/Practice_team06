@@ -16,6 +16,7 @@ import {UsePagination} from "../../hooks/UsePagination.ts";
 import {AgeRestrictionBadge} from "../../components/AgeRestrictionBadge.tsx";
 import StatusPie from "../../components/ui/StatusPie.tsx";
 import RevenueChart from "../../components/ui/RevenueChart.tsx";
+import {SimpleBarChart} from "../../components/ui/SimpleBarChart.tsx";
 
 type StatusFilter = BookingStatus | 'ALL';
 type SortBy = 'date' | 'status' | 'userId';
@@ -137,35 +138,43 @@ const AdminBookingsPage = () => {
                 </div>
 
                 {stats && !loading && (
-                    <div className="max-w-7xl mx-auto w-full flex items-center justify-between gap-8 shadow-sm">
-                        <StatusPie stats={stats} />
-                        <RevenueChart data={stats.revenuePoints} />
-                        <div className="flex flex-col gap-6">
-                            <div className="bg-[#1a1d26] border border-gray-800 rounded-2xl flex items-center gap-4 p-3">
-                                <div className="bg-emerald-500/10 p-3 rounded-xl">
-                                    <TrendingUp className="text-emerald-500" size={24} />
-                                </div>
-                                <div>
-                                    <p className="text-xs text-gray-500 uppercase font-bold tracking-wider">Загальний дохід</p>
-                                    <p className="text-2xl font-black text-white">
-                                        {stats.totalRevenue?.toLocaleString()} ₴
-                                    </p>
-                                </div>
+                    <div className="max-w-7xl mx-auto w-full flex flex-col gap-6">
+                        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+                            <div className="lg:col-span-3 min-w-0">
+                                <RevenueChart data={stats.revenuePoints} />
                             </div>
 
-                            <div className="bg-[#1a1d26] border border-gray-800 rounded-2xl flex items-center gap-4 p-3">
-                                <div className="bg-blue-500/10 p-3 rounded-xl">
-                                    <CreditCard className="text-blue-500" size={24} />
+                            <div className="flex flex-col gap-6">
+                                <div className="bg-[#1a1d26] border border-gray-800 rounded-3xl flex items-center justify-center gap-4 p-6 flex-1 shadow-sm">
+                                    <div className="bg-emerald-500/10 p-4 rounded-2xl">
+                                        <TrendingUp className="text-emerald-500" size={28} />
+                                    </div>
+                                    <div>
+                                        <p className="text-xs text-gray-500 uppercase font-bold tracking-widest mb-1">Загальний дохід</p>
+                                        <p className="text-3xl font-black text-white">{stats.totalRevenue?.toLocaleString()} ₴</p>
+                                    </div>
                                 </div>
-                                <div>
-                                    <p className="text-xs text-gray-500 uppercase font-bold tracking-wider">Середній чек</p>
-                                    <p className="text-2xl font-black text-white">
-                                        {stats.paidCount > 0
-                                            ? Math.round(stats.totalRevenue / stats.paidCount).toLocaleString()
-                                            : 0} ₴
-                                    </p>
+
+                                <div className="bg-[#1a1d26] border border-gray-800 rounded-3xl flex items-center justify-center gap-4 p-6 flex-1 shadow-sm">
+                                    <div className="bg-blue-500/10 p-4 rounded-2xl">
+                                        <CreditCard className="text-blue-500" size={28} />
+                                    </div>
+                                    <div>
+                                        <p className="text-xs text-gray-500 uppercase font-bold tracking-widest mb-1">Середній чек</p>
+                                        <p className="text-3xl font-black text-white">
+                                            {stats.paidCount > 0 ? Math.round(stats.totalRevenue / stats.paidCount).toLocaleString() : 0} ₴
+                                        </p>
+                                    </div>
                                 </div>
                             </div>
+                        </div>
+
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                            <StatusPie stats={stats} />
+
+                            <SimpleBarChart data={stats.hallPoints} dataKey="number" nameKey="hallName" color="#3b82f6" chartName="Популярні зали" />
+
+                            <SimpleBarChart data={stats.genrePoints} dataKey="number" nameKey="genreName" color="#8b5cf6" chartName="Жанри-лідери" />
                         </div>
                     </div>
                 )}

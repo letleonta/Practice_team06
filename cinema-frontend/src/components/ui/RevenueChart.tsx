@@ -4,12 +4,12 @@ import type { RevenuePointDto} from "../../types/booking.ts";
 
 const RevenueChart = ({ data }: { data: RevenuePointDto[] }) => {
     return (
-        <div className="w-full bg-[#1a1d26] border border-gray-800 rounded-2xl p-6 max-w-120 shadow-xl">
-            <h3 className="text-xs font-bold uppercase text-gray-500 mb-6 tracking-wider">
+        <div className="bg-[#1a1d26] border border-gray-800 rounded-3xl p-6 shadow-sm h-80 flex flex-col overflow-hidden">
+            <h3 className="text-xs text-gray-500 uppercase font-black tracking-[0.2em] mb-6 shrink-0">
                 Динаміка виручки
             </h3>
 
-            <div className="flex-1 min-w-0 h-50">
+            <div className="flex-1 min-w-0">
                 <ResponsiveContainer width="100%" height="100%">
                     <AreaChart
                         data={data}
