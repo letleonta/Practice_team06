@@ -105,7 +105,7 @@ const MyBookingsPage = () => {
                                     to={`/bookings/${booking.id}`}
                                     className="group block bg-[#1a1d26] rounded-2xl border border-gray-800 overflow-hidden hover:border-red-600/50 transition-all hover:shadow-2xl hover:shadow-red-600/10 hover:-translate-y-1"
                                 >
-                                    <div className="relative aspect-[16/9] bg-gray-900 overflow-hidden">
+                                    <div className="relative aspect-video bg-gray-900 overflow-hidden">
                                         {booking.posterUri ? (
                                             <img
                                                 src={booking.posterUri}
@@ -118,7 +118,7 @@ const MyBookingsPage = () => {
                                             </div>
                                         )}
 
-                                        <div className="absolute inset-0 bg-gradient-to-t from-[#1a1d26] via-transparent to-transparent"></div>
+                                        <div className="absolute inset-0 bg-linear-to-t from-[#1a1d26] via-transparent to-transparent"></div>
 
                                         <AgeRestrictionBadge
                                             restriction={booking.ageRestriction}
@@ -130,28 +130,28 @@ const MyBookingsPage = () => {
                                         </div>
                                     </div>
 
-                                    <div className="p-5 bg-[#1a1d26] relative z-20 -mt-[1px]">
+                                    <div className="p-5 bg-[#1a1d26] relative z-20 -mt-px">
                                         <h3 className="font-bold text-xl mb-3 text-white group-hover:text-red-600 transition-colors line-clamp-1">
                                             {booking.title}
                                         </h3>
 
                                         <div className="space-y-2.5 mb-4">
                                             <div className="flex items-center gap-2 text-sm">
-                                                <Calendar size={16} className="text-red-600 flex-shrink-0" />
+                                                <Calendar size={16} className="text-red-600 shrink-0" />
                                                 <span className="text-gray-400">
                                                     {formatDateWithYear(booking.startTime)}
                                                 </span>
                                             </div>
 
                                             <div className="flex items-center gap-2 text-sm">
-                                                <Clock size={16} className="text-red-600 flex-shrink-0" />
+                                                <Clock size={16} className="text-red-600 shrink-0" />
                                                 <span className="text-gray-400">
                                                     {formatTime(booking.startTime)}
                                                 </span>
                                             </div>
 
                                             <div className="flex items-center gap-2 text-sm">
-                                                <Ticket size={16} className="text-red-600 flex-shrink-0" />
+                                                <Ticket size={16} className="text-red-600 shrink-0" />
                                                 <span className="text-gray-400">
                                                     {booking.tickets.length} квит.
                                                 </span>

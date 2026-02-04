@@ -1,12 +1,12 @@
-import { useState, useMemo } from 'react';
+import { useState } from 'react';
 import {
     Search, Filter, ArrowUpDown, X, Eye,
     Calendar, Clock, User, Film, Ticket as TicketIcon,
-    Loader2, TrendingDown, TrendingUp, ChevronDown
+    Loader2, TrendingDown, TrendingUp, ChevronDown, Ticket, CreditCard
 } from 'lucide-react';
 import { getStatusColor, getStatusText } from '../../utils/formatBookingStatus';
 import { getAgeRestrictionText } from '../../utils/formatAgeRestriction';
-import { BookingStatus } from "../../types/booking.ts";
+import {type BookingsStatsDto, BookingStatus} from "../../types/booking.ts";
 import type { AdminBookingDto, BookingFilterDto } from "../../types/booking.ts";
 import { BookingService } from "../../services/booking.service";
 import { formatDateWithYear, formatTime } from "../../utils/formatTime";
@@ -14,6 +14,8 @@ import { Pagination } from "../../components/Pagination";
 import { PaginationInfo } from "../../components/PaginationInfo";
 import {UsePagination} from "../../hooks/UsePagination.ts";
 import {AgeRestrictionBadge} from "../../components/AgeRestrictionBadge.tsx";
+import StatusPie from "../../components/ui/StatusPie.tsx";
+import RevenueChart from "../../components/ui/RevenueChart.tsx";
 
 type StatusFilter = BookingStatus | 'ALL';
 type SortBy = 'date' | 'status' | 'userId';
@@ -26,19 +28,20 @@ interface SortIconProps {
 
 const AdminBookingsPage = () => {
     // Filter state
+    const [stats, setStats] = useState<BookingsStatsDto | null>(null);
     const [statusFilter, setStatusFilter] = useState<StatusFilter>('ALL');
     const [sessionFrom, setSessionFrom] = useState('');
     const [sessionTo, setSessionTo] = useState('');
     const [bookingFrom, setBookingFrom] = useState('');
     const [bookingTo, setBookingTo] = useState('');
     const [userIdInput, setUserIdInput] = useState('');
+    const [searchQuery, setSearchQuery] = useState('');
 
     // Sort state
     const [sortBy, setSortBy] = useState<SortBy>('date');
     const [isDesc, setIsDesc] = useState(true);
 
     // UI state
-    const [search, setSearch] = useState('');
     const [filtersOpen, setFiltersOpen] = useState(false);
     const [selectedBooking, setSelectedBooking] = useState<AdminBookingDto | null>(null);
 
@@ -51,13 +54,18 @@ const AdminBookingsPage = () => {
             BookingFromDate: bookingFrom || undefined,
             BookingToDate: bookingTo || undefined,
             UserId: userIdInput && !isNaN(Number(userIdInput)) ? Number(userIdInput) : undefined,
+            SearchQuery: searchQuery || undefined,
             SortBy: sortBy,
             IsDescending: isDesc,
             Page: page,
             PageSize: pageSize,
         };
 
-        return await BookingService.getAllBookings(filter);
+        const response = await BookingService.getAllBookings(filter);
+
+        setStats(response.stats);
+
+        return response.bookingsPage;
     };
 
     // Use pagination hook
@@ -72,19 +80,9 @@ const AdminBookingsPage = () => {
         goToPage
     } = UsePagination(
         fetchBookings,
-        [statusFilter, sessionFrom, sessionTo, bookingFrom, bookingTo, userIdInput, sortBy, isDesc],
+        [statusFilter, sessionFrom, sessionTo, bookingFrom, bookingTo, userIdInput, searchQuery, sortBy, isDesc],
         { pageSize: 6 }
     );
-
-    // Client-side search (по ID/назві)
-    const filtered = useMemo(() => {
-        if (!search) return bookings;
-        const q = search.toLowerCase();
-        return bookings.filter(b =>
-            String(b.id).includes(q) ||
-            (b.title || '').toLowerCase().includes(q)
-        );
-    }, [bookings, search]);
 
     // Sort toggle
     const toggleSort = (field: SortBy) => {
@@ -101,8 +99,8 @@ const AdminBookingsPage = () => {
             return <ArrowUpDown size={14} className="text-gray-600" />;
         }
         return isDesc
-            ? <TrendingDown size={14} className="text-red-500" />
-            : <TrendingUp size={14} className="text-red-500" />;
+            ? <TrendingDown size={14} className="text-red-600" />
+            : <TrendingUp size={14} className="text-red-600" />;
     };
 
     // Helpers
@@ -115,7 +113,7 @@ const AdminBookingsPage = () => {
         setBookingFrom('');
         setBookingTo('');
         setUserIdInput('');
-        setSearch('');
+        setSearchQuery('');
     };
 
     return (
@@ -124,19 +122,53 @@ const AdminBookingsPage = () => {
                 {/* Header */}
                 <div className="flex items-center justify-between">
                     <div>
-                        <h1 className="text-4xl font-black tracking-tight mb-2 uppercase">
-                            Управління бронюваннями
-                        </h1>
+                        <h2 className="text-3xl font-black flex items-center gap-3 tracking-tighter uppercase">
+                            <Ticket className="text-red-600" size={32} /> Керування бронюваннями
+                        </h2>
                         <p className="text-gray-500">
                             Перегляд та керування всіма бронюваннями
                             {totalCount > 0 && (
-                                <span className="ml-2 text-red-600 font-semibold">
+                                <span className="ml-2 text-green-600 font-semibold">
                                     ({totalCount})
                                 </span>
                             )}
                         </p>
                     </div>
                 </div>
+
+                {stats && !loading && (
+                    <div className="max-w-7xl mx-auto w-full flex items-center justify-between gap-8 shadow-sm">
+                        <StatusPie stats={stats} />
+                        <RevenueChart data={stats.revenuePoints} />
+                        <div className="flex flex-col gap-6">
+                            <div className="bg-[#1a1d26] border border-gray-800 rounded-2xl flex items-center gap-4 p-3">
+                                <div className="bg-emerald-500/10 p-3 rounded-xl">
+                                    <TrendingUp className="text-emerald-500" size={24} />
+                                </div>
+                                <div>
+                                    <p className="text-xs text-gray-500 uppercase font-bold tracking-wider">Загальний дохід</p>
+                                    <p className="text-2xl font-black text-white">
+                                        {stats.totalRevenue?.toLocaleString()} ₴
+                                    </p>
+                                </div>
+                            </div>
+
+                            <div className="bg-[#1a1d26] border border-gray-800 rounded-2xl flex items-center gap-4 p-3">
+                                <div className="bg-blue-500/10 p-3 rounded-xl">
+                                    <CreditCard className="text-blue-500" size={24} />
+                                </div>
+                                <div>
+                                    <p className="text-xs text-gray-500 uppercase font-bold tracking-wider">Середній чек</p>
+                                    <p className="text-2xl font-black text-white">
+                                        {stats.paidCount > 0
+                                            ? Math.round(stats.totalRevenue / stats.paidCount).toLocaleString()
+                                            : 0} ₴
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                )}
 
                 {/* Search + Filters toggle */}
                 <div className="flex flex-col sm:flex-row gap-3">
@@ -146,13 +178,13 @@ const AdminBookingsPage = () => {
                         <input
                             type="text"
                             placeholder="Пошук за ID або назвою фільму…"
-                            value={search}
-                            onChange={e => setSearch(e.target.value)}
+                            value={searchQuery}
+                            onChange={e => setSearchQuery(e.target.value)}
                             className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-[#1a1d26] border border-gray-700 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-red-600/50 transition-colors"
                         />
-                        {search && (
+                        {searchQuery && (
                             <button
-                                onClick={() => setSearch('')}
+                                onClick={() => setSearchQuery('')}
                                 className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-600 hover:text-white transition-colors"
                             >
                                 <X size={16} />
@@ -300,7 +332,7 @@ const AdminBookingsPage = () => {
                                         </button>
                                     </td>
                                 </tr>
-                            ) : filtered.length === 0 ? (
+                            ) : bookings.length === 0 ? (
                                 <tr>
                                     <td colSpan={8} className="py-16 text-center">
                                         <TicketIcon size={40} className="text-gray-700 mx-auto mb-3" />
@@ -308,7 +340,7 @@ const AdminBookingsPage = () => {
                                     </td>
                                 </tr>
                             ) : (
-                                filtered.map((b) => (
+                                bookings.map((b) => (
                                     <tr
                                         key={b.id}
                                         className="border-b border-gray-800/60 hover:bg-[#22252f] transition-colors group cursor-pointer"
@@ -317,7 +349,7 @@ const AdminBookingsPage = () => {
                                         <td className="px-4 py-3 text-red-600 font-bold">#{b.id}</td>
                                         <td className="px-4 py-3">
                                             <div className="flex items-center gap-3">
-                                                <div className="flex-shrink-0">
+                                                <div className="shrink-0">
                                                     {b.posterUri ? (
                                                         <img src={b.posterUri} alt={b.title} className="w-8 h-12 object-cover rounded bg-gray-900" />
                                                     ) : (
@@ -399,7 +431,7 @@ const AdminBookingsPage = () => {
                         className="bg-[#1a1d26] border border-gray-800 rounded-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto shadow-2xl"
                         onClick={e => e.stopPropagation()}
                     >
-                        <div className="flex items-center justify-between p-5 border-b border-gray-800 bg-gradient-to-r from-red-600/10 to-transparent rounded-t-2xl">
+                        <div className="flex items-center justify-between p-5 border-b border-gray-800 bg-linear-to-r from-red-600/10 to-transparent rounded-t-2xl">
                             <h2 className="text-lg font-black">
                                 Бронювання <span className="text-red-600">#{selectedBooking.id}</span>
                             </h2>
