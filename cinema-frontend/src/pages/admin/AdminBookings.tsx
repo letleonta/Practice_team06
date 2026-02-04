@@ -5,7 +5,6 @@ import {
     Loader2, TrendingDown, TrendingUp, ChevronDown, Ticket, CreditCard
 } from 'lucide-react';
 import { getStatusColor, getStatusText } from '../../utils/formatBookingStatus';
-import { getAgeRestrictionText } from '../../utils/formatAgeRestriction';
 import {type BookingsStatsDto, BookingStatus} from "../../types/booking.ts";
 import type { AdminBookingDto, BookingFilterDto } from "../../types/booking.ts";
 import { BookingService } from "../../services/booking.service";
@@ -17,9 +16,10 @@ import {AgeRestrictionBadge} from "../../components/AgeRestrictionBadge.tsx";
 import StatusPie from "../../components/ui/StatusPie.tsx";
 import RevenueChart from "../../components/ui/RevenueChart.tsx";
 import {SimpleBarChart} from "../../components/ui/SimpleBarChart.tsx";
+import {BookingFilters} from "../../components/BookingFilters.tsx";
 
 type StatusFilter = BookingStatus | 'ALL';
-type SortBy = 'date' | 'status' | 'userId';
+type SortBy = 'date' | 'status' | 'userEmail';
 
 interface SortIconProps {
     field: SortBy;
@@ -35,7 +35,7 @@ const AdminBookingsPage = () => {
     const [sessionTo, setSessionTo] = useState('');
     const [bookingFrom, setBookingFrom] = useState('');
     const [bookingTo, setBookingTo] = useState('');
-    const [userIdInput, setUserIdInput] = useState('');
+    const [userEmail, setUserEmail] = useState('');
     const [searchQuery, setSearchQuery] = useState('');
 
     // Sort state
@@ -54,7 +54,7 @@ const AdminBookingsPage = () => {
             SessionToDate: sessionTo || undefined,
             BookingFromDate: bookingFrom || undefined,
             BookingToDate: bookingTo || undefined,
-            UserId: userIdInput && !isNaN(Number(userIdInput)) ? Number(userIdInput) : undefined,
+            UserEmail: userEmail || undefined,
             SearchQuery: searchQuery || undefined,
             SortBy: sortBy,
             IsDescending: isDesc,
@@ -81,7 +81,7 @@ const AdminBookingsPage = () => {
         goToPage
     } = UsePagination(
         fetchBookings,
-        [statusFilter, sessionFrom, sessionTo, bookingFrom, bookingTo, userIdInput, searchQuery, sortBy, isDesc],
+        [statusFilter, sessionFrom, sessionTo, bookingFrom, bookingTo, userEmail, searchQuery, sortBy, isDesc],
         { pageSize: 6 }
     );
 
@@ -105,7 +105,7 @@ const AdminBookingsPage = () => {
     };
 
     // Helpers
-    const hasActiveFilters = statusFilter !== 'ALL' || sessionFrom || sessionTo || bookingFrom || bookingTo || userIdInput;
+    const hasActiveFilters = statusFilter !== 'ALL' || sessionFrom || sessionTo || bookingFrom || bookingTo || userEmail;
 
     const resetAllFilters = () => {
         setStatusFilter('ALL');
@@ -113,7 +113,7 @@ const AdminBookingsPage = () => {
         setSessionTo('');
         setBookingFrom('');
         setBookingTo('');
-        setUserIdInput('');
+        setUserEmail('');
         setSearchQuery('');
     };
 
@@ -172,9 +172,11 @@ const AdminBookingsPage = () => {
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                             <StatusPie stats={stats} />
 
-                            <SimpleBarChart data={stats.hallPoints} dataKey="number" nameKey="hallName" color="#3b82f6" chartName="Популярні зали" />
+                            <SimpleBarChart data={stats.hallPoints} dataKey="number" dataLabel="Прибуток"
+                                            nameKey="hallName" color="#3b82f6" chartName="Найприбутковіші зали" />
 
-                            <SimpleBarChart data={stats.genrePoints} dataKey="number" nameKey="genreName" color="#8b5cf6" chartName="Жанри-лідери" />
+                            <SimpleBarChart data={stats.genrePoints} dataKey="number" dataLabel="Кількість квитків"
+                                            nameKey="genreName" color="#8b5cf6" chartName="Жанри-лідери" />
                         </div>
                     </div>
                 )}
@@ -227,69 +229,20 @@ const AdminBookingsPage = () => {
                     )}
                 </div>
 
-                {/* Filters panel */}
                 {filtersOpen && (
                     <div className="bg-[#1a1d26] border border-gray-800 rounded-2xl p-5 animate-[fadeDown_0.2s_ease]">
-                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-4 gap-y-5">
-                            {/* User ID */}
-                            <div className="flex flex-col gap-1.5">
-                                <label className="text-xs text-gray-500 uppercase tracking-wider">User ID</label>
-                                <div className="relative">
-                                    <User size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-600" />
-                                    <input
-                                        type="number"
-                                        placeholder="Введіть ID"
-                                        value={userIdInput}
-                                        onChange={e => setUserIdInput(e.target.value)}
-                                        className="w-full pl-8 pr-3 py-2 rounded-lg bg-gray-800 border border-gray-700 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-red-600/50 transition-colors"
-                                    />
-                                </div>
-                            </div>
-
-                            {/* Сеанс від */}
-                            <div className="flex flex-col gap-1.5">
-                                <label className="text-xs text-gray-500 uppercase tracking-wider">Сеанс від</label>
-                                <input
-                                    type="date"
-                                    value={sessionFrom}
-                                    onChange={e => setSessionFrom(e.target.value)}
-                                    className="px-3 py-2 rounded-lg bg-gray-800 border border-gray-700 text-sm text-white focus:outline-none focus:border-red-600/50 transition-colors"
-                                />
-                            </div>
-
-                            {/* Сеанс до */}
-                            <div className="flex flex-col gap-1.5">
-                                <label className="text-xs text-gray-500 uppercase tracking-wider">Сеанс до</label>
-                                <input
-                                    type="date"
-                                    value={sessionTo}
-                                    onChange={e => setSessionTo(e.target.value)}
-                                    className="px-3 py-2 rounded-lg bg-gray-800 border border-gray-700 text-sm text-white focus:outline-none focus:border-red-600/50 transition-colors"
-                                />
-                            </div>
-
-                            {/* Бронь від */}
-                            <div className="flex flex-col gap-1.5">
-                                <label className="text-xs text-gray-500 uppercase tracking-wider">Бронь від</label>
-                                <input
-                                    type="date"
-                                    value={bookingFrom}
-                                    onChange={e => setBookingFrom(e.target.value)}
-                                    className="px-3 py-2 rounded-lg bg-gray-800 border border-gray-700 text-sm text-white focus:outline-none focus:border-red-600/50 transition-colors"
-                                />
-                            </div>
-
-                            {/* Бронь до */}
-                            <div className="flex flex-col gap-1.5">
-                                <label className="text-xs text-gray-500 uppercase tracking-wider">Бронь до</label>
-                                <input
-                                    type="date"
-                                    value={bookingTo}
-                                    onChange={e => setBookingTo(e.target.value)}
-                                    className="px-3 py-2 rounded-lg bg-gray-800 border border-gray-700 text-sm text-white focus:outline-none focus:border-red-600/50 transition-colors"
-                                />
-                            </div>
-                        </div>
+                        <BookingFilters
+                            userEmail={userEmail}
+                            setUserEmail={setUserEmail}
+                            sessionFrom={sessionFrom}
+                            setSessionFrom={setSessionFrom}
+                            sessionTo={sessionTo}
+                            setSessionTo={setSessionTo}
+                            bookingFrom={bookingFrom}
+                            setBookingFrom={setBookingFrom}
+                            bookingTo={bookingTo}
+                            setBookingTo={setBookingTo}
+                        />
                     </div>
                 )}
 
@@ -302,8 +255,8 @@ const AdminBookingsPage = () => {
                                 <th className="text-left px-4 py-3 text-gray-500 font-semibold uppercase text-xs tracking-wider w-24">№</th>
                                 <th className="text-left px-4 py-3 text-gray-500 font-semibold uppercase text-xs tracking-wider">Фільм</th>
                                 <th className="text-left px-4 py-3 text-gray-500 font-semibold uppercase text-xs tracking-wider">
-                                    <button onClick={() => toggleSort('userId')} className="flex items-center gap-1.5 hover:text-white transition-colors">
-                                        User ID <SortIcon field="userId" currentSort={sortBy} isDesc={isDesc} />
+                                    <button onClick={() => toggleSort('userEmail')} className="flex items-center gap-1.5 hover:text-white transition-colors">
+                                        User Email <SortIcon field="userEmail" currentSort={sortBy} isDesc={isDesc} />
                                     </button>
                                 </th>
                                 <th className="text-left px-4 py-3 text-gray-500 font-semibold uppercase text-xs tracking-wider">Сеанс</th>
@@ -379,7 +332,7 @@ const AdminBookingsPage = () => {
                                                 </div>
                                             </div>
                                         </td>
-                                        <td className="px-4 py-3 text-gray-400 font-mono">{b.userId}</td>
+                                        <td className="px-4 py-3 text-gray-400 font-mono">{b.userEmail}</td>
                                         <td className="px-4 py-3 text-gray-300 whitespace-nowrap">
                                             <p>{formatDateWithYear(b.startTime)}</p>
                                             <p className="text-gray-600 text-xs">{formatTime(b.startTime)}</p>
@@ -464,18 +417,19 @@ const AdminBookingsPage = () => {
                                     </div>
                                 )}
                                 <div className="flex flex-col justify-between py-1">
-                                    <div>
+                                    <div className="flex flex-row justify-between items-center px-1">
                                         <h3 className="text-white font-bold text-lg">{selectedBooking.title}</h3>
                                         {selectedBooking.ageRestriction && (
-                                            <span className="text-xs bg-red-600/20 text-red-400 px-2 py-0.5 rounded-full">
-                                                {getAgeRestrictionText(selectedBooking.ageRestriction)}
-                                            </span>
+                                            <AgeRestrictionBadge
+                                                restriction={selectedBooking.ageRestriction}
+                                                className="w-fit block"
+                                            />
                                         )}
                                     </div>
                                     <div className="space-y-1.5 text-sm">
                                         <div className="flex items-center gap-2 text-gray-400">
                                             <User size={14} className="text-red-600" />
-                                            <span>User ID: <span className="text-gray-200 font-mono">{selectedBooking.userId}</span></span>
+                                            <span>User ID: <span className="text-gray-200 font-mono">{selectedBooking.userEmail}</span></span>
                                         </div>
                                         <div className="flex items-center gap-2 text-gray-400">
                                             <Calendar size={14} className="text-red-600" />
@@ -483,7 +437,7 @@ const AdminBookingsPage = () => {
                                         </div>
                                         <div className="flex items-center gap-2 text-gray-400">
                                             <Clock size={14} className="text-red-600" />
-                                            <span>Бронювано: <span className="text-gray-200">{formatDateWithYear(selectedBooking.bookingTime)} в {formatTime(selectedBooking.bookingTime)}</span></span>
+                                            <span>Час броні: <span className="text-gray-200">{formatDateWithYear(selectedBooking.bookingTime)} в {formatTime(selectedBooking.bookingTime)}</span></span>
                                         </div>
                                     </div>
                                 </div>
