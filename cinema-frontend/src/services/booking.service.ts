@@ -2,7 +2,7 @@ import { axiosInstance } from "../api/axiosInstance";
 import type {
     BookingDto,
     AdminBookingDto,
-    BookingFilterDto, CreateBookingDto
+    BookingFilterDto, CreateBookingDto, AdminBookingsWithStatsDto
 } from "../types/booking";
 import type {PagedResult} from "../types/pagedResult.ts";
 
@@ -16,7 +16,7 @@ export const BookingService = {
                 params.append(key, value.toString());
             }
         });
-        const response = await axiosInstance.get<PagedResult<AdminBookingDto>>("/bookings", {
+        const response = await axiosInstance.get<AdminBookingsWithStatsDto>("/bookings", {
             params: params
         });
         return response.data;
