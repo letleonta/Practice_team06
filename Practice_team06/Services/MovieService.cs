@@ -13,9 +13,13 @@ public class MovieService : IMovieService
         _context = context;
     }
 
-    public async Task<List<MovieDto>> GetAllMoviesAsync()
+    public async Task<List<MovieDto>> GetAllMoviesAsync(MovieFilterDto? filter)
     {
-        var movies = await _context.Movies
+        var moviesQuery = _context.Movies.AsQueryable();
+        
+        moviesQuery = ApplyFilter(moviesQuery, filter);
+
+        var movies = await moviesQuery
             .Include(m => m.MovieGenres).ThenInclude(mg => mg.Genre) // Завантажуємо жанри
             .Include(m => m.Director)
             .Include(m => m.MovieActors).ThenInclude(ma => ma.Actor)
@@ -25,17 +29,12 @@ public class MovieService : IMovieService
         return movies.Select(MapToDto).ToList();
     }
 
-    public async Task<List<MovieDto>> GetUpcomingMoviesAsync()
+    public async Task<List<MovieDto>> GetUpcomingMoviesAsync(MovieFilterDto? filter)
     {
-        var today = DateOnly.FromDateTime(DateTime.Now);
-        var movies = await _context.Movies
-            .Include(m => m.MovieGenres).ThenInclude(mg => mg.Genre)
-            .Include(m => m.Director)
-            .Include(m => m.MovieActors).ThenInclude(ma => ma.Actor)
-            .Where(m => m.ReleaseDate > today) // Фільми, які ще не вийшли
-            .ToListAsync();
-
-        return movies.Select(MapToDto).ToList();
+        if (filter == null)
+            filter = new MovieFilterDto();
+        filter.SelectionType = SelectionType.Upcoming;
+        return await GetAllMoviesAsync(filter);
     }
     
     public async Task<MovieDto?> GetMovieByIdAsync(int id)
@@ -48,25 +47,12 @@ public class MovieService : IMovieService
 
         return movie == null ? null : MapToDto(movie);
     }
-    public async Task<List<MovieDto>> GetNowPlayingMoviesAsync()
+    public async Task<List<MovieDto>> GetNowPlayingMoviesAsync(MovieFilterDto? filter)
     {
-        var today = DateOnly.FromDateTime(DateTime.Now);
-
-        var movies = await _context.Movies
-            .Include(m => m.MovieGenres).ThenInclude(mg => mg.Genre)
-            .Include(m => m.Director)
-            .Include(m => m.MovieActors).ThenInclude(ma => ma.Actor)
-            // (Початок <= Сьогодні) ТА (Кінець >= Сьогодні)
-            // Або (StartDate пустий) ТА (ReleaseDate <= Сьогодні) - як запасний варіант
-            .Where(m => 
-                    (m.StartDate != null && m.EndDate != null && m.StartDate <= today && m.EndDate >= today)
-                    || 
-                    (m.StartDate == null && m.ReleaseDate <= today) // Якщо дати прокату не задані, беремо всі, що вже вийшли
-            )
-            .OrderByDescending(m => m.ReleaseDate)
-            .ToListAsync();
-
-        return movies.Select(MapToDto).ToList();
+        if (filter == null)
+            filter = new MovieFilterDto();
+        filter.SelectionType = SelectionType.NowPlaying;
+        return await GetAllMoviesAsync(filter);
     }
 
     public async Task<MovieDto> CreateMovieAsync(CreateMovieDto dto)
@@ -260,5 +246,39 @@ public class MovieService : IMovieService
                 .Select(ma => $"{ma.Actor.FirstName} {ma.Actor.LastName}")
                 .ToList()
         };
+    }
+    
+    private static IQueryable<Movie> ApplyFilter(IQueryable<Movie> query, MovieFilterDto? filter)
+    {
+        if (filter == null)
+            return query;
+        
+        if (!string.IsNullOrEmpty(filter.Title))
+            query = query.Where(m => m.Title.ToLower().Contains(filter.Title.ToLower()));
+        
+        if (filter.Rating != null)
+            query = query.Where(m => m.Rating >= filter.Rating);
+
+        if (filter.SelectionType != null)
+        {
+            var today =  DateOnly.FromDateTime(DateTime.Now);
+            if (filter.SelectionType == SelectionType.NowPlaying)
+                query = query.Where(m =>
+                    (m.StartDate != null && m.EndDate != null && m.StartDate <= today && m.EndDate >= today)
+                    ||
+                    (m.StartDate == null && m.ReleaseDate <= today));
+            else if (filter.SelectionType == SelectionType.Upcoming)
+                query = query.Where(m => m.ReleaseDate > today);
+        }
+        
+        if (filter.AgeRestrictions.Any())
+        {
+            query = query.Where(m => filter.AgeRestrictions.Contains(m.AgeRestriction));
+        }
+
+        if (filter.Genres.Any())
+            query = query.Where(m => m.MovieGenres.Any(g => filter.Genres.Contains(g.Genre.Name)));
+
+        return query;
     }
 }

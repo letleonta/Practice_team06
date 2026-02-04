@@ -3,9 +3,9 @@
 namespace Practice_team06.Services;
 public interface IMovieService
 {
-    Task<List<MovieDto>> GetAllMoviesAsync();
-    Task<List<MovieDto>> GetUpcomingMoviesAsync();
-    Task<List<MovieDto>> GetNowPlayingMoviesAsync();
+    Task<List<MovieDto>> GetAllMoviesAsync(MovieFilterDto? filter);
+    Task<List<MovieDto>> GetUpcomingMoviesAsync(MovieFilterDto? filter);
+    Task<List<MovieDto>> GetNowPlayingMoviesAsync(MovieFilterDto? filter);
     Task<MovieDto?> GetMovieByIdAsync(int id);
     Task<MovieDto> CreateMovieAsync(CreateMovieDto dto);
     Task<MovieDto> UpdateMovieAsync(int id, CreateMovieDto dto);
