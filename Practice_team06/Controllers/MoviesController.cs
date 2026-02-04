@@ -18,9 +18,9 @@ public class MoviesController : ControllerBase
 
     // Для ЮЗЕРІВ: Отримати всі фільми
     [HttpGet]
-    public async Task<ActionResult<List<MovieDto>>> GetAll()
+    public async Task<ActionResult<List<MovieDto>>> GetAll(MovieFilterDto? filter)
     {
-        return Ok(await _movieService.GetAllMoviesAsync());
+        return Ok(await _movieService.GetAllMoviesAsync(filter));
     }
     
     // Для ЮЗЕРІВ: Отримати деталі одного фільму
@@ -34,15 +34,15 @@ public class MoviesController : ControllerBase
 
     // Для ЮЗЕРІВ: "Скоро у прокаті"
     [HttpGet("upcoming")]
-    public async Task<ActionResult<List<MovieDto>>> GetUpcoming()
+    public async Task<ActionResult<List<MovieDto>>> GetUpcoming(MovieFilterDto? filter)
     {
-        return Ok(await _movieService.GetUpcomingMoviesAsync());
+        return Ok(await _movieService.GetUpcomingMoviesAsync(filter));
     }
     // Для ЮЗЕРІВ: "Зараз у кіно"
     [HttpGet("now-playing")]
-    public async Task<ActionResult<List<MovieDto>>> GetNowPlaying()
+    public async Task<ActionResult<List<MovieDto>>> GetNowPlaying([FromQuery] MovieFilterDto? filter)
     {
-        return Ok(await _movieService.GetNowPlayingMoviesAsync());
+        return Ok(await _movieService.GetNowPlayingMoviesAsync(filter));
     }
     //АДМІН ЧАСТИНА
 
