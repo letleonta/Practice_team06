@@ -29,65 +29,61 @@ const StatusPie = ({ stats }: StatusPieProps) => {
     const getPercent = (value: number) => (total > 0 ? ((value / total) * 100).toFixed(1) : "0.0");
 
     return (
-        <div className="bg-[#1a1d26] border border-gray-800 rounded-2xl p-6 shadow-xl h-full flex flex-col justify-center">
-            <h3 className="text-xs font-bold uppercase text-gray-500 mb-6 tracking-wider">Статуси замовлень</h3>
-
-            <div className="flex flex-col lg:flex-row items-center justify-between gap-10">
-                {/* Графік */}
-                <div className="h-50 w-50 shrink-0 relative">
+        <div className="bg-[#1a1d26] border border-gray-800 rounded-3xl p-6 shadow-sm min-h-75">
+            <h3 className="text-xs text-gray-500 uppercase font-black tracking-[0.2em] mb-6 shrink-0">
+                Статус бронювань
+            </h3>
+            <div className="flex flex-col items-center w-full min-w-0">
+                <div className="h-48 w-48 shrink-0 relative mb-4">
                     <ResponsiveContainer width="100%" height="100%">
                         <PieChart>
                             <Pie
                                 data={data}
-                                innerRadius={55}
-                                outerRadius={75}
+                                innerRadius={50}
+                                outerRadius={65}
                                 dataKey="value"
                                 stroke="none"
                                 shape={MyCustomSector}
-                                animationDuration={1000}
                             >
                                 <LabelList
                                     dataKey="value"
                                     position="outside"
-                                    offset={15}
-                                    fill="#6b7280"
-                                    fontSize={12}
+                                    offset={10}
+                                    fill="#9ca3af"
+                                    fontSize={10}
                                     fontWeight="bold"
-                                    formatter={(val) => {
-                                        const num = Number(val);
-                                        return num > 0 ? num.toString() : '';
-                                    }}
+                                    formatter={(val: any) => (val > 0 ? val : '')}
                                 />
                             </Pie>
                         </PieChart>
                     </ResponsiveContainer>
-                    {/* Текст у центрі кола */}
+
                     <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-                        <span className="text-2xl font-black text-white">{total}</span>
-                        <span className="text-[10px] text-gray-500 uppercase tracking-widest text-center leading-tight">Всього<br/>бронювань</span>
+                        <span className="text-xl font-black text-white leading-none">{total}</span>
+                        <span className="text-[8px] text-gray-500 uppercase tracking-tighter text-center mt-1">
+                            Всього
+                        </span>
                     </div>
                 </div>
 
-                {/* Легенда */}
-                <div className="flex-1 w-full space-y-4">
+                <div className="w-full space-y-2 px-2">
                     {data.map((item, index) => (
-                        <div key={item.name} className="flex items-center group">
-                            {/* Кольоровий індикатор (Tailwind класи для надійності) */}
-                            <div
-                                className="w-3 h-3 rounded-full mr-4 transition-transform group-hover:scale-125 shrink-0"
-                                style={{ backgroundColor: COLORS[index] }}
-                            />
+                        <div key={item.name} className="flex items-center justify-between group py-1 border-b border-gray-800/50 last:border-0">
+                            <div className="flex items-center min-w-0">
+                                <div
+                                    className="w-2.5 h-2.5 rounded-full mr-3 shrink-0"
+                                    style={{ backgroundColor: COLORS[index] }}
+                                />
+                                <span className="text-sm text-gray-400 font-medium truncate">
+                                    {item.name}
+                                </span>
+                            </div>
 
-                            <span className="text-sm text-gray-400 font-medium flex-1">
-                                {item.name}
-                            </span>
-
-                            {/* Кількість та відсоток */}
-                            <div className="flex items-center gap-4 ml-4">
-                                <span className="text-sm font-bold text-white min-w-5 text-right">
+                            <div className="flex items-center gap-3 ml-2 shrink-0">
+                                <span className="text-sm font-bold text-white">
                                     {item.value}
                                 </span>
-                                <span className="text-sm font-semibold text-gray-400 w-12 text-right">
+                                <span className="text-sm font-semibold text-gray-500 w-10 text-right">
                                     {getPercent(item.value)}%
                                 </span>
                             </div>
