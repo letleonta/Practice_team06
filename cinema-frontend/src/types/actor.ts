@@ -7,8 +7,10 @@ export interface ActorDto {
 
 export interface ActorFilterDto {
     search?: string;
-    sortBy?: 'firstname' | 'lastname' | 'id'; // Обмежимо варіанти для безпеки
+    sortBy?: 'id' | 'firstname' | 'lastname';
     isDescending?: boolean;
+    Page?: number;
+    PageSize?: number;
 }
 
 export interface ActorMovieDto {

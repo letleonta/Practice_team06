@@ -1,5 +1,7 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using Practice_team06.DTOs.Common;
 using Practice_team06.DTOs.Director;
+using Practice_team06.Extensions;
 using Practice_team06.Models;
 
 namespace Practice_team06.Services;
@@ -13,10 +15,11 @@ public class DirectorService : IDirectorService
         _context = context;
     }
 
-    public async Task<IEnumerable<DirectorDto>> GetAllAsync(DirectorFilterDto filter)
+    public async Task<PagedResult<DirectorDto>> GetAllAsync(DirectorFilterDto filter)
     {
         var query = _context.Directors.AsQueryable();
-        
+    
+        // 1. Фільтрація (Пошук)
         if (!string.IsNullOrWhiteSpace(filter.Search))
         {
             var s = filter.Search.Trim().ToLower();
@@ -24,9 +27,13 @@ public class DirectorService : IDirectorService
                                      || d.LastName.ToLower().Contains(s));
         }
         
+        var totalCount = await query.CountAsync();
+        
         query = ApplySorting(query, filter.SortBy, filter.IsDescending);
         
-        return await query
+        query = query.ApplyPagination(filter);
+        
+        var items = await query
             .Select(d => new DirectorDto
             {
                 Id = d.Id,
@@ -35,7 +42,16 @@ public class DirectorService : IDirectorService
                 PhotoUri = d.PhotoUri
             })
             .ToListAsync();
+        
+        return new PagedResult<DirectorDto>
+        {
+            Items = items,
+            TotalCount = totalCount,
+            Page = filter.Page ?? 1,
+            PageSize = filter.PageSize ?? 6
+        };
     }
+
     public async Task<DirectorDto?> GetByIdAsync(int id)
     {
         var director = await _context.Directors.FindAsync(id);
