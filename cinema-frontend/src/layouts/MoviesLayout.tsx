@@ -7,6 +7,7 @@ import {GenreService} from "../services/genre.service.ts";
 import type {GenreDto} from "../types/genre.ts";
 import {UsePagination} from "../hooks/UsePagination.ts";
 import {Pagination} from "../components/Pagination.tsx";
+import {PaginationInfo} from "../components/PaginationInfo.tsx";
 
 interface Props {
     title: string;
@@ -62,9 +63,10 @@ const MoviesLayout = ({ title }: Props) => {
         totalCount,
         currentPage,
         totalPages,
+        pageSize,
         loading,
         goToPage
-    } = UsePagination(fetchMovies, [movieFilter, title], { pageSize: 10 });
+    } = UsePagination(fetchMovies, [movieFilter, title], { pageSize: 2 });
 
     const uniqueGenres = useMemo(() => {
         return ['Всі', ...availableGenres];
@@ -147,7 +149,14 @@ const MoviesLayout = ({ title }: Props) => {
                     </div>
 
                     {!loading && totalPages > 1 && (
-                        <div className="mt-12 pb-12 flex justify-center">
+                        <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mt-12 pb-12 px-6">
+                            <PaginationInfo
+                                currentPage={currentPage}
+                                pageSize={pageSize}
+                                totalCount={totalCount}
+                                itemName="фільм"
+                                className="text-xs"
+                            />
                             <Pagination
                                 currentPage={currentPage}
                                 totalPages={totalPages}

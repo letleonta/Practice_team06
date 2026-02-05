@@ -26,7 +26,7 @@ function App() {
                 .then(data => {
                     updateUser({
                         firstName: data.firstName,
-                        avatarUrl: data.avatarUrl
+                        avatarUri: data.avatarUrl
                     });
                 })
                 .catch(err => console.error("Помилка синхронізації:", err));
