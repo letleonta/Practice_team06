@@ -1,6 +1,7 @@
 import type {TicketBookingDto} from "./ticket.ts";
 import type {PagedResult} from "./pagedResult.ts";
 import type {HallDto} from "./hall.ts";
+import type {BaseFilterDto} from "./common.ts";
 
 export const BookingStatus = {
     Inprogress: "Inprogress",
@@ -33,7 +34,7 @@ export interface AdminBookingDto extends BookingDto {
     userEmail: string;
 }
 
-export interface BookingFilterDto {
+export interface BookingFilterDto extends BaseFilterDto {
     Status?: BookingStatus;
     UserEmail?: string | null;
     SessionId?: string | number | null;
@@ -44,8 +45,6 @@ export interface BookingFilterDto {
     SearchQuery?: string | null;
     SortBy?: SortBy;
     IsDescending?: boolean;
-    Page?: number;
-    PageSize?: number;
 }
 
 export interface RevenuePointDto {

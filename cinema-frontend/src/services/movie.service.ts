@@ -1,11 +1,12 @@
 import { axiosInstance } from "../api/axiosInstance";
 import type {MovieDto, CreateMovieDto, MovieFilterDto} from "../types/movie";
+import type {PagedResult} from "../types/pagedResult.ts";
 
 export const MovieService = {
     // Отримати всі фільми
-    async getAll(filter? : MovieFilterDto) {
-        const response = await axiosInstance.get<MovieDto[]>("/movies", {
-            params : filter
+    async getAll(filter : MovieFilterDto) {
+        const response = await axiosInstance.get<PagedResult<MovieDto>>("/movies", {
+            params : filter,
         });
         return response.data;
     },
@@ -17,16 +18,16 @@ export const MovieService = {
     },
 
     // Фільми, що скоро вийдуть
-    async getUpcoming(filter? : MovieFilterDto) {
-        const response = await axiosInstance.get<MovieDto[]>("/movies/upcoming", {
+    async getUpcoming(filter : MovieFilterDto) {
+        const response = await axiosInstance.get<PagedResult<MovieDto>>("/movies/upcoming", {
             params : filter
         });
         return response.data;
     },
 
     // Фільми, що зараз у прокаті (найважливіше для головної сторінки)
-    async getNowPlaying(filter? : MovieFilterDto) {
-        const response = await axiosInstance.get<MovieDto[]>("/movies/now-playing",{
+    async getNowPlaying(filter : MovieFilterDto) {
+        const response = await axiosInstance.get<PagedResult<MovieDto>>("/movies/now-playing",{
             params: filter,
             paramsSerializer: {
                 indexes: null

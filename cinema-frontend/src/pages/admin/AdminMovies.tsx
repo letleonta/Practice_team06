@@ -2,14 +2,17 @@
 import { useForm } from 'react-hook-form';
 import api from '../../api/axiosInstance';
 import { MovieService } from '../../services/movie.service';
-import type { CreateMovieDto, MovieDto } from '../../types/movie';
+import type {CreateMovieDto, MovieDto, MovieFilterDto} from '../../types/movie';
 import {
-    Film, Search, Edit, Trash2, Clock, Plus,
-    ArrowLeft, Save, Star, PlayCircle, Info, Image, Users,
-    ChevronLeft, ChevronRight, Hash, X
+    Film, Search, Edit, Trash2, Plus,
+    ArrowLeft, Save, PlayCircle, Info, Image, Users,
+    ChevronLeft, ChevronRight, Hash, X, Clock, Star
 } from 'lucide-react';
 import {ConfirmModal} from "../../components/ui/ConfirmModal.tsx";
 import {notify} from "../../utils/toast";
+import {UsePagination} from "../../hooks/UsePagination.ts";
+import {Pagination} from "../../components/Pagination.tsx";
+import {PaginationInfo} from "../../components/PaginationInfo.tsx";
 
 // Локальні інтерфейси для типізації
 interface NamedEntity { id: number; name: string; }
@@ -32,12 +35,11 @@ const AdminMovies = () => {
     const [genres, setGenres] = useState<NamedEntity[]>([]);
     const [directors, setDirectors] = useState<PersonEntity[]>([]);
     const [actors, setActors] = useState<PersonEntity[]>([]);
-    const [movies, setMovies] = useState<MovieDto[]>([]);
 
     const [isFormOpen, setIsFormOpen] = useState(false);
     const [editingId, setEditingId] = useState<number | null>(null);
     const [movieSearch, setMovieSearch] = useState('');
-    const [currentPage, setCurrentPage] = useState(1);
+    const [debouncedSearch, setDebouncedSearch] = useState('');
 
     const [searchTerms, setSearchTerms] = useState({ director: '', actor: '', genre: '' });
     const [pages, setPages] = useState({ director: 1, actor: 1, genre: 1 });
@@ -50,16 +52,25 @@ const AdminMovies = () => {
 
     const fetchData = async () => {
         try {
-            const [g, d, a, m] = await Promise.all([
-                api.get('/genres'), api.get('/directors'),
-                api.get('/actors'), MovieService.getAll()
+            const [g, d, a] = await Promise.all([
+                api.get('/genres'),
+                api.get('/directors'),
+                api.get('/actors')
             ]);
-            setGenres(g.data); setDirectors(d.data);
-            setActors(a.data); setMovies(m);
-        } catch (_err) { console.error("Error loading data"); }
+            setGenres(g.data);
+            setDirectors(d.data);
+            setActors(a.data);
+        } catch (_err) {
+            console.error("Error loading dictionaries");
+        }
     };
 
     useEffect(() => { void fetchData(); }, []);
+
+    useEffect(() => {
+        const timer = setTimeout(() => setDebouncedSearch(movieSearch), 600);
+        return () => clearTimeout(timer);
+    }, [movieSearch]);
 
     const toggleSelection = (id: string, field: 'genreIds' | 'actorIds') => {
         const currentValues: string[] = (watch(field) as unknown as string[]) || [];
@@ -118,6 +129,31 @@ const AdminMovies = () => {
         setIsFormOpen(true);
     };
 
+    const {
+        items: movies,
+        totalCount,
+        currentPage,
+        totalPages,
+        pageSize,
+        loading,
+        goToPage
+    } = UsePagination(
+        async (page, size) => {
+            const filter: MovieFilterDto = {
+                Page: page,
+                PageSize: size
+            };
+
+            if (debouncedSearch && debouncedSearch.trim() !== "") {
+                filter.title = debouncedSearch;
+            }
+
+            return await MovieService.getAll(filter);
+        },
+        [debouncedSearch],
+        { pageSize: 2 }
+    );
+
     const onSubmit = async (data: CreateMovieDto) => {
         try {
             const formatted = {
@@ -147,10 +183,6 @@ const AdminMovies = () => {
         const paginated = filtered.slice((pages[pageKey] - 1) * innerItemsPerPage, pages[pageKey] * innerItemsPerPage);
         return { data: paginated, total };
     };
-
-    const filteredMovies = movies.filter(m => m.title.toLowerCase().includes(movieSearch.toLowerCase()));
-    const totalMainPages = Math.ceil(filteredMovies.length / 8);
-    const currentMovies = filteredMovies.slice((currentPage - 1) * 8, currentPage * 8);
 
     const MiniPagination = ({ current, total, onPrev, onNext }: { current: number, total: number, onPrev: () => void, onNext: () => void }) => {
         if (total <= 1) return null;
@@ -219,7 +251,8 @@ const AdminMovies = () => {
                         </h2>
                         <button
                             onClick={() => { setEditingId(null); reset(); setIsFormOpen(true); }}
-                            className="bg-red-600 hover:bg-red-700 text-white px-8 py-4 rounded-2xl font-black uppercase text-[11px] tracking-widest shadow-xl shadow-red-600/20 transition-all active:scale-95"
+                            className="bg-red-600 hover:bg-red-700 text-white px-8 py-4 rounded-2xl font-black uppercase text-[11px]
+                            tracking-widest shadow-xl shadow-red-600/20 transition-all active:scale-95"
                         >
                             + Додати новий фільм
                         </button>
@@ -229,7 +262,7 @@ const AdminMovies = () => {
                         <div className="p-8 border-b border-gray-800/50 flex flex-col md:flex-row justify-between items-center gap-6">
                             <div className="flex items-center gap-4">
                                 <div className="px-4 py-2 bg-gray-900/80 rounded-full border border-gray-800 text-[10px] text-gray-400 font-black uppercase tracking-[0.2em]">
-                                    Всього у базі: {filteredMovies.length}
+                                    Всього у базі: {movies.length}
                                 </div>
                             </div>
                             <div className="relative w-full md:w-100">
@@ -238,99 +271,114 @@ const AdminMovies = () => {
                                     type="text"
                                     placeholder="Пошук фільму..."
                                     value={movieSearch}
-                                    onChange={e => {setMovieSearch(e.target.value); setCurrentPage(1);}}
+                                    onChange={e => {
+                                        setMovieSearch(e.target.value);
+                                        goToPage(1);
+                                    }}
                                     className="w-full bg-gray-950 border border-gray-800 rounded-2xl py-4 pl-14 pr-6 outline-none focus:border-red-600 focus:ring-1 focus:ring-red-600/20 transition-all font-bold text-white placeholder:text-gray-600 shadow-inner"
                                 />
                             </div>
                         </div>
 
                         <div className="p-4 space-y-3">
-                            {currentMovies.map(movie => (
-                                <div
-                                    key={movie.id}
-                                    className="group flex flex-col md:flex-row items-center gap-6 p-5 bg-gray-900/30 hover:bg-white/3 border border-gray-800/40 rounded-4xl transition-all duration-300"
-                                >
-                                    <div className="relative shrink-0">
-                                        <img
-                                            src={movie.posterUri}
-                                            className="w-24 h-36 rounded-2xl object-cover shadow-2xl border border-gray-800 group-hover:scale-105 transition-transform duration-500"
-                                            alt={movie.title}
-                                        />
-                                    </div>
-
-                                    <div className="flex-1 text-center md:text-left space-y-3">
-                                        <div>
-                                            <h3 className="text-2xl font-black text-white uppercase tracking-tighter leading-tight transition-colors">
-                                                {movie.title}
-                                            </h3>
-                                            <div className="flex flex-wrap justify-center md:justify-start gap-2 mt-2">
-                                                {movie.genres.map(g => (
-                                                    <span key={g} className="text-[9px] bg-red-900/20 text-red-700 border border-red-900/30 px-3 py-1 rounded-lg font-black uppercase tracking-wider">
-                                                        {g}
-                                                    </span>
-                                                ))}
-                                            </div>
+                            {/* Додаємо стан завантаження */}
+                            {loading ? (
+                                <div className="flex flex-col items-center justify-center py-24 gap-4">
+                                    <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-red-600"></div>
+                                    <p className="text-gray-500 font-black uppercase text-[10px] tracking-widest">Синхронізація з базою...</p>
+                                </div>
+                            ) : movies.length > 0 ? (
+                                movies.map(movie => (
+                                    <div
+                                        key={movie.id}
+                                        className="group flex flex-col md:flex-row items-center gap-6 p-5 bg-gray-900/30 hover:bg-white/3 border border-gray-800/40 rounded-4xl transition-all duration-300"
+                                    >
+                                        <div className="relative shrink-0">
+                                            <img
+                                                src={movie.posterUri}
+                                                className="w-24 h-36 rounded-2xl object-cover shadow-2xl border border-gray-800 group-hover:scale-105 transition-transform duration-500"
+                                                alt={movie.title}
+                                            />
                                         </div>
 
-                                        <div className="flex items-center justify-center md:justify-start gap-4">
+                                        <div className="flex-1 text-center md:text-left space-y-3">
+                                            <div>
+                                                <h3 className="text-2xl font-black text-white uppercase tracking-tighter leading-tight transition-colors">
+                                                    {movie.title}
+                                                </h3>
+                                                <div className="flex flex-wrap justify-center md:justify-start gap-2 mt-2">
+                                                    {movie.genres.map(g => (
+                                                        <span key={g} className="text-[9px] bg-red-900/20 text-red-700 border border-red-900/30 px-3 py-1 rounded-lg font-black uppercase tracking-wider">
+                                                        {g}
+                                                    </span>
+                                                    ))}
+                                                </div>
+                                            </div>
+
+                                            <div className="flex items-center justify-center md:justify-start gap-4">
                                             <span className="text-[10px] font-mono text-gray-500 uppercase tracking-widest bg-gray-950 px-2 py-1 rounded">
                                                 ID: {movie.id}
                                             </span>
-                                            <div className="flex items-center gap-1.5 px-3 py-1 bg-yellow-500/10 text-yellow-500 border border-yellow-500/20 rounded-xl text-[11px] font-black">
-                                                <Star size={12} fill="currentColor"/> {movie.rating?.toFixed(1) || "0.0"}
+                                                <div className="flex items-center gap-1.5 px-3 py-1 bg-yellow-500/10 text-yellow-500 border border-yellow-500/20 rounded-xl text-[11px] font-black">
+                                                    <Star size={12} fill="currentColor"/> {movie.rating?.toFixed(1) || "0.0"}
+                                                </div>
                                             </div>
                                         </div>
-                                    </div>
 
-                                    <div className="flex items-center gap-10 px-8 py-4 bg-gray-950/40 rounded-3xl border border-gray-800/30">
-                                        <div className="text-center">
-                                            <p className="text-[9px] text-gray-500 uppercase font-black mb-1">Тривалість</p>
-                                            <div className="flex items-center gap-2 text-gray-300 text-sm font-bold">
-                                                <Clock size={14} className="text-red-600"/> {movie.durationMin} хв
+                                        <div className="flex items-center gap-10 px-8 py-4 bg-gray-950/40 rounded-3xl border border-gray-800/30">
+                                            <div className="text-center">
+                                                <p className="text-[9px] text-gray-500 uppercase font-black mb-1">Тривалість</p>
+                                                <div className="flex items-center gap-2 text-gray-300 text-sm font-bold">
+                                                    <Clock size={14} className="text-red-600"/> {movie.durationMin} хв
+                                                </div>
+                                            </div>
+                                            <div className="w-px h-8 bg-gray-800"></div>
+                                            <div className="text-center">
+                                                <p className="text-[9px] text-gray-500 uppercase font-black mb-1">Вартість</p>
+                                                <div className="flex items-center gap-1.5 text-xl font-black text-green-500">
+                                                    {movie.basePrice} <span className="text-xs font-bold text-green-700">₴</span>
+                                                </div>
                                             </div>
                                         </div>
-                                        <div className="w-px h-8 bg-gray-800"></div>
-                                        <div className="text-center">
-                                            <p className="text-[9px] text-gray-500 uppercase font-black mb-1">Вартість</p>
-                                            <div className="flex items-center gap-1.5 text-xl font-black text-green-500">
-                                                {movie.basePrice} <span className="text-xs font-bold text-green-700">₴</span>
-                                            </div>
-                                        </div>
-                                    </div>
 
-                                    <div className="flex gap-3">
-                                        <button
-                                            onClick={() => handleEditMovie(movie)}
-                                            className="p-4 bg-gray-900 text-blue-500 rounded-2xl border border-gray-800 hover:bg-blue-600 hover:text-white hover:border-blue-600 transition-all duration-300 shadow-lg"
-                                        >
-                                            <Edit size={22}/>
-                                        </button>
-                                        <button
-                                            onClick={() => setDeleteConfirm({ isOpen: true, movieId: movie.id, movieTitle: movie.title })}
-                                            className="p-4 bg-gray-900 text-red-500 rounded-2xl border border-gray-800 hover:bg-red-600 hover:text-white hover:border-red-600 transition-all duration-300 shadow-lg"
-                                        >
-                                            <Trash2 size={22}/>
-                                        </button>
+                                        <div className="flex gap-3">
+                                            <button
+                                                onClick={() => handleEditMovie(movie)}
+                                                className="p-4 bg-gray-900 text-blue-500 rounded-2xl border border-gray-800 hover:bg-blue-600 hover:text-white hover:border-blue-600 transition-all duration-300 shadow-lg"
+                                            >
+                                                <Edit size={22}/>
+                                            </button>
+                                            <button
+                                                onClick={() => setDeleteConfirm({ isOpen: true, movieId: movie.id, movieTitle: movie.title })}
+                                                className="p-4 bg-gray-900 text-red-500 rounded-2xl border border-gray-800 hover:bg-red-600 hover:text-white hover:border-red-600 transition-all duration-300 shadow-lg"
+                                            >
+                                                <Trash2 size={22}/>
+                                            </button>
+                                        </div>
                                     </div>
+                                ))
+                            ) : (
+                                /* Стан, коли нічого не знайдено */
+                                <div className="text-center py-20 text-gray-500 font-medium text-xl">
+                                    Нічого не знайдено за запитом "{debouncedSearch}"
                                 </div>
-                            ))}
+                            )}
                         </div>
 
-                        {totalMainPages > 1 && (
-                            <div className="p-10 border-t border-gray-800/50 flex justify-center items-center gap-3">
-                                {[...Array(totalMainPages)].map((_, i) => (
-                                    <button
-                                        key={i}
-                                        onClick={() => setCurrentPage(i + 1)}
-                                        className={`w-12 h-12 rounded-2xl font-black text-xs transition-all duration-300 ${
-                                            currentPage === i + 1
-                                                ? 'bg-red-600 text-white shadow-xl shadow-red-600/30 scale-110'
-                                                : 'bg-gray-900 text-gray-500 hover:bg-gray-800 hover:text-gray-300'
-                                        }`}
-                                    >
-                                        {i + 1}
-                                    </button>
-                                ))}
+                        {!loading && totalPages > 1 && (
+                            <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mt-12 pb-12 px-6">
+                                <PaginationInfo
+                                    currentPage={currentPage}
+                                    pageSize={pageSize}
+                                    totalCount={totalCount}
+                                    itemName="фільм"
+                                    className="text-xs"
+                                />
+                                <Pagination
+                                    currentPage={currentPage}
+                                    totalPages={totalPages}
+                                    onPageChange={goToPage}
+                                />
                             </div>
                         )}
                     </div>

@@ -1,4 +1,6 @@
-﻿export interface MovieDto {
+﻿import type {BaseFilterDto} from "./common.ts";
+
+export interface MovieDto {
     id: number;
     title: string;
     description?: string;
@@ -43,7 +45,7 @@ export const AgeRestriction = {
 
 export type AgeRestrictionType = typeof AgeRestriction[keyof typeof AgeRestriction];
 
-export interface MovieFilterDto {
+export interface MovieFilterDto extends BaseFilterDto {
     title?: string;
     rating?: number;
     ageRestrictions?: AgeRestrictionType[];
