@@ -1,4 +1,5 @@
 ﻿using System.ComponentModel.DataAnnotations;
+using Practice_team06.DTOs.Common;
 
 namespace Practice_team06.DTOs.Booking.Stats;
 

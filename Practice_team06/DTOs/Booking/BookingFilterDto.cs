@@ -1,9 +1,10 @@
 ﻿using System.ComponentModel.DataAnnotations;
+using Practice_team06.DTOs.Common;
 using Practice_team06.Models;
 
 namespace Practice_team06.DTOs.Booking;
 
-public class BookingFilterDto
+public class BookingFilterDto : BaseFilterDto
 {
     public BookingStatus? Status { get; set; }
     
@@ -24,8 +25,4 @@ public class BookingFilterDto
     
     public string? SortBy { get; set; }       // "date", "status", "useremail"
     public bool? IsDescending { get; set; }
-    
-    public int? Page { get; set; } = 1;
-    [Range(6, 100)]
-    public int? PageSize { get; set; } = 10;
 }

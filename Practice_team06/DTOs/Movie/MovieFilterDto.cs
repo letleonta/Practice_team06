@@ -1,8 +1,9 @@
-﻿using Practice_team06.Models;
+﻿using Practice_team06.DTOs.Common;
+using Practice_team06.Models;
 
 namespace Practice_team06.DTOs.Movie;
 
-public class MovieFilterDto
+public class MovieFilterDto : BaseFilterDto
 {
     public string? Title { get; set; } = null!;
     public decimal? Rating { get; set; }

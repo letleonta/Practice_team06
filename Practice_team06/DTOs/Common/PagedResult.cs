@@ -1,4 +1,4 @@
-﻿namespace Practice_team06.DTOs;
+﻿namespace Practice_team06.DTOs.Common;
 
 public class PagedResult<T>
 {
