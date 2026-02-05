@@ -8,7 +8,8 @@ public class AdminBookingDto
 {
     public int Id { get; set; }
     [Required]
-    public int UserId { get; set; }
+    [EmailAddress]
+    public string UserEmail { get; set; } = null!;
     [Required(ErrorMessage = "Назва фільму обов'язкова")]
     [StringLength(255)]
     public string Title { get; set; } = null!;

@@ -14,7 +14,7 @@ public partial class Booking
     public DateTime BookingTime { get; set; }
     [Required]
     public BookingStatus Status { get; set; }
-
+    
     public virtual User User { get; set; } = null!;
 
     public virtual ICollection<Ticket> Tickets { get; set; } = new List<Ticket>();
