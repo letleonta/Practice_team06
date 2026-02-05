@@ -1,8 +1,9 @@
 ﻿using Microsoft.EntityFrameworkCore;
-using Practice_team06.DTOs;
 using Practice_team06.DTOs.Booking;
 using Practice_team06.DTOs.Booking.Stats;
+using Practice_team06.DTOs.Common;
 using Practice_team06.DTOs.Ticket;
+using Practice_team06.Extensions;
 using Practice_team06.Models;
 
 namespace Practice_team06.Services;
@@ -28,7 +29,7 @@ public class BookingService : IBookingService
         
         var stats = await GetStats(query, filter);
             
-        query = ApplyPagination(query, filter);
+        query = query.ApplyPagination(filter);
 
         var bookings = await query
             .AsNoTracking()
@@ -71,7 +72,7 @@ public class BookingService : IBookingService
         var totalCount = await query.CountAsync();
 
         query = ApplySorting(query, filter);
-        query = ApplyPagination(query, filter);
+        query = query.ApplyPagination(filter);
 
         var bookings = await query.ToListAsync();
         var result = bookings.Select(MapToBookingDto).ToList();
@@ -392,8 +393,7 @@ public class BookingService : IBookingService
         {
             query = query.Where(b => 
                 b.Id.ToString().Contains(filter.SearchQuery)
-                || b.Session.Movie.Title.ToLower().Contains(filter.SearchQuery)
-                || b.User.Email!.ToLower().Contains(filter.SearchQuery));
+                || b.Session.Movie.Title.ToLower().Contains(filter.SearchQuery));
         }
 
         return query;
@@ -420,19 +420,5 @@ public class BookingService : IBookingService
 
             _ => query.OrderByDescending(b => b.BookingTime)
         };
-    }
-
-    private static IQueryable<Booking> ApplyPagination(IQueryable<Booking> query, BookingFilterDto filter)
-    {
-        var page = filter.Page ?? 1;
-        var pageSize = filter.PageSize ?? 10;
-
-        if (page < 1) page = 1;
-        if (pageSize < 1) pageSize = 10;
-        if (pageSize > 100) pageSize = 100;
-
-        return query
-            .Skip((page - 1) * pageSize)
-            .Take(pageSize);
     }
 }
