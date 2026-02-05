@@ -32,7 +32,8 @@ public class SessionService : ISessionService
             LanguageName = s.Language.Name,
             StartTime = s.StartTime,
             // Кінець сеансу = Початок + Тривалість фільму
-            EndTime = s.StartTime.AddMinutes(s.Movie.DurationMin ?? 0) 
+            EndTime = s.StartTime.AddMinutes(s.Movie.DurationMin ?? 0),
+            AgeRestriction = s.Movie.AgeRestriction
         }).ToList();
     }
     public async Task<SessionDto?> GetSessionByIdAsync(int id)
@@ -55,7 +56,8 @@ public class SessionService : ISessionService
             StartTime = session.StartTime, // Початок фільму
         
             // Кінець фільму = Початок + Тривалість
-            EndTime = session.StartTime.AddMinutes(session.Movie.DurationMin ?? 0) 
+            EndTime = session.StartTime.AddMinutes(session.Movie.DurationMin ?? 0),
+            AgeRestriction = session.Movie.AgeRestriction
         };
     }
         
@@ -106,7 +108,8 @@ public class SessionService : ISessionService
             HallName = session.Hall.Name,
             LanguageName = session.Language.Name,
             StartTime = session.StartTime,
-            EndTime = session.StartTime.AddMinutes(duration)
+            EndTime = session.StartTime.AddMinutes(duration),
+            AgeRestriction = session.Movie.AgeRestriction
         };
     }
 public async Task<SessionDto> UpdateSessionAsync(int id, CreateSessionDto dto)
@@ -163,7 +166,8 @@ public async Task<SessionDto> UpdateSessionAsync(int id, CreateSessionDto dto)
         HallName = session.Hall.Name,
         LanguageName = session.Language.Name,
         StartTime = session.StartTime,
-        EndTime = session.StartTime.AddMinutes(duration)
+        EndTime = session.StartTime.AddMinutes(duration),
+        AgeRestriction = session.Movie.AgeRestriction
     };
 }
     public async Task DeleteSessionAsync(int id)

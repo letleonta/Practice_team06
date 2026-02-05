@@ -18,24 +18,26 @@ public class BookingService : IBookingService
     
     public async Task<AdminBookingsWithStatsDto> GetAllBookingsAsync(BookingFilterDto filter)
     {
-        var bookingsQuery = _context.Bookings.AsQueryable();
+        var query = _context.Bookings.AsQueryable();
 
-        bookingsQuery = ApplyFilter(bookingsQuery, filter);
+        query = ApplyFilter(query, filter);
         
-        var totalCount = await bookingsQuery.CountAsync();
+        var totalCount = await query.CountAsync();
 
-        bookingsQuery = ApplySorting(bookingsQuery, filter);
+        query = ApplySorting(query, filter);
         
-        var stats = await GetStats(bookingsQuery, filter);
+        var stats = await GetStats(query, filter);
             
-        bookingsQuery = ApplyPagination(bookingsQuery, filter);
+        query = ApplyPagination(query, filter);
 
-        var bookings = await bookingsQuery
+        var bookings = await query
+            .AsNoTracking()
             .Include(b => b.Session)
             .ThenInclude(s => s.Movie)
             .Include(b => b.Tickets)
             .ThenInclude(t => t.Seat)
             .ThenInclude(s => s.Hall)
+            .Include(b => b.User)
             .ToListAsync();
 
         var result = bookings.Select(MapToAdminBookingDto).ToList();
@@ -109,6 +111,7 @@ public class BookingService : IBookingService
             .Include(b => b.Tickets)
             .ThenInclude(t => t.Seat)
             .ThenInclude(s => s.Hall)
+            .Include(b => b.User)
             .FirstOrDefaultAsync(b => b.Id == bookingId);
 
         if (booking == null)
@@ -146,10 +149,10 @@ public class BookingService : IBookingService
             .ToHashSetAsync();
 
         var takenSeats = dto.SeatIds.Where(id => occupiedSeatIds.Contains(id)).ToList();
-        if (takenSeats.Any())
+        if (takenSeats.Count != 0)
             throw new InvalidOperationException($"Seats {string.Join(", ", takenSeats)} are already taken.");
         
-        using var transaction = await _context.Database.BeginTransactionAsync();
+        await using var transaction = await _context.Database.BeginTransactionAsync();
         try
         {
             var booking = new Booking
@@ -158,7 +161,7 @@ public class BookingService : IBookingService
                 SessionId = dto.SessionId,
                 BookingTime = DateTime.Now,
                 Status = BookingStatus.Paid
-            };;
+            };
             _context.Bookings.Add(booking);
             await _context.SaveChangesAsync();
 
@@ -169,7 +172,7 @@ public class BookingService : IBookingService
                 SeatId = seat.Id,
                 IsActive = true,
                 ActualPrice = CalculateTicketPrice(session, seat)
-            }).ToList();;
+            }).ToList();
             _context.Tickets.AddRange(tickets);
             await _context.SaveChangesAsync();
 
@@ -184,31 +187,46 @@ public class BookingService : IBookingService
         }
     }
 
-    public Task ConfirmBookingAsync(int userId, int bookingId)
-    {
-        return ChangeBookingStatusAsync(userId, bookingId, BookingStatus.Paid);
-    }
-
-    public Task CancelBookingAsync(int userId, int bookingId)
-    {
-        return ChangeBookingStatusAsync(userId, bookingId, BookingStatus.Cancelled);
-    }
-
-    public async Task ChangeBookingStatusAsync(int userId, int bookingId, BookingStatus newStatus)
+    public async Task ConfirmBookingAsync(int userId, int bookingId)
     {
         var booking = await _context.Bookings
             .FirstOrDefaultAsync(b => b.Id == bookingId && b.UserId == userId);
 
-        if (booking == null)
-            throw new KeyNotFoundException($"Booking with ID {bookingId} for user {userId} not found.");
-
+        if (booking == null) throw new KeyNotFoundException("Бронювання не знайдено.");
+    
+        if (booking.Status == BookingStatus.Paid) 
+            throw new InvalidOperationException("Бронювання вже оплачене.");
+    
         if (booking.Status == BookingStatus.Cancelled)
-            throw new InvalidOperationException("Cancelled booking cannot be changed.");
+            throw new InvalidOperationException("Неможливо оплатити скасоване бронювання.");
 
-        if (booking.Status == BookingStatus.Paid && newStatus == BookingStatus.Paid)
-            throw new InvalidOperationException("Booking has already been paid.");
+        booking.Status = BookingStatus.Paid;
+        await _context.SaveChangesAsync();
+    }
 
-        booking.Status = newStatus;
+    public async Task CancelBookingAsync(int userId, int bookingId)
+    {
+        var booking = await _context.Bookings
+            .Include(b => b.Session)
+            .FirstOrDefaultAsync(b => b.Id == bookingId && b.UserId == userId);
+
+        if (booking == null) throw new KeyNotFoundException("Бронювання не знайдено.");
+
+        var timeUntilSession = booking.Session.StartTime - DateTime.UtcNow;
+        var minutesRemaining = timeUntilSession.TotalMinutes;
+        
+        if (minutesRemaining < 0)
+        {
+            throw new InvalidOperationException("Сеанс вже почався або закінчився.");
+        }
+        if (minutesRemaining < 30)
+        {
+            throw new InvalidOperationException($"Запізно для скасування. До сеансу залишилося {Math.Round(minutesRemaining)} хв. (мінімум 30)");
+        }
+
+        if (booking.Status == BookingStatus.Cancelled) return;
+
+        booking.Status = BookingStatus.Cancelled;
         await _context.SaveChangesAsync();
     }
     
@@ -250,7 +268,7 @@ public class BookingService : IBookingService
         return new AdminBookingDto
         {
             Id = booking.Id,
-            UserId = booking.UserId,
+            UserEmail = !string.IsNullOrEmpty(booking.User.Email) ? booking.User.Email : "Не вказано",
             Title = booking.Session.Movie.Title,
             AgeRestriction = booking.Session.Movie.AgeRestriction,
             PosterUri = booking.Session.Movie.PosterUri,
@@ -291,8 +309,8 @@ public class BookingService : IBookingService
 
     private async Task<BookingsStatsDto> GetStats(IQueryable<Booking> query, BookingFilterDto filter)
     {
-        DateTime startDate = filter.BookingFromDate ?? DateTime.UtcNow.AddDays(-30);
-        DateTime endDate = filter.BookingToDate ?? startDate.AddDays(30);
+        DateTime endDate = filter.BookingToDate ?? DateTime.UtcNow;
+        DateTime startDate = filter.BookingFromDate ?? endDate.AddDays(-30);
         return new BookingsStatsDto
         {
             TotalCount = await query.CountAsync(),
@@ -313,23 +331,30 @@ public class BookingService : IBookingService
                 .OrderBy(p => p.Date)
                 .ToListAsync(),
             HallPoints = await query
-                .Where(b => b.Status == BookingStatus.Paid && b.BookingTime >= startDate && b.BookingTime <= endDate)
-                .GroupBy(b => b.Session.Hall)
+                .Where(b => b.Status == BookingStatus.Paid 
+                            && b.BookingTime >= startDate 
+                            && b.BookingTime <= endDate)
+                .SelectMany(b => b.Tickets)
+                .GroupBy(t => t.Booking.Session.Hall.Name)
                 .Select(g => new HallPointDto 
                 {
-                    HallName = g.Key.Name,
-                    Number = g.Count()
+                    HallName = g.Key,
+                    Number = g.Sum(t => t.ActualPrice)
                 })
                 .OrderByDescending(p => p.Number)
                 .Take(5)
                 .ToListAsync(),
             GenrePoints = await query
-                .Where(b => b.Status == BookingStatus.Paid && b.BookingTime >= startDate && b.BookingTime <= endDate).SelectMany(b => b.Session.Movie.MovieGenres) 
+                .Where(b => b.Status == BookingStatus.Paid 
+                            && b.BookingTime >= startDate 
+                            && b.BookingTime <= endDate)
+                .SelectMany(b => b.Tickets) 
+                .SelectMany(t => t.Booking.Session.Movie.MovieGenres)
                 .GroupBy(mg => mg.Genre.Name)
-                .Select(mg => new GenrePointDto
+                .Select(g => new GenrePointDto
                 {
-                    GenreName = mg.Key,
-                    Number = mg.Count()
+                    GenreName = g.Key,
+                    Number = g.Count() 
                 })
                 .OrderByDescending(p => p.Number)
                 .Take(5)
@@ -341,9 +366,6 @@ public class BookingService : IBookingService
     {
         if (filter.Status != null)
             query = query.Where(b => b.Status == filter.Status);
-
-        if (filter.UserId != null)
-            query = query.Where(b => b.UserId == filter.UserId);
 
         if (filter.SessionId != null)
             query = query.Where(b => b.SessionId == filter.SessionId);
@@ -359,12 +381,19 @@ public class BookingService : IBookingService
 
         if (filter.SessionToDate != null)
             query = query.Where(b => b.Session.StartTime <= filter.SessionToDate.Value);
+
+        if (!string.IsNullOrEmpty(filter.UserEmail))
+        {
+            query = query.Where(b =>
+                b.User.Email!.ToLower().Contains(filter.UserEmail));
+        }
         
         if (!string.IsNullOrEmpty(filter.SearchQuery))
         {
             query = query.Where(b => 
-                b.Id.ToString().Contains(filter.SearchQuery) || 
-                b.Session.Movie.Title.Contains(filter.SearchQuery));
+                b.Id.ToString().Contains(filter.SearchQuery)
+                || b.Session.Movie.Title.ToLower().Contains(filter.SearchQuery)
+                || b.User.Email!.ToLower().Contains(filter.SearchQuery));
         }
 
         return query;
@@ -385,13 +414,9 @@ public class BookingService : IBookingService
                 ? query.OrderByDescending(b => b.Status)
                 : query.OrderBy(b => b.Status),
 
-            "userid" => isDescending
-                ? query.OrderByDescending(b => b.UserId)
-                : query.OrderBy(b => b.UserId),
-
-            "sessiontime" => isDescending
-                ? query.OrderByDescending(b => b.Session.StartTime)
-                : query.OrderBy(b => b.Session.StartTime),
+            "useremail" => isDescending
+                ? query.OrderByDescending(b => b.User.Email)
+                : query.OrderBy(b => b.User.Email),
 
             _ => query.OrderByDescending(b => b.BookingTime)
         };

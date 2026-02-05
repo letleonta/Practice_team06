@@ -3,5 +3,5 @@
 public class HallPointDto
 {
     public string HallName { get; set; } = "";
-    public int Number { get; set; }
+    public decimal Number { get; set; }
 }

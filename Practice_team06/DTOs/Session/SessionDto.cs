@@ -1,4 +1,5 @@
 ﻿using System.ComponentModel.DataAnnotations;
+using Practice_team06.Models;
 
 namespace Practice_team06.DTOs.Session;
 
@@ -11,4 +12,5 @@ public class SessionDto
     public string LanguageName { get; set; }
     public DateTime StartTime { get; set; }
     public DateTime EndTime { get; set; } 
+    public AgeRestriction AgeRestriction { get; set; }
 }
