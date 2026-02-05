@@ -17,12 +17,12 @@ public class BookingFilterDto
     [DataType(DataType.DateTime)]
     public DateTime? SessionToDate { get; set; }
     
-    public int? UserId { get; set; }
+    public string? UserEmail { get; set; }
     public int? SessionId { get; set; }
     
     public string? SearchQuery { get; set; }
     
-    public string? SortBy { get; set; }       // "date", "status", "user"
+    public string? SortBy { get; set; }       // "date", "status", "useremail"
     public bool? IsDescending { get; set; }
     
     public int? Page { get; set; } = 1;
