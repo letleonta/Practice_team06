@@ -5,8 +5,9 @@ import { MovieService } from '../services/movie.service';
 import type { MovieDto } from '../types/movie';
 import type { SessionDto } from '../types/session';
 import { Clock, Calendar, Star, Ticket, ArrowLeft, PlayCircle } from 'lucide-react';
-import {formatDateWithYear, formatTime} from "../utils/formatTime.ts";
+import {formatDateWithYear} from "../utils/formatTime.ts";
 import {AgeRestrictionBadge} from "../components/AgeRestrictionBadge.tsx";
+import {SessionItem} from "../components/SessionItem.tsx";
 
 const MoviePage = () => {
     const { id } = useParams<{ id: string }>();
@@ -179,24 +180,12 @@ const MoviePage = () => {
                     {sessions.length > 0 ? (
                         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-5">
                             {sessions.map(session => (
-                                <button
+                                <SessionItem
                                     key={session.id}
-                                    onClick={() => handleBuyTicket(session.id)}
-                                    className="group flex flex-col items-center justify-center bg-[#0f1117] hover:bg-red-600 border border-white/5 hover:border-red-500 rounded-[28px] py-5 px-3 transition-all duration-300 shadow-lg hover:-translate-y-2"
-                                >
-                                    {/* Дата (наприклад, 4 лют.) */}
-                                    <span className="text-[11px] text-red-500 group-hover:text-red-100 font-black uppercase tracking-tighter mb-1 transition-colors">
-                                        {new Date(session.startTime).toLocaleDateString('uk-UA', { day: 'numeric', month: 'short' })}
-                                    </span>
-                                    {/* Час */}
-                                    <span className="text-2xl font-black text-white group-hover:scale-110 transition-transform">
-                                        {formatTime(session.startTime)}
-                                    </span>
-                                    {/* Зал */}
-                                    <span className="text-[10px] text-gray-600 group-hover:text-white/80 font-bold uppercase tracking-widest mt-2">
-                                        {session.hallName}
-                                    </span>
-                                </button>
+                                    session={session}
+                                    variant="client"
+                                    onClick={handleBuyTicket}
+                                />
                             ))}
                         </div>
                     ) : (

@@ -6,6 +6,7 @@ export interface SessionDto {
     languageName: string;
     startTime: string;
     endTime: string;
+    ageRestriction: string;
 }
 
 export interface CreateSessionDto {

@@ -17,6 +17,8 @@ import { SessionService } from "../services/session.service";
 import { SeatService } from "../services/seat.service";
 import { BookingService } from "../services/booking.service";
 import type {SessionSeatDto} from "../types/seat.ts";
+import {ConfirmModal} from "../components/ui/ConfirmModal.tsx";
+import {AgeRestrictionBadge} from "../components/AgeRestrictionBadge.tsx";
 
 const SessionPage = () => {
     const { user } = useAuthStore();
@@ -33,13 +35,15 @@ const SessionPage = () => {
     const [purchasing, setPurchasing] = useState(false);
     const [purchaseError, setPurchaseError] = useState<string | null>(null);
 
+    const [isConfirmOpen, setIsConfirmOpen] = useState(false);
+
     const fetchData = useCallback(async () => {
         if (!sessionId) return;
         try {
             const id = Number(sessionId);
             const [sessionData, seatsData] = await Promise.all([
                 SessionService.getById(id),
-                SeatService.getAvailableSeats(id),
+                SeatService.getAvailableSeats(id)
             ]);
             setSession(sessionData);
             setSeats(seatsData);
@@ -66,6 +70,16 @@ const SessionPage = () => {
         !!selectedSeats.find((s) => s.seatId === seat.seatId);
 
     const totalPrice = selectedSeats.reduce((sum, s) => sum + s.price, 0);
+
+    const startPurchaseProcess = () => {
+        if (!session || selectedSeats.length === 0) return;
+
+        if (session.ageRestriction.toString() === "SixteenPlus" || session.ageRestriction.toString() === "EighteenPlus") {
+            setIsConfirmOpen(true);
+        } else {
+            handlePurchase();
+        }
+    };
 
     const handlePurchase = async () => {
         if (!session || selectedSeats.length === 0) return;
@@ -167,7 +181,7 @@ const SessionPage = () => {
                     <div className="flex-1 bg-[#1a1d26] rounded-2xl border border-gray-800 p-6 overflow-x-auto">
                         {/* Screen */}
                         <div className="mb-8 flex flex-col items-center">
-                            <div className="w-3/4 max-w-md h-1.5 bg-gradient-to-r from-transparent via-white/50 to-transparent rounded-full shadow-lg shadow-white/20" />
+                            <div className="w-3/4 max-w-md h-1.5 bg-linear-to-r from-transparent via-white/50 to-transparent rounded-full shadow-lg shadow-white/20" />
                             <span className="text-gray-600 text-xs mt-2 tracking-widest uppercase">Екран</span>
                         </div>
 
@@ -293,7 +307,7 @@ const SessionPage = () => {
 
                                     {/* Buy button */}
                                     <button
-                                        onClick={handlePurchase}
+                                        onClick={startPurchaseProcess}
                                         disabled={purchasing || !user}
                                         className={[
                                             'w-full py-3.5 rounded-xl font-bold text-lg flex items-center justify-center gap-2 transition-all',
@@ -322,6 +336,33 @@ const SessionPage = () => {
                     </div>
                 </div>
             </div>
+            <ConfirmModal
+                isOpen={isConfirmOpen}
+                title="Вікове обмеження"
+                variant="warning"
+                confirmText="Продовжити"
+                cancelText="Назад"
+                description={
+                    <div className="space-y-3">
+                        <p>
+                            Цей фільм має вікове обмеження:
+                        </p>
+                            <AgeRestrictionBadge
+                                restriction={session.ageRestriction}
+                                className="px-3 py-1"
+                                />
+                        <p className="text-xs text-gray-500">
+                            Купуючи квиток, ви підтверджуєте, що відповідаєте віковим вимогам.
+                        </p>
+                    </div>
+                }
+                onConfirm={() => {
+                    setIsConfirmOpen(false);
+                    handlePurchase();
+                }}
+                onClose={() => setIsConfirmOpen(false)}
+                isLoading={purchasing}
+            />
         </div>
     );
 };

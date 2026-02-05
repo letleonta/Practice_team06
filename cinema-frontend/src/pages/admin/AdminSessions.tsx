@@ -4,14 +4,19 @@ import { SessionService } from '../../services/session.service';
 import { MovieService } from '../../services/movie.service';
 import type { CreateSessionDto, SessionDto} from '../../types/session';
 import type { MovieDto } from '../../types/movie';
-import {Calendar, Film, MapPin, Plus, Search, Trash2, Languages, Loader2, Clock} from 'lucide-react';
+import {Calendar, Film, Search, Loader2 } from 'lucide-react';
 import type {HallDto} from "../../types/hall.ts";
 import type {LanguageDto} from "../../types/language.ts";
 import {HallService} from "../../services/hall.service.ts";
 import {LanguageService} from "../../services/language.service.ts";
+import {getAgeRestrictionText} from "../../utils/formatAgeRestriction.ts";
+import {SessionCreateForm} from "../../components/SessionCreateForm.tsx";
+import {ConfirmModal} from "../../components/ui/ConfirmModal.tsx";
+import {SessionItem} from "../../components/SessionItem.tsx";
+import {notify} from "../../utils/toast";
 
 const AdminSessions = () => {
-    const { register, handleSubmit, reset } = useForm<CreateSessionDto>();
+    const { reset } = useForm<CreateSessionDto>();
 
     // --- ДАНІ ---
     const [movies, setMovies] = useState<MovieDto[]>([]);
@@ -24,6 +29,7 @@ const AdminSessions = () => {
     const [movieSearch, setMovieSearch] = useState('');
     const [loadingSessions, setLoadingSessions] = useState(false);
     const [isLoadingData, setIsLoadingData] = useState(true); // Стан завантаження списку
+    const [deleteModal, setDeleteModal] = useState({ isOpen: false, id: null as number | null });
 
     // Завантаження довідників при старті (ОДИН РАЗ)
     useEffect(() => {
@@ -40,7 +46,7 @@ const AdminSessions = () => {
                 setLanguages(l);
             } catch (err) {
                 console.error("Помилка завантаження даних:", err);
-                alert("Не вдалося завантажити дані. Перевір з'єднання з сервером.");
+                notify.error("Не вдалося завантажити дані. Перевір з'єднання з сервером.");
             } finally {
                 setIsLoadingData(false);
             }
@@ -62,7 +68,7 @@ const AdminSessions = () => {
     }, [selectedMovie]);
 
     const onSubmit = async (data: CreateSessionDto) => {
-        if (!selectedMovie) return alert("Оберіть фільм!");
+        if (!selectedMovie) return notify.error("Оберіть фільм!");
 
         try {
             const formattedData = {
@@ -73,24 +79,28 @@ const AdminSessions = () => {
             };
 
             await SessionService.create(formattedData);
-            alert('Сеанс створено!');
+            notify.success('Сеанс створено!');
             reset();
             const updatedSessions = await SessionService.getByMovieId(selectedMovie.id);
             setSessions(updatedSessions);
         } catch (err: any) {
-            alert('Помилка: ' + (err.response?.data?.message || 'Накладання часу або помилка сервера'));
+            notify.error('Помилка: ' + (err.response?.data?.message || 'Накладання часу або помилка сервера'));
         }
     };
 
-    const handleDelete = async (id: number) => {
-        if (!confirm('Видалити цей сеанс?')) return;
+    const confirmDelete = async () => {
+        if (!deleteModal.id) return;
         try {
-            await SessionService.delete(id);
+            await SessionService.delete(deleteModal.id);
             if (selectedMovie) {
                 const updated = await SessionService.getByMovieId(selectedMovie.id);
                 setSessions(updated);
             }
-        } catch (err) { alert('Не вдалося видалити'); }
+        } catch (err) {
+            notify.error('Помилка видалення');
+        } finally {
+            setDeleteModal({ isOpen: false, id: null });
+        }
     };
 
     const filteredMovies = useMemo(() => movies.filter(m =>
@@ -101,7 +111,7 @@ const AdminSessions = () => {
         <div className="flex flex-col lg:flex-row gap-8 text-white h-[calc(100vh-100px)]">
 
             {/* ЛІВА КОЛОНКА: ВИБІР ФІЛЬМУ */}
-            <div className="w-full lg:w-1/3 bg-[#1a1d26] rounded-[32px] border border-gray-800 shadow-2xl flex flex-col overflow-hidden">
+            <div className="w-full lg:w-1/3 bg-[#1a1d26] rounded-4xl border border-gray-800 shadow-2xl flex flex-col overflow-hidden">
                 <div className="p-6 border-b border-gray-800">
                     <h2 className="text-xl font-black flex items-center gap-2 mb-4 uppercase tracking-tighter">
                         <Film className="text-red-600" /> Оберіть фільм
@@ -146,7 +156,7 @@ const AdminSessions = () => {
                                 ? 'bg-red-600 border-red-500 shadow-lg shadow-red-900/50'
                                 : 'bg-gray-900/50 border-gray-800 hover:bg-gray-800 hover:border-gray-600'}`}
                         >
-                            <div className="w-12 h-16 bg-gray-800 rounded-xl overflow-hidden flex-shrink-0 shadow-sm border border-black/20">
+                            <div className="w-12 h-16 bg-gray-800 rounded-xl overflow-hidden shrink-0 shadow-sm border border-black/20">
                                 {movie.posterUri ? (
                                     <img
                                         src={movie.posterUri}
@@ -162,7 +172,7 @@ const AdminSessions = () => {
                             <div className="min-w-0">
                                 <h3 className="font-bold text-sm truncate text-white">{movie.title}</h3>
                                 <p className={`text-[10px] font-bold uppercase tracking-wider mt-1 ${selectedMovie?.id === movie.id ? 'text-red-200' : 'text-gray-500'}`}>
-                                    {movie.durationMin} хв • {movie.ageRestriction}
+                                    {movie.durationMin} хв • {getAgeRestrictionText(movie.ageRestriction)}
                                 </p>
                             </div>
                         </button>
@@ -175,46 +185,14 @@ const AdminSessions = () => {
 
                 {/* Форма створення (тільки якщо вибрано фільм) */}
                 {selectedMovie ? (
-                    <div className="bg-[#1a1d26] p-6 rounded-[32px] border border-gray-800 shadow-xl animate-fade-in">
-                        <div className="flex items-center justify-between mb-6">
-                            <h2 className="text-xl font-black uppercase tracking-tighter flex items-center gap-2">
-                                <Calendar className="text-red-600" /> Розклад: <span className="text-red-500">{selectedMovie.title}</span>
-                            </h2>
-                        </div>
-
-                        <form onSubmit={handleSubmit(onSubmit)} className="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
-                            <div className="md:col-span-1">
-                                <label className="block text-[10px] font-bold text-gray-500 mb-1 ml-1 uppercase">Зал</label>
-                                <select {...register('hallId', { required: true })} className="w-full p-3 bg-gray-900 border border-gray-700 rounded-xl outline-none focus:border-red-500 cursor-pointer">
-                                    <option value="">Оберіть зал</option>
-                                    {halls.map(h => <option key={h.id} value={h.id}>{h.name}</option>)}
-                                </select>
-                            </div>
-
-                            <div className="md:col-span-1">
-                                <label className="block text-[10px] font-bold text-gray-500 mb-1 ml-1 uppercase">Мова / Тип</label>
-                                <select {...register('languageId', { required: true })} className="w-full p-3 bg-gray-900 border border-gray-700 rounded-xl outline-none focus:border-red-500 cursor-pointer">
-                                    <option value="">Оберіть мову</option>
-                                    {languages.map(l => <option key={l.id} value={l.id}>{l.name}</option>)}
-                                </select>
-                            </div>
-
-                            <div className="md:col-span-1">
-                                <label className="block text-[10px] font-bold text-gray-500 mb-1 ml-1 uppercase">Дата і час</label>
-                                <input
-                                    type="datetime-local"
-                                    {...register('startTime', { required: true })}
-                                    className="w-full p-3 bg-gray-900 border border-gray-700 rounded-xl outline-none focus:border-red-500 text-sm"
-                                />
-                            </div>
-
-                            <button className="w-full bg-white text-black font-black p-3 rounded-xl hover:bg-gray-200 transition flex items-center justify-center gap-2">
-                                <Plus size={18} /> ДОДАТИ
-                            </button>
-                        </form>
-                    </div>
+                    <SessionCreateForm
+                        movie={selectedMovie}
+                        halls={halls}
+                        languages={languages}
+                        onSubmit={onSubmit}
+                    />
                 ) : (
-                    <div className="bg-[#1a1d26] p-10 rounded-[32px] border border-gray-800 border-dashed flex flex-col items-center justify-center text-gray-500 h-40 animate-pulse">
+                    <div className="bg-[#1a1d26] p-10 rounded-4xl border border-gray-800 border-dashed flex flex-col items-center justify-center text-gray-500 h-40 animate-pulse">
                         <Film size={40} className="mb-2 opacity-20" />
                         <p className="font-bold">Оберіть фільм зліва</p>
                         <p className="text-xs">щоб керувати його розкладом</p>
@@ -222,7 +200,7 @@ const AdminSessions = () => {
                 )}
 
                 {/* Список сеансів */}
-                <div className="bg-[#1a1d26] flex-1 rounded-[32px] border border-gray-800 shadow-xl overflow-hidden flex flex-col">
+                <div className="bg-[#1a1d26] flex-1 rounded-4xl border border-gray-800 shadow-xl overflow-hidden flex flex-col">
                     <div className="p-6 border-b border-gray-800 bg-gray-900/30">
                         <h3 className="font-bold flex items-center gap-2">Активні сеанси <span className="bg-gray-800 px-2 py-0.5 rounded text-xs text-white">{sessions.length}</span></h3>
                     </div>
@@ -241,42 +219,24 @@ const AdminSessions = () => {
                         ) : (
                             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
                                 {sessions.map(session => (
-                                    <div key={session.id} className="bg-gray-900 p-4 rounded-2xl border border-gray-800 flex justify-between items-start group hover:border-gray-600 transition hover:bg-gray-800/50">
-                                        <div>
-                                            <div className="flex items-center gap-2 mb-2">
-                                                <div className="bg-red-600/20 text-red-500 p-2 rounded-xl">
-                                                    <Clock size={18} />
-                                                </div>
-                                                <span className="font-black text-xl text-white tracking-tight">
-                                                    {new Date(session.startTime).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
-                                                </span>
-                                            </div>
-                                            <div className="space-y-1.5 ml-1">
-                                                <div className="flex items-center gap-2 text-xs text-gray-400 font-medium">
-                                                    <Calendar size={12} /> {new Date(session.startTime).toLocaleDateString()}
-                                                </div>
-                                                <div className="flex items-center gap-2 text-xs text-gray-300 font-bold">
-                                                    <MapPin size={12} className="text-red-500" /> {session.hallName}
-                                                </div>
-                                                <div className="flex items-center gap-2 text-[10px] text-gray-500 uppercase tracking-wider font-bold">
-                                                    <Languages size={10} /> {session.languageName}
-                                                </div>
-                                            </div>
-                                        </div>
-                                        <button
-                                            onClick={() => handleDelete(session.id)}
-                                            className="p-2 text-gray-600 hover:text-red-500 hover:bg-red-500/10 rounded-xl transition opacity-0 group-hover:opacity-100"
-                                            title="Скасувати сеанс"
-                                        >
-                                            <Trash2 size={18} />
-                                        </button>
-                                    </div>
+                                    <SessionItem
+                                        key={session.id}
+                                        session={session}
+                                        onDelete={(id) => setDeleteModal({ isOpen: true, id })}
+                                    />
                                 ))}
                             </div>
                         )}
                     </div>
                 </div>
             </div>
+            <ConfirmModal
+                isOpen={deleteModal.isOpen}
+                title="Видалити сеанс?"
+                description="Це дію неможливо буде скасувати"
+                onConfirm={confirmDelete}
+                onClose={() => setDeleteModal({ isOpen: false, id: null })}
+            />
         </div>
     );
 };

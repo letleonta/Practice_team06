@@ -5,6 +5,7 @@ import type {MovieDto, MovieFilterDto} from '../types/movie';
 import {MovieService} from "../services/movie.service.ts";
 import {GenreService} from "../services/genre.service.ts";
 import type {GenreDto} from "../types/genre.ts";
+import {notify} from "../utils/toast.ts";
 
 interface Props {
     title: string;
@@ -37,6 +38,7 @@ const MoviesLayout = ({ title }: Props) => {
             setMovies(result);
         }
         catch (error) {
+            notify.error("Не вдалося завантажити фільми. Спробуйте пізніше.");
             console.error("Помилка при завантаженні фільмів:", error);
         }
         finally {

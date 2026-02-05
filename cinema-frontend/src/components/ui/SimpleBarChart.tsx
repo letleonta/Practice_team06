@@ -1,6 +1,6 @@
 import { Bar, BarChart, ResponsiveContainer, Tooltip, XAxis, YAxis, LabelList } from "recharts";
 
-export const SimpleBarChart = ({ data, dataKey, nameKey, color, chartName }: any) => {
+export const SimpleBarChart = ({ data, dataKey, dataLabel, nameKey, color, chartName }: any) => {
     const maxValue = data && data.length > 0
         ? Math.max(...data.map((d: any) => d[dataKey]))
         : 0;
@@ -35,7 +35,7 @@ export const SimpleBarChart = ({ data, dataKey, nameKey, color, chartName }: any
                         />
 
                         <Bar
-                            name="Кількість"
+                            name={dataLabel}
                             dataKey={dataKey}
                             fill={color}
                             radius={[0, 4, 4, 0]}
