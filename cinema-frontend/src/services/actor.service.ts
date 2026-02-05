@@ -5,11 +5,12 @@ import type {
     ActorMovieDto,
     CreateActorDto
 } from "../types/actor";
+import type {PagedResult} from "../types/pagedResult";
 
 export const ActorService = {
-    async getAll(filter?: ActorFilterDto) {
-        const response = await axiosInstance.get<ActorDto[]>("/actors", {
-            params: filter // Axios сам додасть їх до URL
+    async getAll(filter: ActorFilterDto): Promise<PagedResult<ActorDto>> {
+        const response = await axiosInstance.get<PagedResult<ActorDto>>("/actors", {
+            params: filter
         });
         return response.data;
     },
