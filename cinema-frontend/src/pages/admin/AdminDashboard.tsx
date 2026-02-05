@@ -49,7 +49,7 @@ const AdminDashboard = () => {
                     <div className="bg-red-600 p-2 rounded-lg shadow-lg shadow-red-600/20">
                         <Clapperboard size={24} className="text-white" />
                     </div>
-                    <h2 className="text-xl font-black uppercase tracking-tighter italic">Cinema Admin</h2>
+                    <h2 className="text-xl font-black uppercase tracking-tighter">Cinema Admin</h2>
                 </div>
 
                 <nav className="flex-1 space-y-8 overflow-y-auto custom-scrollbar pr-2">
@@ -131,7 +131,7 @@ const AdminDashboard = () => {
                             <span className="text-[10px] text-gray-500 font-bold mt-1 uppercase tracking-tighter">System Access</span>
                         </div>
                         {/* Безпечний рендер першої літери */}
-                        <div className={`h-12 w-12 rounded-2xl flex items-center justify-center font-black text-xl shadow-lg border ${userRole === 'Admin' ? 'bg-gradient-to-br from-red-600 to-red-900 border-red-500/20' : 'bg-gradient-to-br from-amber-500 to-amber-700 border-amber-500/20'}`}>
+                        <div className={`h-12 w-12 rounded-2xl flex items-center justify-center font-black text-xl shadow-lg border ${userRole === 'Admin' ? 'bg-linear-to-br from-red-600 to-red-900 border-red-500/20' : 'bg-linear-to-br from-amber-500 to-amber-700 border-amber-500/20'}`}>
                             {(userRole || 'G').charAt(0)}
                         </div>
                     </div>

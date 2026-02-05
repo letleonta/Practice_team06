@@ -5,12 +5,16 @@ import type {BookingDto} from "../types/booking.ts";
 import {getStatusColor, getStatusText} from "../utils/formatBookingStatus.ts";
 import {BookingService} from "../services/booking.service.ts";
 import {AgeRestrictionBadge} from "../components/AgeRestrictionBadge.tsx";
+import {notify} from "../utils/toast.ts";
+import {ConfirmModal} from "../components/ui/ConfirmModal.tsx";
 
 const BookingDetailsPage = () => {
     const { bookingId } = useParams<{ bookingId: string }>();
     const [booking, setBooking] = useState<BookingDto | null>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
+    const [cancelling, setCancelling] = useState(false);
+    const [isCancelModalOpen, setIsCancelModalOpen] = useState(false);
 
     useEffect(() => {
         const fetchBooking = async () => {
@@ -28,6 +32,23 @@ const BookingDetailsPage = () => {
 
         fetchBooking();
     }, [bookingId]);
+
+    const handleCancelBooking = async () => {
+        if (!booking) return;
+        setCancelling(true);
+        try {
+            await BookingService.cancelBooking(booking.id);
+            const updatedData = await BookingService.getBookingById(booking.id);
+            setBooking(updatedData);
+        } catch (err : any) {
+            console.error("Помилка скасування:", err);
+            const errorMessage = err.response?.data || err.message || "Помилка сервера";
+            notify.error(errorMessage);
+        } finally {
+            setCancelling(false);
+            setIsCancelModalOpen(false);
+        }
+    };
 
     if (loading) {
         return (
@@ -84,8 +105,20 @@ const BookingDetailsPage = () => {
                     <h1 className="text-4xl font-black text-white">
                         Бронювання <span className="text-red-600">#{booking.id}</span>
                     </h1>
-                    <div className={`px-4 py-2 rounded-full border font-semibold ${getStatusColor(booking.status)}`}>
-                        {getStatusText(booking.status)}
+                    <div className="flex items-center gap-4">
+                        {/* Кнопка скасування (показуємо лише для активних бронювань) */}
+                        {booking.status !== 'Inprogress' && (
+                            <button
+                                onClick={() => setIsCancelModalOpen(true)}
+                                className="px-6 py-2.5 rounded-xl border border-gray-700 text-gray-400 hover:bg-red-600 hover:text-white hover:border-red-600 transition-all font-bold text-sm uppercase tracking-wider"
+                            >
+                                Скасувати замовлення
+                            </button>
+                        )}
+
+                        <div className={`px-4 py-2 rounded-full border font-semibold ${getStatusColor(booking.status)}`}>
+                            {getStatusText(booking.status)}
+                        </div>
                     </div>
                 </div>
 
@@ -95,7 +128,7 @@ const BookingDetailsPage = () => {
                     <div className="lg:col-span-1">
                         <div className="bg-[#1a1d26] rounded-2xl overflow-hidden border border-gray-800 shadow-2xl sticky top-24">
                             {/* Poster */}
-                            <div className="relative aspect-[2/3] bg-gray-900">
+                            <div className="relative aspect-2/3 bg-gray-900">
                                 {booking.posterUri ? (
                                     <img
                                         src={booking.posterUri}
@@ -178,7 +211,7 @@ const BookingDetailsPage = () => {
                     <div className="lg:col-span-2">
                         <div className="bg-[#1a1d26] rounded-2xl border border-gray-800 shadow-2xl overflow-hidden">
                             {/* Header */}
-                            <div className="p-6 border-b border-gray-800 bg-gradient-to-r from-red-600/10 to-transparent">
+                            <div className="p-6 border-b border-gray-800 bg-linear-to-r from-red-600/10 to-transparent">
                                 <div className="flex items-center justify-between">
                                     <h2 className="text-2xl font-bold flex items-center gap-3">
                                         <TicketIcon size={28} className="text-red-600" />
@@ -202,7 +235,7 @@ const BookingDetailsPage = () => {
                                         {booking.tickets.map((ticket, index) => (
                                             <div
                                                 key={`${ticket.id}-${index}`}
-                                                className="relative bg-gradient-to-br from-gray-800/50 to-gray-900/50 rounded-xl border border-gray-700 p-5 hover:border-red-600/50 transition-all hover:shadow-lg hover:shadow-red-600/10 group"
+                                                className="relative bg-linear-to-br from-gray-800/50 to-gray-900/50 rounded-xl border border-gray-700 p-5 hover:border-red-600/50 transition-all hover:shadow-lg hover:shadow-red-600/10 group"
                                             >
                                                 {/* Ticket Number Badge */}
                                                 <div className="absolute -top-2 -right-2 bg-red-600 text-white text-xs font-bold px-3 py-1 rounded-full shadow-lg">
@@ -234,7 +267,7 @@ const BookingDetailsPage = () => {
                                                 </div>
 
                                                 {/* Decorative element */}
-                                                <div className="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-transparent via-red-600/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                                                <div className="absolute bottom-0 left-0 right-0 h-1 bg-linear-to-r from-transparent via-red-600/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
                                             </div>
                                         ))}
                                     </div>
@@ -244,6 +277,22 @@ const BookingDetailsPage = () => {
                     </div>
                 </div>
             </div>
+            <ConfirmModal
+                isOpen={isCancelModalOpen}
+                title="Скасувати бронювання?"
+                variant="danger"
+                confirmText="Так, скасувати"
+                cancelText="Ні, залишити"
+                description={
+                    <div className="space-y-2">
+                        <p>Ви впевнені, що хочете скасувати бронювання на фільм <b>{booking.title}</b>?</p>
+                        <p className="text-xs text-gray-500">Кошти будуть повернуті згідно з правилами кінотеатру, а ваші місця знову стануть доступними для продажу.</p>
+                    </div>
+                }
+                onConfirm={handleCancelBooking}
+                onClose={() => setIsCancelModalOpen(false)}
+                isLoading={cancelling}
+            />
         </div>
     );
 };
