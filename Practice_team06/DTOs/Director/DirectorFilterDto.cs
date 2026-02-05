@@ -1,10 +1,12 @@
-﻿namespace Practice_team06.DTOs.Director;
+﻿using Practice_team06.DTOs.Common;
 
-public class DirectorFilterDto
+namespace Practice_team06.DTOs.Director;
+
+public class DirectorFilterDto :  BaseFilterDto
 {
     public string? Search { get; set; }
     
-    public string? SortBy { get; set; } // "firstname", "lastname"
+    public string? SortBy { get; set; } 
    
     public bool IsDescending { get; set; } = false; 
 }

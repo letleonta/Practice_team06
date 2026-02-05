@@ -1,10 +1,12 @@
-﻿using Practice_team06.DTOs.Director;
+﻿using Microsoft.AspNetCore.Mvc.RazorPages;
+using Practice_team06.DTOs.Common;
+using Practice_team06.DTOs.Director;
 
 namespace Practice_team06.Services;
 
 public interface IDirectorService
 {
-    Task<IEnumerable<DirectorDto>> GetAllAsync(DirectorFilterDto filter);
+    Task<PagedResult<DirectorDto>> GetAllAsync(DirectorFilterDto filter);
     
     Task<DirectorDto?> GetByIdAsync(int id);
     

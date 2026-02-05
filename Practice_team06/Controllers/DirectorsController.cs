@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Practice_team06.DTOs.Common;
 using Practice_team06.DTOs.Director;
 using Practice_team06.Services;
 
@@ -17,7 +18,7 @@ public class DirectorsController : ControllerBase
     }
     
     [HttpGet] 
-    public async Task<ActionResult<IEnumerable<DirectorDto>>> GetDirectors([FromQuery] DirectorFilterDto filter)
+    public async Task<ActionResult<PagedResult<DirectorDto>>> GetDirectors([FromQuery] DirectorFilterDto filter)
     {
         var directors = await _directorService.GetAllAsync(filter);
 
