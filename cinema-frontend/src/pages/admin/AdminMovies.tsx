@@ -6,8 +6,10 @@ import type { CreateMovieDto, MovieDto } from '../../types/movie';
 import {
     Film, Search, Edit, Trash2, Clock, Plus,
     ArrowLeft, Save, Star, PlayCircle, Info, Image, Users,
-    ChevronLeft, ChevronRight, Hash, X, AlertTriangle
+    ChevronLeft, ChevronRight, Hash, X
 } from 'lucide-react';
+import {ConfirmModal} from "../../components/ui/ConfirmModal.tsx";
+import {notify} from "../../utils/toast";
 
 // Локальні інтерфейси для типізації
 interface NamedEntity { id: number; name: string; }
@@ -82,7 +84,7 @@ const AdminMovies = () => {
             await MovieService.delete(deleteConfirm.movieId);
             await fetchData();
             setDeleteConfirm({ isOpen: false, movieId: null, movieTitle: '' });
-        } catch (_err) { alert('Помилка при видаленні'); }
+        } catch (_err) { notify.error('Помилка при видаленні'); }
     };
 
     const handleEditMovie = (movie: MovieDto) => {
@@ -165,23 +167,20 @@ const AdminMovies = () => {
         <div className="max-w-7xl mx-auto pb-20 text-white p-4 relative">
 
             {/* Попап видалення */}
-            {deleteConfirm.isOpen && (
-                <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/95 backdrop-blur-xl p-4 animate-fade-in">
-                    <div className="bg-[#1a1d26] border border-red-900/30 p-10 rounded-[40px] w-full max-w-md shadow-2xl text-center scale-in">
-                        <AlertTriangle size={48} className="mx-auto mb-6 text-red-500" />
-                        <h3 className="text-2xl font-black uppercase mb-2">Видалити фільм?</h3>
-                        <p className="text-gray-400 text-sm mb-8 leading-relaxed">Ви впевнені, що хочете видалити <br/><span className="text-white font-bold">"{deleteConfirm.movieTitle}"</span>?</p>
-                        <div className="flex gap-3">
-                            <button onClick={() => setDeleteConfirm({ isOpen: false, movieId: null, movieTitle: '' })} className="flex-1 py-4 rounded-2xl bg-gray-800 font-black uppercase text-[10px] text-white">Скасувати</button>
-                            <button onClick={() => void confirmDelete()} className="flex-1 py-4 rounded-2xl bg-red-600 font-black uppercase text-[10px] shadow-lg shadow-red-600/20 text-white">Видалити</button>
-                        </div>
-                    </div>
-                </div>
-            )}
+            <ConfirmModal
+                isOpen={deleteConfirm.isOpen}
+                title="Видалити фільм?"
+                description={
+                    <>Ви впевнені, що хочете видалити <br/>
+                        <span className="text-white font-bold">"{deleteConfirm.movieTitle}"</span>?</>
+                }
+                onConfirm={() => void confirmDelete()}
+                onClose={() => setDeleteConfirm({ ...deleteConfirm, isOpen: false })}
+            />
 
             {/* Попап додавання */}
             {modal.isOpen && (
-                <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/90 backdrop-blur-md p-4 animate-fade-in">
+                <div className="fixed inset-0 z-100 flex items-center justify-center bg-black/90 backdrop-blur-md p-4 animate-fade-in">
                     <div className="bg-[#1a1d26] border border-gray-800 p-8 rounded-[40px] w-full max-w-lg shadow-2xl scale-in">
                         <div className="flex justify-between items-center mb-8">
                             <h3 className="text-xl font-black uppercase">Додати {modal.type}</h3>
@@ -233,7 +232,7 @@ const AdminMovies = () => {
                                     Всього у базі: {filteredMovies.length}
                                 </div>
                             </div>
-                            <div className="relative w-full md:w-[400px]">
+                            <div className="relative w-full md:w-100">
                                 <Search className="absolute left-5 top-1/2 -translate-y-1/2 text-gray-500" size={18}/>
                                 <input
                                     type="text"
@@ -249,9 +248,9 @@ const AdminMovies = () => {
                             {currentMovies.map(movie => (
                                 <div
                                     key={movie.id}
-                                    className="group flex flex-col md:flex-row items-center gap-6 p-5 bg-gray-900/30 hover:bg-white/[0.03] border border-gray-800/40 rounded-[32px] transition-all duration-300"
+                                    className="group flex flex-col md:flex-row items-center gap-6 p-5 bg-gray-900/30 hover:bg-white/3 border border-gray-800/40 rounded-4xl transition-all duration-300"
                                 >
-                                    <div className="relative flex-shrink-0">
+                                    <div className="relative shrink-0">
                                         <img
                                             src={movie.posterUri}
                                             className="w-24 h-36 rounded-2xl object-cover shadow-2xl border border-gray-800 group-hover:scale-105 transition-transform duration-500"
@@ -348,12 +347,12 @@ const AdminMovies = () => {
                         <aside className="lg:sticky lg:top-10 w-full lg:w-64 space-y-4">
                             <nav className="bg-[#1a1d26] p-6 rounded-[40px] border border-gray-800 shadow-xl">
                                 {[{id: 'basic', label: 'Головне', icon: Info}, {id: 'media', label: 'Медіа & Дати', icon: PlayCircle}, {id: 'staff', label: 'Команда', icon: Users}, {id: 'tax', label: 'Жанри', icon: Hash}].map(item => (
-                                    <button key={item.id} type="button" onClick={() => document.getElementById(item.id)?.scrollIntoView({behavior:'smooth', block:'start'})} className="w-full flex items-center gap-3 p-4 rounded-2xl text-xs font-black text-gray-500 hover:bg-white/[0.05] hover:text-white transition-all uppercase text-left group">
+                                    <button key={item.id} type="button" onClick={() => document.getElementById(item.id)?.scrollIntoView({behavior:'smooth', block:'start'})} className="w-full flex items-center gap-3 p-4 rounded-2xl text-xs font-black text-gray-500 hover:text-white transition-all uppercase text-left group">
                                         <item.icon size={18} className="group-hover:text-red-600"/> {item.label}
                                     </button>
                                 ))}
                             </nav>
-                            <button type="button" onClick={(e) => void handleSubmit(onSubmit)(e)} className="w-full bg-red-600 text-white py-6 rounded-[32px] font-black uppercase text-xs shadow-xl hover:bg-red-700 active:scale-95 transition-all text-white"><Save size={20} className="inline mr-2"/> Зберегти</button>
+                            <button type="button" onClick={(e) => void handleSubmit(onSubmit)(e)} className="w-full bg-red-600 text-white py-6 rounded-4xl font-black uppercase text-xs shadow-xl hover:bg-red-700 active:scale-95 transition-all"><Save size={20} className="inline mr-2"/> Зберегти</button>
                         </aside>
 
                         <div className="flex-1 space-y-10 w-full">
@@ -380,11 +379,11 @@ const AdminMovies = () => {
                                     <h3 className="text-white font-black uppercase flex items-center gap-3 border-b border-gray-800 pb-8"><Image className="text-blue-500"/> Медіа</h3>
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                                         <div className="space-y-6">
-                                            <div><label className="text-[10px] text-gray-500 font-black uppercase mb-3 block uppercase tracking-widest leading-none">URL Постера</label><input {...register('posterUri')} className="w-full bg-gray-900 border border-gray-700 p-4 rounded-2xl outline-none text-white font-mono text-xs shadow-inner"/></div>
-                                            <div><label className="text-[10px] text-gray-500 font-black uppercase mb-3 block uppercase tracking-widest leading-none">URL Трейлера</label><input {...register('trailerUri')} className="w-full bg-gray-900 border border-gray-700 p-4 rounded-2xl outline-none text-white font-mono text-xs shadow-inner"/></div>
+                                            <div><label className="text-[10px] text-gray-500 font-black uppercase mb-3 block tracking-widest leading-none">URL Постера</label><input {...register('posterUri')} className="w-full bg-gray-900 border border-gray-700 p-4 rounded-2xl outline-none text-white font-mono text-xs shadow-inner"/></div>
+                                            <div><label className="text-[10px] text-gray-500 font-black uppercase mb-3 block tracking-widest leading-none">URL Трейлера</label><input {...register('trailerUri')} className="w-full bg-gray-900 border border-gray-700 p-4 rounded-2xl outline-none text-white font-mono text-xs shadow-inner"/></div>
                                         </div>
                                         <div className="bg-gray-900/40 p-6 rounded-3xl border border-gray-800 space-y-4 shadow-inner">
-                                            <div><label className="text-[10px] text-gray-400 font-black uppercase block mb-1 uppercase tracking-widest leading-none">Прем'єра</label><input type="date" {...register('releaseDate')} className="w-full bg-gray-900 border border-gray-800 p-3 rounded-xl outline-none text-white font-black shadow-inner"/></div>
+                                            <div><label className="text-[10px] text-gray-400 font-black uppercase block mb-1 tracking-widest leading-none">Прем'єра</label><input type="date" {...register('releaseDate')} className="w-full bg-gray-900 border border-gray-800 p-3 rounded-xl outline-none text-white font-black shadow-inner"/></div>
                                             <div className="grid grid-cols-2 gap-3">
                                                 <div><label className="text-[10px] text-green-500 font-black block mb-1 uppercase tracking-widest leading-none">Старт</label><input type="date" {...register('startDate')} className="w-full bg-gray-900 border border-gray-700 p-3 rounded-xl outline-none text-white shadow-inner"/></div>
                                                 <div><label className="text-[10px] text-red-500 font-black block mb-1 uppercase tracking-widest leading-none">Кінець</label><input type="date" {...register('endDate')} className="w-full bg-gray-900 border border-gray-700 p-3 rounded-xl outline-none text-white shadow-inner"/></div>
