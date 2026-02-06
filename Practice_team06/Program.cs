@@ -66,6 +66,7 @@ builder.Services.AddCors(options =>
 });
 
 builder.Services.AddAutoMapper(_ => {}, typeof(ActorProfile).Assembly);
+builder.Services.AddAutoMapper(_ => {}, typeof(DirectorProfile).Assembly);
 
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IActorService, ActorService>();
