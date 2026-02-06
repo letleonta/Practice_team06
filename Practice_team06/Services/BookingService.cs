@@ -19,7 +19,7 @@ public class BookingService : IBookingService
     
     public async Task<AdminBookingsWithStatsDto> GetAllBookingsAsync(BookingFilterDto filter)
     {
-        var query = _context.Bookings.AsQueryable();
+        var query = _context.Bookings.AsNoTracking();
 
         query = ApplyFilter(query, filter);
         
