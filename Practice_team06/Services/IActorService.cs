@@ -1,10 +1,11 @@
 ﻿using Practice_team06.DTOs.Actor;
+using Practice_team06.DTOs.Common;
 
 namespace Practice_team06.Services;
 
 public interface IActorService
 {
-    Task<IEnumerable<ActorDto>> GetAllAsync(ActorFilterDto filter);
+    Task<PagedResult<ActorDto>> GetAllAsync(ActorFilterDto filter);
     Task<ActorDto?> GetByIdAsync(int id);
     Task<ActorDto> CreateAsync(CreateActorDto actorDto);
     Task<IEnumerable<ActorDto>> CreateRangeAsync(IEnumerable<CreateActorDto> actorsDto);

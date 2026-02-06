@@ -1,6 +1,8 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using Practice_team06.Models;
 using Practice_team06.DTOs.Actor;
+using Practice_team06.DTOs.Common;
+using Practice_team06.Extensions;
 
 namespace Practice_team06.Services;
 
@@ -13,7 +15,7 @@ public class ActorService : IActorService
         _context = context;
     }
 
-    public async Task<IEnumerable<ActorDto>> GetAllAsync(ActorFilterDto filter)
+    public async Task<PagedResult<ActorDto>> GetAllAsync(ActorFilterDto filter)
     {
         var query = _context.Actors.AsQueryable();
         
@@ -24,9 +26,13 @@ public class ActorService : IActorService
                                      || a.LastName.ToLower().Contains(s));
         }
         
+        var totalCount = await query.CountAsync();
+        
         query = ApplySorting(query, filter.SortBy, filter.IsDescending);
         
-        return await query
+        query = query.ApplyPagination(filter);
+        
+        var items = await query
             .Select(a => new ActorDto
             {
                 Id = a.Id,
@@ -35,6 +41,14 @@ public class ActorService : IActorService
                 PhotoUri = a.PhotoUri
             })
             .ToListAsync();
+        
+        return new PagedResult<ActorDto>
+        {
+            Items = items,
+            TotalCount = totalCount,
+            Page = filter.Page ?? 1,
+            PageSize = filter.PageSize ?? 6
+        };
     }
     public async Task<ActorDto?> GetByIdAsync(int id)
     {

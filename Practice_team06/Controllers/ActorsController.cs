@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Practice_team06.DTOs.Actor;
+using Practice_team06.DTOs.Common;
 using Practice_team06.Services;
 
 namespace Practice_team06.Controllers;
@@ -17,7 +18,7 @@ public class ActorsController : ControllerBase
     }
 
     [HttpGet]
-    public async Task<ActionResult<IEnumerable<ActorDto>>> GetActors([FromQuery] ActorFilterDto filter)
+    public async Task<ActionResult<PagedResult<ActorDto>>> GetActors([FromQuery] ActorFilterDto filter)
     {
         var actors = await _actorService.GetAllAsync(filter);
 

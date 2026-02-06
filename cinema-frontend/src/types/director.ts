@@ -7,8 +7,10 @@ export interface DirectorDto {
 
 export interface DirectorFilterDto {
     search?: string;
-    sortBy?: 'firstname' | 'lastname' | 'id';
+    sortBy?: 'id' | 'firstname' | 'lastname';
     isDescending?: boolean;
+    Page?: number;
+    PageSize?: number;
 }
 
 export interface DirectorMovieDto {
