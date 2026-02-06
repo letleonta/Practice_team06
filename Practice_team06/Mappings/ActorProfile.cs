@@ -14,11 +14,9 @@ public class ActorProfile : Profile
             .ForMember(dest => dest.Id, opt => opt.Ignore());
 
         CreateMap<MovieActor, ActorMovieDto>()
-            .ForMember(dest => dest.Title, opt => opt.MapFrom(src => src.Movie.Title))
-    
-            .ForMember(dest => dest.ReleaseDate, opt => opt.MapFrom(src => src.Movie.ReleaseDate))
-            
             .ForMember(dest => dest.MovieId, opt => opt.MapFrom(src => src.MovieId))
-            .ForMember(dest => dest.RoleName, opt => opt.MapFrom(src => src.RoleName));
+            .ForMember(dest => dest.Title, opt => opt.MapFrom(src => src.Movie.Title))
+            .ForMember(dest => dest.RoleName, opt => opt.MapFrom(src => src.RoleName))
+            .ForMember(dest => dest.ReleaseDate, opt => opt.MapFrom(src => src.Movie.ReleaseDate));
     }
 }

@@ -18,5 +18,5 @@ public interface IDirectorService
     
     Task<bool> DeleteAsync(int id);
     
-    Task<IEnumerable<DirectorMovieDto>> GetDirectorMoviesAsync(int directorId);
+    Task<PagedResult<DirectorMovieDto>> GetDirectorMoviesAsync(int actorId, BaseFilterDto filter);
 }
