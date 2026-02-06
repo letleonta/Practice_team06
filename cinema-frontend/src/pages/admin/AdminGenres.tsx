@@ -1,7 +1,7 @@
 ﻿import { useEffect, useState, useMemo } from 'react';
 import api from '../../api/axiosInstance';
 import type { CreateGenreDto, GenreDto } from '../../types/genre';
-import { Tag, Trash2, Search, ListFilter, X } from 'lucide-react';
+import {Tag, Trash2, Search, ListFilter, X, Plus} from 'lucide-react';
 import { notify } from "../../utils/toast.ts";
 import { CreateCard } from "../../components/CreateCard.tsx";
 import {ConfirmModal} from "../../components/ui/ConfirmModal.tsx";
@@ -75,7 +75,7 @@ const AdminGenres = () => {
             <CreateCard
                 title="Новий жанр"
                 buttonText="Додати жанр"
-                icon={Tag}
+                icon={Plus}
                 loading={loading}
                 onSubmit={handleCreateSubmit}
                 fields={[
@@ -83,7 +83,7 @@ const AdminGenres = () => {
                         name: 'name',
                         label: "Назва",
                         placeholder: "Напр. Драма",
-                        icon: Tag,
+                        icon: Plus,
                         required: true
                     }
                 ]}

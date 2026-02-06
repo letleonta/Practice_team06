@@ -1,18 +1,8 @@
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import {
-    UserPlus,
-    Trash2,
-    Search,
-    Loader2,
-    User as UserIcon,
-    X,
-    Pencil,
-    Film,
-    Calendar,
-    Clapperboard,
-    Check,
-    Upload
+    UserPlus, Trash2, Search, Loader2, User as UserIcon,
+    X, Pencil, Film, Calendar, Clapperboard, Check, Upload
 } from 'lucide-react';
 
 import { ActorService } from '../../services/actor.service.ts';
@@ -22,12 +12,36 @@ import { Pagination } from "../../components/Pagination";
 import { PaginationInfo } from "../../components/PaginationInfo";
 import { DataTable, type Column } from "../../components/DataTable.tsx";
 import { notify } from "../../utils/toast";
+import { ConfirmModal } from "../../components/ui/ConfirmModal.tsx";
+import { CreateCard } from "../../components/CreateCard.tsx";
+import { API_CONFIG } from "../../../config.ts";
 
-const BASE_URL = "http://localhost:5144";
+// Конфігурація полів для CreateCard
+const actorFields = [
+    {
+        name: 'firstName',
+        label: "Ім'я",
+        placeholder: "Введіть ім'я актора...",
+        icon: UserIcon
+    },
+    {
+        name: 'lastName',
+        label: "Прізвище",
+        placeholder: "Введіть прізвище актора...",
+        icon: UserIcon
+    },
+    {
+        name: 'photoUri',
+        label: "URL фото",
+        placeholder: "https://...",
+        required: false,
+        icon: Upload
+    },
+];
 
 const AdminActors = () => {
-    const { register, handleSubmit, reset, setValue } = useForm<CreateActorDto>();
-    const addForm = useForm<CreateActorDto>();
+    // editForm залишається для модалки редагування
+    const editForm = useForm<CreateActorDto>();
 
     const [searchTerm, setSearchTerm] = useState('');
     const [sortBy, setSortBy] = useState<'id' | 'firstname' | 'lastname'>('id');
@@ -38,6 +52,12 @@ const AdminActors = () => {
     const [actorMovies, setActorMovies] = useState<ActorMovieDto[]>([]);
     const [loadingMovies, setLoadingMovies] = useState(false);
     const [isEditMode, setIsEditMode] = useState(false);
+
+    const [deleteModal, setDeleteModal] = useState<{ isOpen: boolean; id: number | null; name: string }>({
+        isOpen: false,
+        id: null,
+        name: ''
+    });
 
     const fetchActors = async (page: number, pageSize: number) => {
         const filter: ActorFilterDto = {
@@ -50,98 +70,75 @@ const AdminActors = () => {
         return await ActorService.getAll(filter);
     };
 
-    // Оновлений виклик хука
     const {
-        items: actors,
-        totalCount,
-        currentPage,
-        totalPages,
-        pageSize,
-        loading,
-        error,
-        goToPage,
-        refresh, // Отримуємо функцію refresh
-    } = UsePagination(
-        fetchActors,
-        [searchTerm, sortBy, isDesc], // Прибрали refreshTrigger
-        { pageSize: 6 }
-    );
+        items: actors, totalCount, currentPage, totalPages, pageSize, loading, error, goToPage, refresh,
+    } = UsePagination(fetchActors, [searchTerm, sortBy, isDesc], { pageSize: 6 });
 
-    const handleOpenDetails = async (actor: ActorDto) => {
-        setSelectedActor(actor);
-        setLoadingMovies(true);
-        setIsEditMode(false);
-        try {
-            const movies = await ActorService.getActorMovies(actor.id);
-            setActorMovies(movies);
-        } catch (err) {
-            console.error("Movies load error:", err);
-            setActorMovies([]);
-        } finally {
-            setLoadingMovies(false);
-        }
-    };
+    // --- ОБРОБНИКИ ПОДІЙ ---
 
-    const onSubmit = async (data: CreateActorDto) => {
+    // Функція для CreateCard (Додавання)
+    const handleAddActor = async (data: CreateActorDto) => {
         setIsSaving(true);
         try {
-            const payload = {
+            await ActorService.create({
                 ...data,
-                firstName: data.firstName.trim(),
-                lastName: data.lastName.trim(),
-                photoUri: data.photoUri?.trim() === "" ? undefined : data.photoUri?.trim()
-            };
-
-            if (isEditMode && selectedActor) {
-                await ActorService.update(selectedActor.id, payload as CreateActorDto);
-
-                setSelectedActor({ ...selectedActor, ...payload } as ActorDto);
-
-                notify.success("Дані оновлено");
-                setIsEditMode(false);
-
-                // Оновлюємо список без скидання сторінки
-                refresh();
-
-            } else {
-                await ActorService.create(payload as CreateActorDto);
-                notify.success("Актора додано");
-                reset();
-                setSelectedActor(null);
-
-                // Тут також можна використати refresh(), щоб залишитись на поточній сторінці,
-                // або goToPage(1), якщо хочете перейти на початок.
-                refresh();
-            }
-        } catch (err: unknown) {
-            console.error(err);
-            notify.error("Помилка операції");
+                photoUri: data.photoUri?.trim() || undefined
+            });
+            notify.success("Актора додано");
+            refresh();
+        } catch (err) {
+            notify.error("Помилка додавання");
         } finally {
             setIsSaving(false);
         }
     };
 
-    const handleDelete = async (id: number) => {
-        if (!window.confirm('Видалити цього актора?')) return;
+    // Функція для модалки (Редагування)
+    const onEditSubmit = async (data: CreateActorDto) => {
+        if (!selectedActor) return;
+        setIsSaving(true);
         try {
-            await ActorService.delete(id);
-            notify.success("Актора видалено");
-            setSelectedActor(null);
-
-            // Оновлюємо дані
+            const payload = { ...data, photoUri: data.photoUri?.trim() || undefined };
+            await ActorService.update(selectedActor.id, payload);
+            setSelectedActor({ ...selectedActor, ...payload });
+            notify.success("Дані оновлено");
+            setIsEditMode(false);
             refresh();
-        } catch (err: unknown) {
-            console.error(err);
-            notify.error("Не вдалося видалити");
+        } catch (err) {
+            notify.error("Помилка оновлення");
+        } finally {
+            setIsSaving(false);
         }
     };
 
-    const handleSort = (sortKey: string) => {
-        if (sortBy === sortKey) {
-            setIsDesc(!isDesc);
-        } else {
-            setSortBy(sortKey as 'id' | 'firstname' | 'lastname');
-            setIsDesc(false);
+    const handleConfirmDelete = async () => {
+        if (!deleteModal.id) return;
+        setIsSaving(true);
+        try {
+            await ActorService.delete(deleteModal.id);
+            notify.success("Актора видалено");
+            if (selectedActor?.id === deleteModal.id) setSelectedActor(null);
+            refresh();
+        } catch (err) {
+            notify.error("Не вдалося видалити");
+        } finally {
+            setIsSaving(false);
+            setDeleteModal({ isOpen: false, id: null, name: '' });
+        }
+    };
+
+    const handleOpenDetails = async (actor: ActorDto) => {
+        setSelectedActor(actor);
+        setLoadingMovies(true);
+        setIsEditMode(false);
+        editForm.reset();
+        try {
+            const movies = await ActorService.getActorMovies(actor.id);
+            setActorMovies(movies);
+        } catch (err) {
+            setActorMovies([]);
+        } finally {
+            setLoadingMovies(false);
         }
     };
 
@@ -154,8 +151,7 @@ const AdminActors = () => {
                 <div className="w-12 h-12 rounded-2xl bg-gray-800 border border-gray-700 overflow-hidden flex items-center justify-center">
                     {actor.photoUri ? (
                         <img
-                            src={actor.photoUri.startsWith('http') ? actor.photoUri : `${BASE_URL}${actor.photoUri}`}
-                            alt=""
+                            src={actor.photoUri.startsWith('http') ? actor.photoUri : `${API_CONFIG.BASE_URL}${actor.photoUri}`}
                             className="w-full h-full object-cover"
                         />
                     ) : (
@@ -164,32 +160,9 @@ const AdminActors = () => {
                 </div>
             )
         },
-        {
-            key: 'id',
-            header: 'ID',
-            sortable: true,
-            sortKey: 'id',
-            width: 'w-24',
-            render: (actor) => (
-                <span className="text-red-600 font-black text-lg tracking-tighter">
-                    #{actor.id}
-                </span>
-            )
-        },
-        {
-            key: 'firstName',
-            header: "Ім'я",
-            sortable: true,
-            sortKey: 'firstname',
-            render: (actor) => <span className="font-bold text-gray-100 uppercase">{actor.firstName}</span>
-        },
-        {
-            key: 'lastName',
-            header: 'Прізвище',
-            sortable: true,
-            sortKey: 'lastname',
-            render: (actor) => <span className="font-bold text-gray-100 uppercase">{actor.lastName}</span>
-        },
+        { key: 'id', header: 'ID', sortable: true, sortKey: 'id', width: 'w-24', render: (actor) => <span className="text-red-600 font-black text-lg tracking-tighter">#{actor.id}</span> },
+        { key: 'firstName', header: "Ім'я", sortable: true, sortKey: 'firstname', render: (actor) => <span className="font-bold text-gray-100 uppercase">{actor.firstName}</span> },
+        { key: 'lastName', header: 'Прізвище', sortable: true, sortKey: 'lastname', render: (actor) => <span className="font-bold text-gray-100 uppercase">{actor.lastName}</span> },
         {
             key: 'actions',
             header: 'Дії',
@@ -200,7 +173,7 @@ const AdminActors = () => {
                     <button onClick={(e) => { e.stopPropagation(); handleOpenDetails(actor); }} className="p-2 text-gray-500 hover:text-white hover:bg-gray-800 rounded-xl transition-all">
                         <Pencil size={16} />
                     </button>
-                    <button onClick={(e) => { e.stopPropagation(); handleDelete(actor.id); }} className="p-2 text-gray-500 hover:text-red-500 hover:bg-red-500/10 rounded-xl transition-all">
+                    <button onClick={(e) => { e.stopPropagation(); setDeleteModal({ isOpen: true, id: actor.id, name: `${actor.firstName} ${actor.lastName}` }); }} className="p-2 text-gray-500 hover:text-red-500 hover:bg-red-500/10 rounded-xl transition-all">
                         <Trash2 size={16} />
                     </button>
                 </div>
@@ -211,25 +184,25 @@ const AdminActors = () => {
     return (
         <div className="flex flex-col lg:flex-row gap-8 items-start text-white pb-10 font-sans relative">
 
-            {/* ЛІВА ЧАСТИНА: ФОРМА ДОДАВАННЯ (завжди видима) */}
-            <div className="w-full lg:w-1/3 lg:sticky lg:top-24 bg-[#1a1d26] p-8 rounded-[32px] border border-gray-800 shadow-2xl">
-                <div className="flex items-center gap-3 mb-8">
-                    <div className="bg-red-600/20 p-2 rounded-lg text-red-600">
-                        {isEditMode ? <Pencil size={24} /> : <UserPlus size={24} />}
-                    </div>
-                    <h2 className="text-xl font-black uppercase tracking-tighter">Новий актор</h2>
-                </div>
+            {/* МОДАЛКА ПІДТВЕРДЖЕННЯ ВИДАЛЕННЯ */}
+            <ConfirmModal
+                isOpen={deleteModal.isOpen}
+                title="Видалити актора?"
+                description={<>Ви впевнені, що хочете видалити актора <span className="text-white font-bold">"{deleteModal.name}"</span>? Цю дію неможливо буде скасувати.</>}
+                onConfirm={handleConfirmDelete}
+                onClose={() => setDeleteModal({ ...deleteModal, isOpen: false })}
+                isLoading={isSaving}
+            />
 
-                <form onSubmit={handleSubmit(onSubmit)} className="space-y-5 text-left text-white">
-                    <input {...addForm.register('firstName', { required: true })} placeholder="Ім'я" className="w-full p-4 bg-gray-900 border border-gray-700 rounded-2xl outline-none focus:border-red-600 transition-all font-bold text-white" />
-                    <input {...addForm.register('lastName', { required: true })} placeholder="Прізвище" className="w-full p-4 bg-gray-900 border border-gray-700 rounded-2xl outline-none focus:border-red-600 transition-all font-bold text-white" />
-                    <input {...addForm.register('photoUri')} placeholder="URL фото" className="w-full p-4 bg-gray-900 border border-gray-700 rounded-2xl outline-none focus:border-red-600 transition-all text-sm text-white" />
-
-                    <button disabled={isSaving} className="w-full bg-red-600 hover:bg-red-700 py-4 rounded-2xl font-black uppercase text-[10px] tracking-widest transition-all shadow-lg shadow-red-600/20 mt-2">
-                        {isSaving ? <Loader2 className="animate-spin mx-auto" size={18}/> : 'Зберегти'}
-                    </button>
-                </form>
-            </div>
+            {/* ЛІВА ЧАСТИНА: КОМПОНЕНТ ДОДАВАННЯ (замінив вашу форму на CreateCard) */}
+            <CreateCard
+                title="Новий актор"
+                buttonText="Зберегти"
+                icon={UserPlus}
+                fields={actorFields}
+                loading={isSaving}
+                onSubmit={handleAddActor}
+            />
 
             {/* ПРАВА ЧАСТИНА: ТАБЛИЦЯ */}
             <div className="w-full lg:w-2/3 flex flex-col gap-6">
@@ -251,11 +224,11 @@ const AdminActors = () => {
                     error={error}
                     onRowClick={handleOpenDetails}
                     sortConfig={{ sortBy, isDesc }}
-                    onSort={handleSort}
+                    onSort={(key) => sortBy === key ? setIsDesc(!isDesc) : (setSortBy(key as any), setIsDesc(false))}
                 />
 
                 {!loading && totalPages > 0 && (
-                    <div className="bg-[#161820] p-4 rounded-3xl border border-gray-800 flex flex-col sm:flex-row items-center justify-between gap-4 font-sans">
+                    <div className="bg-[#161820] p-4 rounded-3xl border border-gray-800 flex flex-col sm:flex-row items-center justify-between gap-4">
                         <PaginationInfo currentPage={currentPage} pageSize={pageSize} totalCount={totalCount} itemName="акторів" />
                         <Pagination currentPage={currentPage} totalPages={totalPages} onPageChange={goToPage} />
                     </div>
@@ -272,7 +245,7 @@ const AdminActors = () => {
                             <div className="w-24 h-24 rounded-2xl border-2 border-red-600 p-1 shadow-lg shadow-red-600/10 overflow-hidden bg-gray-900 shrink-0">
                                 {selectedActor.photoUri ? (
                                     <img
-                                        src={selectedActor.photoUri.startsWith('http') ? selectedActor.photoUri : `${BASE_URL}${selectedActor.photoUri}`}
+                                        src={selectedActor.photoUri.startsWith('http') ? selectedActor.photoUri : `${API_CONFIG.BASE_URL}${selectedActor.photoUri}`}
                                         className="w-full h-full object-cover rounded-xl"
                                         alt=""
                                     />
@@ -283,26 +256,22 @@ const AdminActors = () => {
                                 )}
                             </div>
 
-                            <div className="flex-1 text-left font-sans">
+                            <div className="flex-1 text-left">
                                 {!isEditMode ? (
                                     <>
-                                        <h4 className="text-3xl font-black uppercase tracking-tighter text-white leading-none mb-1">
-                                            {selectedActor.firstName}
-                                        </h4>
-                                        <h4 className="text-3xl font-black uppercase tracking-tighter text-white leading-none">
-                                            {selectedActor.lastName}
-                                        </h4>
+                                        <h4 className="text-3xl font-black uppercase tracking-tighter text-white leading-none mb-1">{selectedActor.firstName}</h4>
+                                        <h4 className="text-3xl font-black uppercase tracking-tighter text-white leading-none">{selectedActor.lastName}</h4>
                                     </>
                                 ) : (
-                                    <div className="space-y-2 pr-4 font-sans text-left">
+                                    <div className="space-y-2 pr-4 text-left">
                                         <input
-                                            {...register('firstName', { required: true })}
-                                            className="w-full bg-[#0f1117] border border-red-600/30 rounded-xl p-2 text-xl font-bold outline-none focus:border-red-600 transition-all text-white font-sans"
+                                            {...editForm.register('firstName', { required: true })}
+                                            className="w-full bg-[#0f1117] border border-red-600/30 rounded-xl p-2 text-xl font-bold outline-none focus:border-red-600 text-white"
                                             placeholder="Ім'я"
                                         />
                                         <input
-                                            {...register('lastName', { required: true })}
-                                            className="w-full bg-[#0f1117] border border-red-600/30 rounded-xl p-2 text-xl font-bold outline-none focus:border-red-600 transition-all text-white font-sans"
+                                            {...editForm.register('lastName', { required: true })}
+                                            className="w-full bg-[#0f1117] border border-red-600/30 rounded-xl p-2 text-xl font-bold outline-none focus:border-red-600 text-white"
                                             placeholder="Прізвище"
                                         />
                                     </div>
@@ -322,8 +291,8 @@ const AdminActors = () => {
                                     <div className="relative">
                                         <Upload size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" />
                                         <input
-                                            {...register('photoUri')}
-                                            className="w-full bg-gray-900 border border-gray-800 rounded-xl py-3 pl-10 pr-4 text-sm outline-none focus:border-red-600 transition-all font-sans text-white font-sans"
+                                            {...editForm.register('photoUri')}
+                                            className="w-full bg-gray-900 border border-gray-800 rounded-xl py-3 pl-10 pr-4 text-sm outline-none focus:border-red-600 text-white font-sans"
                                             placeholder="https://..."
                                         />
                                     </div>
@@ -340,19 +309,17 @@ const AdminActors = () => {
                             ) : actorMovies.length > 0 ? (
                                 <div className="grid grid-cols-1 gap-3 font-sans">
                                     {actorMovies.map(movie => (
-                                        <div key={movie.movieId} className="bg-gray-900/50 border border-gray-800 p-4 rounded-2xl flex items-center justify-between group font-sans">
+                                        <div key={movie.movieId} className="bg-gray-900/50 border border-gray-800 p-4 rounded-2xl flex items-center justify-between group">
                                             <div className="flex items-center gap-4 text-left font-sans">
                                                 <div className="p-3 bg-red-600/10 rounded-xl text-red-600"><Film size={20} /></div>
                                                 <div className="text-left font-sans">
-                                                    <p className="font-bold text-base leading-tight uppercase text-white font-sans">{movie.title}</p>
-                                                    <p className="text-[10px] text-gray-500 font-black uppercase mt-1 flex items-center gap-1.5 font-sans">
-                                                        <Calendar size={10} className="text-red-600" /> {movie.releaseDate || 'Дата TBA'}
-                                                    </p>
+                                                    <p className="font-bold text-base uppercase text-white font-sans">{movie.title}</p>
+                                                    <p className="text-[10px] text-gray-500 uppercase mt-1 flex items-center gap-1.5 font-sans"><Calendar size={10} className="text-red-600" /> {movie.releaseDate || 'Дата TBA'}</p>
                                                 </div>
                                             </div>
-                                            <div className="text-right font-sans">
-                                                <p className="text-[10px] text-gray-600 uppercase font-black font-sans leading-none mb-1">Роль</p>
-                                                <p className="text-sm font-bold text-red-500 uppercase font-sans leading-none">{movie.roleName || '—'}</p>
+                                            <div className="text-right">
+                                                <p className="text-[10px] text-gray-600 uppercase font-black mb-1">Роль</p>
+                                                <p className="text-sm font-bold text-red-500 uppercase">{movie.roleName || '—'}</p>
                                             </div>
                                         </div>
                                     ))}
@@ -369,16 +336,16 @@ const AdminActors = () => {
                                     <button
                                         onClick={() => {
                                             setIsEditMode(true);
-                                            setValue('firstName', selectedActor.firstName);
-                                            setValue('lastName', selectedActor.lastName);
-                                            setValue('photoUri', selectedActor.photoUri || '');
+                                            editForm.setValue('firstName', selectedActor.firstName);
+                                            editForm.setValue('lastName', selectedActor.lastName);
+                                            editForm.setValue('photoUri', selectedActor.photoUri || '');
                                         }}
                                         className="flex-1 flex items-center justify-center gap-2 py-4 bg-gray-800 hover:bg-gray-700 text-white rounded-2xl font-black text-[10px] uppercase tracking-widest transition-all font-sans"
                                     >
                                         <Pencil size={16} className="text-red-600 font-sans" /> Редагувати
                                     </button>
                                     <button
-                                        onClick={() => handleDelete(selectedActor.id)}
+                                        onClick={() => setDeleteModal({ isOpen: true, id: selectedActor.id, name: `${selectedActor.firstName} ${selectedActor.lastName}` })}
                                         className="flex-1 flex items-center justify-center gap-2 py-4 bg-red-600/10 hover:bg-red-600 text-red-600 hover:text-white rounded-2xl font-black text-[10px] uppercase tracking-widest transition-all border border-red-600/20 font-sans"
                                     >
                                         <Trash2 size={16} /> Видалити
@@ -387,11 +354,11 @@ const AdminActors = () => {
                             ) : (
                                 <>
                                     <button
-                                        onClick={handleSubmit(onSubmit)}
+                                        onClick={editForm.handleSubmit(onEditSubmit)}
                                         disabled={isSaving}
                                         className="flex-1 flex items-center justify-center gap-2 py-4 bg-red-600 hover:bg-red-700 text-white rounded-2xl font-black text-[10px] uppercase tracking-widest transition-all shadow-lg shadow-red-600/30 font-sans"
                                     >
-                                        {isSaving ? <Loader2 className="animate-spin font-sans" size={16} /> : <><Check size={16} className="font-sans" /> Зберегти зміни</>}
+                                        {isSaving ? <Loader2 className="animate-spin font-sans" size={16} /> : <><Check size={16} /> Зберегти зміни</>}
                                     </button>
                                     <button
                                         onClick={() => setIsEditMode(false)}
