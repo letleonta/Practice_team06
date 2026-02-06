@@ -45,7 +45,7 @@ public class UsersController(IUserService userService, UserManager<User> userMan
         try
         {
             var path = await userService.UploadAvatarAsync(int.Parse(userId), file);
-            return Ok(new { avatarUrl = path });
+            return Ok(new { avatarUri = path });
         }
         catch (Exception ex)
         {

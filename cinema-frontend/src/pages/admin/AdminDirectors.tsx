@@ -22,8 +22,7 @@ import { Pagination } from "../../components/Pagination";
 import { PaginationInfo } from "../../components/PaginationInfo";
 import { DataTable, type Column } from "../../components/DataTable.tsx";
 import { notify } from "../../utils/toast";
-
-const BASE_URL = "http://localhost:5144";
+import {API_CONFIG} from "../../../config.ts";
 
 const AdminDirectors = () => {
     const { register, handleSubmit, reset, setValue } = useForm<CreateDirectorDto>();
@@ -151,7 +150,7 @@ const AdminDirectors = () => {
                 <div className="w-12 h-12 rounded-2xl bg-gray-800 border border-gray-700 overflow-hidden flex items-center justify-center">
                     {director.photoUri ? (
                         <img
-                            src={director.photoUri.startsWith('http') ? director.photoUri : `${BASE_URL}${director.photoUri}`}
+                            src={director.photoUri.startsWith('http') ? director.photoUri : `${API_CONFIG.BASE_URL}${director.photoUri}`}
                             alt=""
                             className="w-full h-full object-cover"
                         />

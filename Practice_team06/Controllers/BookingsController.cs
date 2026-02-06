@@ -3,6 +3,8 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Practice_team06.DTOs.Booking;
+using Practice_team06.DTOs.Booking.Stats;
+using Practice_team06.DTOs.Common;
 using Practice_team06.Models;
 using Practice_team06.Services;
 
@@ -23,7 +25,7 @@ namespace Practice_team06.Controllers
         // Get all bookings
         [HttpGet]
         [Authorize(Roles = "Admin, Manager")]
-        public async Task<IActionResult> GetAllBookings([FromQuery] BookingFilterDto filter)
+        public async Task<ActionResult<AdminBookingsWithStatsDto>> GetAllBookings([FromQuery] BookingFilterDto filter)
         {
             var bookings = await _bookingService.GetAllBookingsAsync(filter);
             return Ok(bookings);
@@ -33,7 +35,7 @@ namespace Practice_team06.Controllers
         // Get all client bookings
         [HttpGet("my")]
         [Authorize(Roles = "Customer")]
-        public async Task<IActionResult> GetMyBookings([FromQuery] BookingFilterDto filter)
+        public async Task<ActionResult<PagedResult<BookingDto>>> GetMyBookings([FromQuery] BookingFilterDto filter)
         {
             var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier);
             if (userIdClaim == null)

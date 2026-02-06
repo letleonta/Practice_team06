@@ -106,8 +106,7 @@ const BookingDetailsPage = () => {
                         Бронювання <span className="text-red-600">#{booking.id}</span>
                     </h1>
                     <div className="flex items-center gap-4">
-                        {/* Кнопка скасування (показуємо лише для активних бронювань) */}
-                        {booking.status !== 'Inprogress' && (
+                        {booking.status !== 'Cancelled' && (
                             <button
                                 onClick={() => setIsCancelModalOpen(true)}
                                 className="px-6 py-2.5 rounded-xl border border-gray-700 text-gray-400 hover:bg-red-600 hover:text-white hover:border-red-600 transition-all font-bold text-sm uppercase tracking-wider"
