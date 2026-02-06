@@ -1,4 +1,7 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using Practice_team06.DTOs.Actor;
+using Practice_team06.DTOs.Director;
+using Practice_team06.DTOs.Genre;
 using Practice_team06.DTOs.Movie;
 using Practice_team06.Models;
 
@@ -235,16 +238,27 @@ public class MovieService : IMovieService
             StartDate = m.StartDate,
             EndDate = m.EndDate,
             // Якщо режисера немає - Unknown
-            DirectorName = m.Director != null 
-                ? $"{m.Director.FirstName} {m.Director.LastName}" 
-                : "Unknown",
-            Genres = m.MovieGenres
-                .Select(mg => mg.Genre.Name)
-                .ToList(),
-            // Виводимо список акторів
-            Actors = m.MovieActors
-                .Select(ma => $"{ma.Actor.FirstName} {ma.Actor.LastName}")
-                .ToList()
+            Director = m.Director != null ? new DirectorDto 
+            { 
+                Id = m.Director.Id,
+                FirstName = m.Director.FirstName,
+                LastName = m.Director.LastName,
+                PhotoUri = m.Director.PhotoUri 
+            } : null,
+
+            // Мапимо Акторів
+            Actors = m.MovieActors.Select(ma => new ActorDto 
+            { 
+                Id = ma.Actor.Id,
+                FirstName = ma.Actor.FirstName,
+                LastName = ma.Actor.LastName,
+                PhotoUri = ma.Actor.PhotoUri 
+            }).ToList(),
+            Genres = m.MovieGenres.Select(mg => new GenreDto 
+            { 
+                Id = mg.Genre.Id,
+                Name = mg.Genre.Name
+            }).ToList()
         };
     }
     
