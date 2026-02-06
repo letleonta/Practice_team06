@@ -58,6 +58,7 @@ const SessionPage = () => {
     useEffect(() => { fetchData(); }, [fetchData]);
 
     const toggleSeat = (seat: SessionSeatDto) => {
+        if (user?.role === 'Admin') return;
         if (!seat.isAvailable) return;
         setSelectedSeats((prev) =>
             prev.find((s) => s.seatId === seat.seatId)
