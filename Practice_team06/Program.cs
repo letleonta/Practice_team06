@@ -73,6 +73,7 @@ builder.Services.AddCors(options =>
 });
 
 builder.Services.AddAutoMapper(_ => {}, typeof(ActorProfile).Assembly);
+builder.Services.AddAutoMapper(_ => {}, typeof(DirectorProfile).Assembly);
 builder.Services.AddAutoMapper(_ => {}, typeof(SeatProfile).Assembly);
 builder.Services.AddAutoMapper(_ => {}, typeof(HallProfile).Assembly);
 builder.Services.AddAutoMapper(_ => {}, typeof(BookingProfile).Assembly);
@@ -112,7 +113,6 @@ using (var scope = app.Services.CreateScope())
     {
         var context = services.GetRequiredService<PostgresContext>();
         await DbInitializer.SeedRolesAndAdminAsync(services);
-        
         await DbInitializer.SeedDataAsync(context);
     }
     catch (Exception ex)
