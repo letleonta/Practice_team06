@@ -5,10 +5,11 @@ import type {
     DirectorMovieDto,
     CreateDirectorDto
 } from "../types/director";
-import type {PagedResult} from "../types/pagedResult.ts";
+
+import type {PagedResult} from "../types/common.ts";
 
 export const DirectorService = {
-    async getAll(filter?: DirectorFilterDto) {
+    async getAll(filter: DirectorFilterDto) {
         const response = await axiosInstance.get<PagedResult<DirectorDto>>("/directors", {
             params: filter
         });

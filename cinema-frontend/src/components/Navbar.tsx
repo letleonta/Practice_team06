@@ -1,8 +1,8 @@
 import { Link, useNavigate } from 'react-router-dom';
 import { LogOut, ShieldCheck, User as UserIcon } from 'lucide-react';
 import { useAuthStore } from '../store/useAuthStore';
+import {API_CONFIG} from "../../config.ts";
 
-const BASE_URL = "http://localhost:5144";
 
 const Navbar = () => {
     const { user, logout } = useAuthStore();
@@ -32,7 +32,7 @@ const Navbar = () => {
                     <Link to="/upcoming" className="text-[14px] font-extrabold uppercase tracking-[0.2em] text-gray-400 hover:text-white transition-colors">
                         Скоро в кіно
                     </Link>
-                    {user && (user.role === 'Customer' || user.role === 'Admin') && (
+                    {user && (user.role === 'Customer') && (
                         <Link to="/bookings/my" className="text-[14px] font-extrabold uppercase tracking-[0.2em] text-gray-400 hover:text-white transition-colors">
                             Бронювання
                         </Link>
@@ -61,11 +61,10 @@ const Navbar = () => {
                             to="/profile"
                             className="flex items-center gap-4 bg-[#0f1117]/50 hover:bg-[#0f1117] p-1.5 pr-6 rounded-full border border-gray-800 transition-all group"
                         >
-                            {/* Аватарка w-11 h-11 з червоним бордером */}
                             <div className="w-11 h-11 rounded-full overflow-hidden bg-gray-900 flex items-center justify-center border-2 border-red-600 shadow-lg shadow-red-600/10">
-                                {user.avatarUrl ? (
+                                {user.avatarUri ? (
                                     <img
-                                        src={`${BASE_URL}${user.avatarUrl}`}
+                                        src={`${API_CONFIG.BASE_URL}${user.avatarUri}`}
                                         alt="Ava"
                                         className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
                                     />

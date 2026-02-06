@@ -5,7 +5,8 @@ import type {
     ActorMovieDto,
     CreateActorDto
 } from "../types/actor";
-import type {PagedResult} from "../types/pagedResult";
+
+import type {PagedResult} from "../types/common.ts";
 
 export const ActorService = {
     async getAll(filter: ActorFilterDto): Promise<PagedResult<ActorDto>> {
