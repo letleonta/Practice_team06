@@ -1,4 +1,6 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using AutoMapper;
+using AutoMapper.QueryableExtensions;
+using Microsoft.EntityFrameworkCore;
 using Practice_team06.DTOs.Ticket;
 using Practice_team06.Models;
 
@@ -7,108 +9,81 @@ namespace Practice_team06.Services;
 public class TicketService : ITicketService
 {
     private readonly PostgresContext _context;
+    private readonly IMapper _mapper;
 
-    public TicketService(PostgresContext context)
+    public TicketService(PostgresContext context, IMapper mapper)
     {
         _context = context;
+        _mapper = mapper;
     }
 
     public async Task<decimal> CalculatePriceAsync(int sessionId, int seatId)
     {
-        var session = await _context.Sessions
-            .Include(s => s.Movie)
-            .FirstOrDefaultAsync(s => s.Id == sessionId);
+        var sessionData = await _context.Sessions
+            .Where(s => s.Id == sessionId)
+            .Select(s => new { s.Movie.BasePrice, s.Hall.PriceModifier })
+            .FirstOrDefaultAsync() ?? throw new KeyNotFoundException($"Session {sessionId} not found.");
 
-        if (session == null) throw new KeyNotFoundException($"Session {sessionId} not found.");
-        if (session.Movie == null) throw new KeyNotFoundException("Movie not found for this session.");
+        var seatModifier = await _context.Seats
+            .Where(s => s.Id == seatId)
+            .Select(s => s.PriceModifier)
+            .FirstOrDefaultAsync();
 
-        var seat = await _context.Seats
-            .Include(s => s.Hall)
-            .FirstOrDefaultAsync(s => s.Id == seatId);
-
-        if (seat == null) throw new KeyNotFoundException($"Seat {seatId} not found.");
-        if (seat.Hall == null) throw new KeyNotFoundException("Hall not found for this seat.");
-
-        return session.Movie.BasePrice * seat.Hall.PriceModifier * seat.PriceModifier;
+        return sessionData.BasePrice * sessionData.PriceModifier * seatModifier;
     }
 
     public async Task<List<AdminTicketDto>> GetTicketsForBookingAsync(int bookingId)
     {
-        var booking = await _context.Bookings
-            .FirstOrDefaultAsync(b => b.Id == bookingId);
-
-        if (booking == null)
-            throw new KeyNotFoundException($"Booking with ID {bookingId} not found.");
-        
-        var tickets = await _context.Tickets
-            .Include(ticket => ticket.Seat)
-            .Where(t => t.BookingId == booking.Id)
-            .Select(t => AdminTicketDto.TicketToAdminTicketDto(t, booking.UserId))
+        return await _context.Tickets
+            .AsNoTracking()
+            .Where(t => t.BookingId == bookingId)
+            .ProjectTo<AdminTicketDto>(_mapper.ConfigurationProvider)
             .ToListAsync();
-
-        return tickets;
     }
 
     public async Task<List<TicketBookingDto>> GetTicketsForUserBookingAsync(int userId, int bookingId)
     {
-        var booking = await _context.Bookings
-            .FirstOrDefaultAsync(b => b.Id == bookingId && b.UserId == userId);
-
-        if (booking == null)
-            throw new KeyNotFoundException($"Booking with ID {bookingId} for user {userId} not found.");
-        
-        var tickets = await _context.Tickets
-            .Include(ticket => ticket.Seat)
-            .Where(t => t.BookingId == booking.Id)
-            .Select(t => TicketBookingDto.TicketToTicketBookingDto(t))
+        return await _context.Tickets
+            .AsNoTracking()
+            .Where(t => t.BookingId == bookingId && t.Booking.UserId == userId)
+            .ProjectTo<TicketBookingDto>(_mapper.ConfigurationProvider)
             .ToListAsync();
-
-        return tickets;
     }
     
     public async Task<List<AdminTicketDto>> GetAllTicketsAsync()
     {
-        var tickets = await _context.Tickets
-            .Include(ticket => ticket.Seat)
-            .Select(ticket => AdminTicketDto.TicketToAdminTicketDto(ticket, ticket.Booking.UserId))
+        return await _context.Tickets
+            .AsNoTracking()
+            .ProjectTo<AdminTicketDto>(_mapper.ConfigurationProvider)
             .ToListAsync();
-        
-        return tickets;
     }
 
     public async Task<AdminTicketDto> GetTicketByIdAsync(int ticketId)
     {
-        var ticket = await _context.Tickets
-            .Include(ticket => ticket.Booking)
-            .Include(ticket => ticket.Seat)
-            .FirstOrDefaultAsync(t => t.Id == ticketId);
+        var result = await _context.Tickets
+            .AsNoTracking()
+            .Where(t => t.Id == ticketId)
+            .ProjectTo<AdminTicketDto>(_mapper.ConfigurationProvider)
+            .FirstOrDefaultAsync();
 
-        if (ticket == null)
-            throw new KeyNotFoundException($"Ticket with ID {ticketId} not found.");
-
-        return AdminTicketDto.TicketToAdminTicketDto(ticket, ticket.Booking.UserId);
+        return result ?? throw new KeyNotFoundException($"Ticket with ID {ticketId} not found.");
     }
 
     public async Task<TicketDto> GetTicketForUserByIdAsync(int userId, int ticketId)
     {
-        var ticket = await _context.Tickets
-            .Include(ticket => ticket.Booking)
-            .Include(ticket => ticket.Seat)
-            .FirstOrDefaultAsync(t => t.Id == ticketId && t.Booking.UserId == userId);
+        var result = await _context.Tickets
+            .AsNoTracking()
+            .Where(t => t.Id == ticketId && t.Booking.UserId == userId)
+            .ProjectTo<TicketDto>(_mapper.ConfigurationProvider)
+            .FirstOrDefaultAsync();
 
-        if (ticket == null)
-            throw new KeyNotFoundException($"Ticket with ID {ticketId} for user {userId} not found.");
-
-        return TicketDto.TicketToTicketDto(ticket);
+        return result ?? throw new KeyNotFoundException($"Ticket with ID {ticketId} for user {userId} not found.");
     }
 
     public async Task DeleteTicketAsync(int ticketId)
     {
         var ticket = await _context.Tickets.FindAsync(ticketId);
-        if (ticket == null)
-        {
-            throw new KeyNotFoundException($"Ticket with ID {ticketId} not found.");
-        }
+        if (ticket == null) throw new KeyNotFoundException($"Ticket with ID {ticketId} not found.");
 
         _context.Tickets.Remove(ticket);
         await _context.SaveChangesAsync();

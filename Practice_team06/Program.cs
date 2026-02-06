@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Practice_team06.Data;
+using Practice_team06.Mappings;
 using Practice_team06.Models;
 using Practice_team06.Services;
 
@@ -63,6 +64,12 @@ builder.Services.AddCors(options =>
               .AllowCredentials();
     });
 });
+
+builder.Services.AddAutoMapper(_ => {}, typeof(SeatProfile).Assembly);
+builder.Services.AddAutoMapper(_ => {}, typeof(BookingProfile).Assembly);
+builder.Services.AddAutoMapper(_ => {}, typeof(TicketProfile).Assembly);
+builder.Services.AddAutoMapper(_ => {}, typeof(GenreProfile).Assembly);
+builder.Services.AddAutoMapper(_ => {}, typeof(LanguageProfile).Assembly);
 
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IActorService, ActorService>();
