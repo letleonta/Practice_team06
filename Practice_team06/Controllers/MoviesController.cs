@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Practice_team06.DTOs.Common;
 using Practice_team06.DTOs.Movie;
 using Practice_team06.Services;
 
@@ -18,9 +19,22 @@ public class MoviesController : ControllerBase
 
     // Для ЮЗЕРІВ: Отримати всі фільми
     [HttpGet]
-    public async Task<ActionResult<List<MovieDto>>> GetAll(MovieFilterDto? filter)
+    public async Task<ActionResult<PagedResult<MovieDto>>> GetAll([FromQuery] MovieFilterDto filter)
     {
         return Ok(await _movieService.GetAllMoviesAsync(filter));
+    }
+
+    // Для ЮЗЕРІВ: "Скоро у прокаті"
+    [HttpGet("upcoming")]
+    public async Task<ActionResult<PagedResult<MovieDto>>> GetUpcoming([FromQuery] MovieFilterDto filter)
+    {
+        return Ok(await _movieService.GetUpcomingMoviesAsync(filter));
+    }
+    // Для ЮЗЕРІВ: "Зараз у кіно"
+    [HttpGet("now-playing")]
+    public async Task<ActionResult<PagedResult<MovieDto>>> GetNowPlaying([FromQuery] MovieFilterDto filter)
+    {
+        return Ok(await _movieService.GetNowPlayingMoviesAsync(filter));
     }
     
     // Для ЮЗЕРІВ: Отримати деталі одного фільму
@@ -30,19 +44,6 @@ public class MoviesController : ControllerBase
         var movie = await _movieService.GetMovieByIdAsync(id);
         if (movie == null) return NotFound();
         return Ok(movie);
-    }
-
-    // Для ЮЗЕРІВ: "Скоро у прокаті"
-    [HttpGet("upcoming")]
-    public async Task<ActionResult<List<MovieDto>>> GetUpcoming(MovieFilterDto? filter)
-    {
-        return Ok(await _movieService.GetUpcomingMoviesAsync(filter));
-    }
-    // Для ЮЗЕРІВ: "Зараз у кіно"
-    [HttpGet("now-playing")]
-    public async Task<ActionResult<List<MovieDto>>> GetNowPlaying([FromQuery] MovieFilterDto? filter)
-    {
-        return Ok(await _movieService.GetNowPlayingMoviesAsync(filter));
     }
     //АДМІН ЧАСТИНА
 

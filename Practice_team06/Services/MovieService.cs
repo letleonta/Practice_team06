@@ -1,5 +1,7 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using Practice_team06.DTOs.Common;
 using Practice_team06.DTOs.Movie;
+using Practice_team06.Extensions;
 using Practice_team06.Models;
 
 namespace Practice_team06.Services;
@@ -13,27 +15,38 @@ public class MovieService : IMovieService
         _context = context;
     }
 
-    public async Task<List<MovieDto>> GetAllMoviesAsync(MovieFilterDto? filter)
+    public async Task<PagedResult<MovieDto>> GetAllMoviesAsync(MovieFilterDto filter)
     {
-        var moviesQuery = _context.Movies.AsQueryable();
+        var query = _context.Movies.AsQueryable();
         
-        moviesQuery = ApplyFilter(moviesQuery, filter);
+        query = ApplyFilter(query, filter);
+        var totalCount = await query.CountAsync();
 
-        var movies = await moviesQuery
+        var movies = await query
             .Include(m => m.MovieGenres).ThenInclude(mg => mg.Genre) // Завантажуємо жанри
             .Include(m => m.Director)
             .Include(m => m.MovieActors).ThenInclude(ma => ma.Actor)
             .OrderByDescending(m => m.ReleaseDate)
+            .ApplyPagination(filter)
             .ToListAsync();
-
-        return movies.Select(MapToDto).ToList();
+        
+        return new PagedResult<MovieDto>
+        {
+            Items = movies.Select(MapToDto).ToList(),
+            TotalCount = totalCount,
+            Page = filter.Page!.Value,
+            PageSize = filter.PageSize!.Value
+        };
     }
 
-    public async Task<List<MovieDto>> GetUpcomingMoviesAsync(MovieFilterDto? filter)
+    public async Task<PagedResult<MovieDto>> GetUpcomingMoviesAsync(MovieFilterDto filter)
     {
-        if (filter == null)
-            filter = new MovieFilterDto();
         filter.SelectionType = SelectionType.Upcoming;
+        return await GetAllMoviesAsync(filter);
+    }
+    public async Task<PagedResult<MovieDto>> GetNowPlayingMoviesAsync(MovieFilterDto filter)
+    {
+        filter.SelectionType = SelectionType.NowPlaying;
         return await GetAllMoviesAsync(filter);
     }
     
@@ -46,13 +59,6 @@ public class MovieService : IMovieService
             .FirstOrDefaultAsync(m => m.Id == id);
 
         return movie == null ? null : MapToDto(movie);
-    }
-    public async Task<List<MovieDto>> GetNowPlayingMoviesAsync(MovieFilterDto? filter)
-    {
-        if (filter == null)
-            filter = new MovieFilterDto();
-        filter.SelectionType = SelectionType.NowPlaying;
-        return await GetAllMoviesAsync(filter);
     }
 
     public async Task<MovieDto> CreateMovieAsync(CreateMovieDto dto)
