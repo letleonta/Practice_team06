@@ -1,6 +1,7 @@
 import { axiosInstance } from "../api/axiosInstance";
 import type {MovieDto, CreateMovieDto, MovieFilterDto} from "../types/movie";
-import type {PagedResult} from "../types/pagedResult.ts";
+
+import type {PagedResult} from "../types/common.ts";
 
 export const MovieService = {
     // Отримати всі фільми

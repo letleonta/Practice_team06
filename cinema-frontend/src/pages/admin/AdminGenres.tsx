@@ -129,7 +129,7 @@ const AdminGenres = () => {
                         </thead>
                         <tbody className="divide-y divide-gray-800/50">
                         {filteredGenres.map(genre => (
-                            <tr key={genre.id} className="group hover:bg-white/[0.02] transition-colors">
+                            <tr key={genre.id} className="group hover:bg-white/2 transition-colors">
                                 <td className="p-4 pl-6">
                                     <div className="w-10 h-10 rounded-xl bg-gray-900 border border-gray-800 flex items-center justify-center group-hover:border-red-500/30 transition-colors">
                                         <Tag size={16} className="text-gray-500 group-hover:text-red-500 transition-colors" />

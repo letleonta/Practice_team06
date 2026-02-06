@@ -1,7 +1,6 @@
 import type {TicketBookingDto} from "./ticket.ts";
-import type {PagedResult} from "./pagedResult.ts";
 import type {HallDto} from "./hall.ts";
-import type {BaseFilterDto} from "./common.ts";
+import type {BaseFilterDto, PagedResult} from "./common.ts";
 
 export const BookingStatus = {
     Inprogress: "Inprogress",

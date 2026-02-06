@@ -6,7 +6,7 @@ import type {CreateMovieDto, MovieDto, MovieFilterDto} from '../../types/movie';
 import {
     Film, Search, Edit, Trash2,
     ArrowLeft, Save, PlayCircle, Info, Image, Users,
-    Hash, X, Clock, Star
+    Hash, X, Clock, Star, Activity
 } from 'lucide-react';
 import {ConfirmModal} from "../../components/ui/ConfirmModal.tsx";
 import {notify} from "../../utils/toast";
@@ -16,6 +16,9 @@ import {PaginationInfo} from "../../components/PaginationInfo.tsx";
 import {MultipleSelectGrid} from "../../components/Form/MultipleSelectGrid.tsx";
 import {FormSection, FormSelect, FormTextarea, FormInput} from "../../components/Form/FormSection.tsx";
 import {SingleSelectGrid} from "../../components/Form/SingleSelectGrid.tsx";
+import {GenreService} from "../../services/genre.service.ts";
+import {DirectorService} from "../../services/director.service.ts";
+import {ActorService} from "../../services/actor.service.ts";
 
 interface NamedEntity { id: number; name: string; }
 interface PersonEntity { id: number; firstName: string; lastName: string; }
@@ -52,13 +55,19 @@ const AdminMovies = () => {
     const fetchData = async () => {
         try {
             const [g, d, a] = await Promise.all([
-                api.get('/genres'),
-                api.get('/directors'),
-                api.get('/actors')
+                GenreService.getAll(),
+                DirectorService.getAll({
+                    Page: 1,
+                    PageSize: 10
+                }),
+                ActorService.getAll({
+                    Page: 1,
+                    PageSize: 10
+                })
             ]);
-            setGenres(g.data);
-            setDirectors(d.data);
-            setActors(a.data);
+            setGenres(g);
+            setDirectors(d.items);
+            setActors(a.items);
         } catch (_err) {
             console.error("Error loading dictionaries");
         }

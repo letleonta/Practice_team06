@@ -86,7 +86,7 @@ const AdminLanguages = () => {
                 fields={[
                     {
                         name: 'name',
-                        label: "Назва мови",
+                        label: "Назва",
                         placeholder: "Напр. Українська",
                         icon: Globe
                     }
