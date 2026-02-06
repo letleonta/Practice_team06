@@ -1,6 +1,8 @@
-﻿import type {DirectorDto} from "./director.ts";
+import type {DirectorDto} from "./director.ts";
 import type {ActorDto} from "./actor.ts";
 import type {GenreDto} from "./genre.ts";
+
+import type {BaseFilterDto} from "./common.ts";
 
 export interface MovieDto {
     id: number;
@@ -47,7 +49,7 @@ export const AgeRestriction = {
 
 export type AgeRestrictionType = typeof AgeRestriction[keyof typeof AgeRestriction];
 
-export interface MovieFilterDto {
+export interface MovieFilterDto extends BaseFilterDto {
     title?: string;
     rating?: number;
     ageRestrictions?: AgeRestrictionType[];

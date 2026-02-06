@@ -11,7 +11,7 @@ import { Pagination } from "../components/Pagination";
 import { UsePagination } from "../hooks/UsePagination";
 
 const MyBookingsPage = () => {
-    const [activeFilter, setActiveFilter] = useState<FilterStatus>('ALL');
+    const [activeFilter, setactiveFilter] = useState<FilterStatus>('ALL');
 
     const fetchBookings = async (Page: number, PageSize: number) => {
         const filter: BookingFilterDto = {
@@ -60,7 +60,7 @@ const MyBookingsPage = () => {
 
                 <BookingFilterBar
                     activeFilter={activeFilter}
-                    onFilterChange={setActiveFilter}
+                    onFilterChange={setactiveFilter}
                 />
 
                 {loading ? (

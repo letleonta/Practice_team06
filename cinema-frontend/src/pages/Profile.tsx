@@ -44,7 +44,7 @@ export const Profile = () => {
             setLoading(true);
             const data = await UserService.getProfile();
             setUser(data);
-            updateUser({ firstName: data.firstName, avatarUrl: data.avatarUrl });
+            updateUser({ firstName: data.firstName, avatarUri: data.avatarUrl });
             reset({
                 firstName: data.firstName,
                 lastName: data.lastName,
@@ -74,7 +74,7 @@ export const Profile = () => {
             setIsActionLoading(true);
             await UserService.deleteAvatar();
             setUser(prev => prev ? { ...prev, avatarUrl: undefined } : null);
-            updateUser({ avatarUrl: undefined });
+            updateUser({ avatarUri: undefined });
             notify.success("Фото видалено");
 
             setIsDeleteConfirmOpen(false);
@@ -95,7 +95,7 @@ export const Profile = () => {
             setIsActionLoading(true);
             const result = await UserService.uploadAvatar(file);
             setUser(prev => prev ? { ...prev, avatarUrl: result.avatarUrl } : null);
-            updateUser({ avatarUrl: result.avatarUrl });
+            updateUser({ avatarUri: result.avatarUrl });
             notify.success("Аватар оновлено");
             setIsAvatarModalOpen(false);
         } catch (err) {

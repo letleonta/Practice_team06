@@ -9,7 +9,6 @@ interface SessionItemProps {
 }
 
 export const SessionItem = ({ session, onDelete, onClick, variant = 'admin' }: SessionItemProps) => {
-
     // ВАРІАНТ ДЛЯ КЛІЄНТА (Кнопка-картка)
     if (variant === 'client') {
         return (

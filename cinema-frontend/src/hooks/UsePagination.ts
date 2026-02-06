@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import type { PagedResult } from '../types/pagedResult';
 import { useSearchParams } from 'react-router-dom';
+import type {PagedResult} from "../types/common.ts";
 
 interface UsePaginationOptions {
     pageSize?: number;
