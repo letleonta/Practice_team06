@@ -1,3 +1,5 @@
+import type {BaseFilterDto} from "./common.ts";
+
 export interface ActorDto {
     id: number;
     firstName: string;
@@ -5,12 +7,10 @@ export interface ActorDto {
     photoUri?: string; // string? -> опціональне поле
 }
 
-export interface ActorFilterDto {
+export interface ActorFilterDto extends BaseFilterDto {
     search?: string;
     sortBy?: 'id' | 'firstname' | 'lastname';
     isDescending?: boolean;
-    Page?: number;
-    PageSize?: number;
 }
 
 export interface ActorMovieDto {

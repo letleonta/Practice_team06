@@ -10,9 +10,15 @@ export const formatDateWithoutYear = (dateStr?: string) => {
     return new Date(dateStr).toLocaleDateString('uk-UA', { day: 'numeric', month: 'long' });
 };
 
-export const formatDateShort = (dateStr?: string) => {
+export const formatDateShortWithYear = (dateStr?: string) => {
     if (!dateStr) return '';
     return new Date(dateStr).toLocaleDateString('uk-UA', { day: 'numeric', month: 'numeric', year: 'numeric' });
+};
+
+
+export const formatDateShortWithoutYear = (dateStr?: string) => {
+    if (!dateStr) return '';
+    return new Date(dateStr).toLocaleDateString('uk-UA', { day: 'numeric', month: 'numeric'});
 };
 
 export const formatTime = (s: string) =>

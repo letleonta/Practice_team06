@@ -1,7 +1,8 @@
 ﻿import axios from 'axios';
+import {API_CONFIG} from "../../config.ts";
 
 export const axiosInstance = axios.create({
-    baseURL: 'http://localhost:5144/api', // Переконайся, що порт правильний
+    baseURL: API_CONFIG.BASE_URL + "/api",
     headers: {
         'Content-Type': 'application/json'
     }

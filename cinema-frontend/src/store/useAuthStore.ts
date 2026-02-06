@@ -8,7 +8,7 @@ interface UserInfo {
     role: string | string[];
     id: string;
     firstName?: string;  // Додано
-    avatarUrl?: string;  // Додано
+    avatarUri?: string;  // Додано
 }
 
 interface AuthState {

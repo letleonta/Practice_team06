@@ -4,7 +4,8 @@ import type {
     AdminBookingDto,
     BookingFilterDto, CreateBookingDto, AdminBookingsWithStatsDto
 } from "../types/booking";
-import type {PagedResult} from "../types/pagedResult.ts";
+
+import type {PagedResult} from "../types/common.ts";
 
 export const BookingService = {
     // --- ДЛЯ АДМІНІСТРАТОРА ---

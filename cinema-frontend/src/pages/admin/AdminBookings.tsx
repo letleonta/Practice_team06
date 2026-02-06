@@ -42,7 +42,7 @@ const AdminBookingsPage = () => {
     const [selectedBooking, setSelectedBooking] = useState<AdminBookingDto | null>(null);
 
     // Fetch function for pagination hook
-    const fetchBookings = async (page: number, pageSize: number) => {
+    const fetchBookings = async (Page: number, PageSize: number) => {
         const filter: BookingFilterDto = {
             Status: statusFilter !== 'ALL' ? statusFilter : undefined,
             SessionFromDate: sessionFrom || undefined,
@@ -53,8 +53,8 @@ const AdminBookingsPage = () => {
             SearchQuery: searchQuery || undefined,
             SortBy: sortBy,
             IsDescending: isDesc,
-            Page: page,
-            PageSize: pageSize,
+            Page: Page,
+            PageSize: PageSize,
         };
 
         const response = await BookingService.getAllBookings(filter);

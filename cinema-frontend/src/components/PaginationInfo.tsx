@@ -29,6 +29,10 @@ export const PaginationInfo = ({
             if (count < 5) return 'бронювання';
             return 'бронювань';
         }
+        if (itemName === 'фільм') {
+            if (count === 1) return 'фільм';
+            else return 'фільмів';
+        }
         return itemName;
     };
 
