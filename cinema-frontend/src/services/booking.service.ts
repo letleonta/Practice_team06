@@ -54,7 +54,6 @@ export const BookingService = {
         await axiosInstance.put(`/bookings/${bookingId}/cancel`);
     },
 
-    //TODO: чому
     async confirmBooking(bookingId: number) {
         await axiosInstance.put(`/bookings/${bookingId}/confirm`);
     },
