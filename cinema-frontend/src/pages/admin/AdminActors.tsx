@@ -21,18 +21,18 @@ const actorFields = [
     {
         name: 'firstName',
         label: "Ім'я",
-        placeholder: "Введіть ім'я актора...",
+        placeholder: "Напр. Бред",
         icon: UserIcon
     },
     {
         name: 'lastName',
         label: "Прізвище",
-        placeholder: "Введіть прізвище актора...",
+        placeholder: "Напр. Пітт",
         icon: UserIcon
     },
     {
         name: 'photoUri',
-        label: "URL фото",
+        label: "Посилання на фото",
         placeholder: "https://...",
         required: false,
         icon: Upload

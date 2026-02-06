@@ -23,10 +23,33 @@ import { PaginationInfo } from "../../components/PaginationInfo";
 import { DataTable, type Column } from "../../components/DataTable.tsx";
 import { notify } from "../../utils/toast";
 import { API_CONFIG } from "../../../config.ts";
-import { ConfirmModal } from "../../components/ui/ConfirmModal.tsx"; // Перевірте шлях до компонента
+import { ConfirmModal } from "../../components/ui/ConfirmModal.tsx";
+import { CreateCard } from "../../components/CreateCard.tsx"; // Перевірте шлях до компонента
+
+const directorFields = [
+    {
+        name: 'firstName',
+        label: "Ім'я",
+        placeholder: "Напр. Квентін",
+        icon: UserIcon
+    },
+    {
+        name: 'lastName',
+        label: "Прізвище",
+        placeholder: "Напр. Тарантіно",
+        icon: UserIcon
+    },
+    {
+        name: 'photoUri',
+        label: "Посилання на фото",
+        placeholder: "https://...",
+        required: false,
+        icon: Upload
+    },
+];
 
 const AdminDirectors = () => {
-    const addForm = useForm<CreateDirectorDto>();
+    // Залишаємо лише форму для модалки редагування
     const editForm = useForm<CreateDirectorDto>();
 
     const [searchTerm, setSearchTerm] = useState('');
@@ -92,7 +115,6 @@ const AdminDirectors = () => {
         }
     };
 
-
     const handleOpenDetails = async (director: DirectorDto) => {
         setSelectedDirector(director);
         setLoadingMovies(true);
@@ -108,13 +130,19 @@ const AdminDirectors = () => {
         }
     };
 
-    const onAddSubmit = async (data: CreateDirectorDto) => {
+    // Обробник для компонента CreateCard
+    const handleAddDirector = async (data: CreateDirectorDto) => {
         setIsSaving(true);
         try {
-            await DirectorService.create({ ...data, photoUri: data.photoUri?.trim() || undefined });
+            const payload = {
+                ...data,
+                firstName: data.firstName.trim(),
+                lastName: data.lastName.trim(),
+                photoUri: data.photoUri?.trim() || undefined
+            };
+            await DirectorService.create(payload);
             notify.success("Режисера додано");
-            addForm.reset();
-            refresh();
+            refresh(); // CreateCard сам очистить свою форму після успіху
         } catch (err) {
             notify.error("Помилка при додаванні");
         } finally {
@@ -126,7 +154,12 @@ const AdminDirectors = () => {
         if (!selectedDirector) return;
         setIsSaving(true);
         try {
-            const payload = { ...data, photoUri: data.photoUri?.trim() || undefined };
+            const payload = {
+                ...data,
+                firstName: data.firstName.trim(),
+                lastName: data.lastName.trim(),
+                photoUri: data.photoUri?.trim() || undefined
+            };
             await DirectorService.update(selectedDirector.id, payload);
             setSelectedDirector({ ...selectedDirector, ...payload });
             notify.success("Дані оновлено");
@@ -178,7 +211,7 @@ const AdminDirectors = () => {
     return (
         <div className="flex flex-col lg:flex-row gap-8 items-start text-white pb-10 font-sans relative">
 
-            {/* ВАШ КАСТОМНИЙ CONFIRM MODAL */}
+            {/* КАСТОМНИЙ CONFIRM MODAL */}
             <ConfirmModal
                 isOpen={deleteModal.isOpen}
                 title="Видалити режисера?"
@@ -188,23 +221,15 @@ const AdminDirectors = () => {
                 isLoading={isSaving}
             />
 
-            {/* ЛІВА ЧАСТИНА: ФОРМА ДОДАВАННЯ */}
-            <div className="w-full lg:w-1/3 lg:sticky lg:top-24 bg-[#1a1d26] p-8 rounded-[32px] border border-gray-800 shadow-2xl">
-                <div className="flex items-center gap-3 mb-8">
-                    <div className="bg-red-600/20 p-2 rounded-lg text-red-600"><UserPlus size={24} /></div>
-                    <h2 className="text-xl font-black uppercase tracking-tighter">Новий режисер</h2>
-                </div>
-
-                <form onSubmit={addForm.handleSubmit(onAddSubmit)} className="space-y-5 text-left text-white">
-                    <input {...addForm.register('firstName', { required: true })} placeholder="Ім'я" className="w-full p-4 bg-gray-900 border border-gray-700 rounded-2xl outline-none focus:border-red-600 transition-all font-bold text-white" />
-                    <input {...addForm.register('lastName', { required: true })} placeholder="Прізвище" className="w-full p-4 bg-gray-900 border border-gray-700 rounded-2xl outline-none focus:border-red-600 transition-all font-bold text-white" />
-                    <input {...addForm.register('photoUri')} placeholder="URL фото" className="w-full p-4 bg-gray-900 border border-gray-700 rounded-2xl outline-none focus:border-red-600 transition-all text-sm text-white" />
-
-                    <button type="submit" disabled={isSaving} className="w-full bg-red-600 hover:bg-red-700 py-4 rounded-2xl font-black uppercase text-[10px] tracking-widest transition-all shadow-lg shadow-red-600/20 mt-2">
-                        {isSaving ? <Loader2 className="animate-spin mx-auto" size={18}/> : 'Зберегти'}
-                    </button>
-                </form>
-            </div>
+            {/* ЛІВА ЧАСТИНА: ВИКОРИСТОВУЄМО CREATECARD */}
+            <CreateCard
+                title="Новий режисер"
+                buttonText="Зберегти"
+                icon={UserPlus}
+                fields={directorFields}
+                loading={isSaving}
+                onSubmit={handleAddDirector}
+            />
 
             {/* ПРАВА ЧАСТИНА: ТАБЛИЦЯ */}
             <div className="w-full lg:w-2/3 flex flex-col gap-6">
@@ -283,7 +308,7 @@ const AdminDirectors = () => {
                                 <div className="grid grid-cols-1 gap-3 font-sans">
                                     {directorMovies.map(movie => (
                                         <div key={movie.movieId} className="bg-gray-900/50 border border-gray-800 p-4 rounded-2xl flex items-center justify-between group">
-                                            <div className="flex items-center gap-4 text-left">
+                                            <div className="flex items-center gap-4 text-left font-sans">
                                                 <div className="p-3 bg-red-600/10 rounded-xl text-red-600"><Film size={20} /></div>
                                                 <div className="text-left font-sans">
                                                     <p className="font-bold text-base uppercase text-white font-sans">{movie.title}</p>
@@ -311,7 +336,7 @@ const AdminDirectors = () => {
                                         }}
                                         className="flex-1 flex items-center justify-center gap-2 py-4 bg-gray-800 hover:bg-gray-700 text-white rounded-2xl font-black text-[10px] uppercase tracking-widest transition-all font-sans"
                                     >
-                                        <Pencil size={16} className="text-red-600" /> Редагувати
+                                        <Pencil size={16} className="text-red-600 font-sans" /> Редагувати
                                     </button>
                                     <button
                                         onClick={() => openDeleteModal(selectedDirector)}
@@ -323,9 +348,9 @@ const AdminDirectors = () => {
                             ) : (
                                 <>
                                     <button onClick={editForm.handleSubmit(onEditSubmit)} disabled={isSaving} className="flex-1 flex items-center justify-center gap-2 py-4 bg-red-600 hover:bg-red-700 text-white rounded-2xl font-black uppercase text-[10px] tracking-widest transition-all shadow-lg shadow-red-600/30">
-                                        {isSaving ? <Loader2 className="animate-spin" size={16} /> : <><Check size={16} /> Зберегти зміни</>}
+                                        {isSaving ? <Loader2 className="animate-spin font-sans" size={16} /> : <><Check size={16} className="font-sans" /> Зберегти зміни</>}
                                     </button>
-                                    <button onClick={() => setIsEditMode(false)} className="px-8 py-4 bg-gray-800 hover:bg-gray-700 text-white rounded-2xl font-black uppercase text-[10px] tracking-widest transition-all">Скасувати</button>
+                                    <button onClick={() => setIsEditMode(false)} className="px-8 py-4 bg-gray-800 hover:bg-gray-700 text-white rounded-2xl font-black uppercase text-[10px] tracking-widest transition-all font-sans">Скасувати</button>
                                 </>
                             )}
                         </div>
