@@ -60,12 +60,12 @@ public class DirectorsController : ControllerBase
         var createdDirectors = await _directorService.CreateRangeAsync(directorsList);
         return Ok(createdDirectors);
     }
-
+    
     [HttpGet("{id}/movies")]
-    public async Task<ActionResult<IEnumerable<DirectorMovieDto>>> GetDirectorMovies(int id)
+    public async Task<ActionResult<PagedResult<DirectorMovieDto>>> GetDirectorMovies(int id, [FromQuery] BaseFilterDto filter)
     {
-        var movies = await _directorService.GetDirectorMoviesAsync(id);
-        return Ok(movies);
+        var result = await _directorService.GetDirectorMoviesAsync(id, filter);
+        return Ok(result);
     }
     
     [HttpPut("{id}")] 
