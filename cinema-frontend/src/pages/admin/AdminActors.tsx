@@ -16,7 +16,6 @@ import { ConfirmModal } from "../../components/ui/ConfirmModal.tsx";
 import { CreateCard } from "../../components/CreateCard.tsx";
 import { API_CONFIG } from "../../../config.ts";
 
-// Конфігурація полів для CreateCard
 const actorFields = [
     {
         name: 'firstName',
@@ -40,7 +39,6 @@ const actorFields = [
 ];
 
 const AdminActors = () => {
-    // editForm залишається для модалки редагування
     const editForm = useForm<CreateActorDto>();
 
     const [searchTerm, setSearchTerm] = useState('');

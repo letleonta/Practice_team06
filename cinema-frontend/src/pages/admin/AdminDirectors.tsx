@@ -49,7 +49,6 @@ const directorFields = [
 ];
 
 const AdminDirectors = () => {
-    // Залишаємо лише форму для модалки редагування
     const editForm = useForm<CreateDirectorDto>();
 
     const [searchTerm, setSearchTerm] = useState('');
