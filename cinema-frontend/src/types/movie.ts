@@ -1,4 +1,8 @@
-﻿export interface MovieDto {
+﻿import type {DirectorDto} from "./director.ts";
+import type {ActorDto} from "./actor.ts";
+import type {GenreDto} from "./genre.ts";
+
+export interface MovieDto {
     id: number;
     title: string;
     description?: string;
@@ -11,9 +15,9 @@
     ageRestriction: string;
     startDate?: string;
     endDate?: string;
-    directorName: string;
-    genres: string[];
-    actors: string[];
+    director?: DirectorDto;
+    actors: ActorDto[];
+    genres: GenreDto[]
     languageIds: number[];
 }
 export interface CreateMovieDto {
