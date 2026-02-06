@@ -21,28 +21,25 @@ public class BookingService : IBookingService
         _mapper = mapper;
     }
 
-    public async Task<AdminBookingsWithStatsDto> GetAllBookingsAsync(BookingFilterDto filter)
+    public async Task<PagedResult<AdminBookingDto>> GetAllBookingsAsync(BookingFilterDto filter)
     {
         var query = _context.Bookings.AsNoTracking();
         query = ApplyFilter(query, filter);
     
         var totalCount = await query.CountAsync();
         query = ApplySorting(query, filter);
-        var stats = await GetStats(query, filter);
 
         var items = await query
             .ApplyPagination(filter)
             .ProjectTo<AdminBookingDto>(_mapper.ConfigurationProvider)
             .ToListAsync();
 
-        return new AdminBookingsWithStatsDto {
-            BookingsPage = new PagedResult<AdminBookingDto> {
-                Items = items,
-                TotalCount = totalCount,
-                Page = filter.Page ?? 1,
-                PageSize = filter.PageSize ?? 10
-            },
-            Stats = stats
+        return new PagedResult<AdminBookingDto>
+        {
+            Items = items,
+            TotalCount = totalCount,
+            Page = filter.Page ?? 1,
+            PageSize = filter.PageSize ?? 10
         };
     }
 
@@ -70,32 +67,42 @@ public class BookingService : IBookingService
         };
     }
 
-    public async Task<BookingDto> GetBookingByIdAsync(int userId, int bookingId)
+    public async Task<T> GetBookingByIdAsync<T>(int? userId, int bookingId, BaseFilterDto filter) 
+        where T : class, IBookingWithTickets
     {
-        var result = await _context.Bookings
-            .AsNoTracking()
-            .Where(b => b.Id == bookingId && b.UserId == userId)
-            .ProjectTo<BookingDto>(_mapper.ConfigurationProvider)
+        var query = _context.Bookings.AsNoTracking();
+
+        if (userId.HasValue)
+            query = query.Where(b => b.Id == bookingId && b.UserId == userId.Value);
+        else
+            query = query.Where(b => b.Id == bookingId);
+
+        var booking = await query
+            .ProjectTo<T>(_mapper.ConfigurationProvider)
             .FirstOrDefaultAsync();
 
-        if (result == null)
-            throw new KeyNotFoundException($"Booking {bookingId} for user {userId} not found.");
+        if (booking == null) throw new KeyNotFoundException($"Booking with {bookingId} not found");
 
-        return result;
-    }
-
-    public async Task<AdminBookingDto> GetBookingByIdAsync(int bookingId)
-    {
-        var result = await _context.Bookings
+        var ticketsQuery = _context.Tickets
             .AsNoTracking()
-            .Where(b => b.Id == bookingId)
-            .ProjectTo<AdminBookingDto>(_mapper.ConfigurationProvider)
-            .FirstOrDefaultAsync();
+            .Where(t => t.BookingId == bookingId)
+            .OrderBy(t => t.Id);
 
-        if (result == null)
-            throw new KeyNotFoundException($"Booking {bookingId} not found.");
+        var totalCount = await ticketsQuery.CountAsync();
+        var ticketItems = await ticketsQuery
+            .ApplyPagination(filter)
+            .ProjectTo<TicketBookingDto>(_mapper.ConfigurationProvider)
+            .ToListAsync();
 
-        return result;
+        booking.PagedTickets = new PagedResult<TicketBookingDto>
+        {
+            Items = ticketItems,
+            TotalCount = totalCount,
+            Page = filter.Page ?? 1,
+            PageSize = filter.PageSize ?? 10
+        };
+
+        return booking;
     }
 
     public async Task<BookingDto> CreateBookingAsync(int userId, CreateBookingDto dto)
@@ -135,7 +142,7 @@ public class BookingService : IBookingService
                 UserId = userId,
                 SessionId = dto.SessionId,
                 BookingTime = DateTime.UtcNow,
-                Status = BookingStatus.Paid
+                Status = BookingStatus.Inprogress
             };
             _context.Bookings.Add(booking);
             await _context.SaveChangesAsync();
@@ -224,8 +231,10 @@ public class BookingService : IBookingService
         return session.Movie.BasePrice * session.Hall.PriceModifier * seat.PriceModifier;
     }
 
-    private async Task<BookingsStatsDto> GetStats(IQueryable<Booking> query, BookingFilterDto filter)
+    public async Task<BookingsStatsDto> GetBookingStatsAsync(BookingFilterDto filter)
     {
+        var query = _context.Bookings.AsNoTracking();
+        query = ApplyFilter(query, filter);
         DateTime endDate = filter.BookingToDate ?? DateTime.UtcNow;
         DateTime startDate = filter.BookingFromDate ?? endDate.AddDays(-30);
         return new BookingsStatsDto
@@ -234,6 +243,10 @@ public class BookingService : IBookingService
             InProgressCount = await query.CountAsync(b => b.Status == BookingStatus.Inprogress),
             PaidCount = await query.CountAsync(b => b.Status == BookingStatus.Paid),
             CancelledCount = await query.CountAsync(b => b.Status == BookingStatus.Cancelled),
+            TotalTicketsCount = await query
+                .SelectMany(b => b.Tickets)
+                .Where(t => t.IsActive)
+                .CountAsync(),
             TotalRevenue = await query.Where(b => b.Status == BookingStatus.Paid)
                 .SelectMany(b => b.Tickets)
                 .SumAsync(t => t.ActualPrice),

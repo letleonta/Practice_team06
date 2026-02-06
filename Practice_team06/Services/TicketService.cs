@@ -1,7 +1,9 @@
 ﻿using AutoMapper;
 using AutoMapper.QueryableExtensions;
 using Microsoft.EntityFrameworkCore;
+using Practice_team06.DTOs.Common;
 using Practice_team06.DTOs.Ticket;
+using Practice_team06.Extensions;
 using Practice_team06.Models;
 
 namespace Practice_team06.Services;
@@ -17,45 +19,26 @@ public class TicketService : ITicketService
         _mapper = mapper;
     }
 
-    public async Task<decimal> CalculatePriceAsync(int sessionId, int seatId)
+    public async Task<PagedResult<AdminTicketDto>> GetAllTicketsAsync(BaseFilterDto filter)
     {
-        var sessionData = await _context.Sessions
-            .Where(s => s.Id == sessionId)
-            .Select(s => new { s.Movie.BasePrice, s.Hall.PriceModifier })
-            .FirstOrDefaultAsync() ?? throw new KeyNotFoundException($"Session {sessionId} not found.");
+        var query = _context.Tickets.AsNoTracking();
 
-        var seatModifier = await _context.Seats
-            .Where(s => s.Id == seatId)
-            .Select(s => s.PriceModifier)
-            .FirstOrDefaultAsync();
+        var totalCount = await query.CountAsync();
 
-        return sessionData.BasePrice * sessionData.PriceModifier * seatModifier;
-    }
+        query = query.OrderByDescending(t => t.Id);
 
-    public async Task<List<AdminTicketDto>> GetTicketsForBookingAsync(int bookingId)
-    {
-        return await _context.Tickets
-            .AsNoTracking()
-            .Where(t => t.BookingId == bookingId)
+        var items = await query
+            .ApplyPagination(filter)
             .ProjectTo<AdminTicketDto>(_mapper.ConfigurationProvider)
             .ToListAsync();
-    }
 
-    public async Task<List<TicketBookingDto>> GetTicketsForUserBookingAsync(int userId, int bookingId)
-    {
-        return await _context.Tickets
-            .AsNoTracking()
-            .Where(t => t.BookingId == bookingId && t.Booking.UserId == userId)
-            .ProjectTo<TicketBookingDto>(_mapper.ConfigurationProvider)
-            .ToListAsync();
-    }
-    
-    public async Task<List<AdminTicketDto>> GetAllTicketsAsync()
-    {
-        return await _context.Tickets
-            .AsNoTracking()
-            .ProjectTo<AdminTicketDto>(_mapper.ConfigurationProvider)
-            .ToListAsync();
+        return new PagedResult<AdminTicketDto>
+        {
+            Items = items,
+            TotalCount = totalCount,
+            Page = filter.Page ?? 1,
+            PageSize = filter.PageSize ?? 10
+        };
     }
 
     public async Task<AdminTicketDto> GetTicketByIdAsync(int ticketId)
@@ -80,6 +63,53 @@ public class TicketService : ITicketService
         return result ?? throw new KeyNotFoundException($"Ticket with ID {ticketId} for user {userId} not found.");
     }
 
+    public async Task RefundTicketByUserAsync(int userId, int ticketId)
+    {
+        var ticket = await _context.Tickets
+            .Include(t => t.Booking)
+            .Include(t => t.Booking.Session)
+            .FirstOrDefaultAsync(t => t.Id == ticketId && t.Booking.UserId == userId);
+
+        if (ticket == null)
+            throw new KeyNotFoundException("Квиток не знайдено або ви не є його власником.");
+
+        var timeUntilSession = ticket.Booking.Session.StartTime - DateTime.UtcNow;
+        if (timeUntilSession.TotalMinutes < 30)
+            throw new InvalidOperationException("Повернення можливе не пізніше ніж за 30 хвилин до початку.");
+
+        await ExecuteRefundAsync(ticket);
+    }
+
+    public async Task RefundTicketByAdminAsync(int ticketId)
+    {
+        var ticket = await _context.Tickets
+            .Include(t => t.Booking)
+            .FirstOrDefaultAsync(t => t.Id == ticketId);
+
+        if (ticket == null)
+            throw new KeyNotFoundException("Квиток не знайдено.");
+
+        await ExecuteRefundAsync(ticket);
+    }
+
+    private async Task ExecuteRefundAsync(Ticket ticket)
+    {
+        if (!ticket.IsActive)
+            throw new InvalidOperationException("Квиток вже було повернуто.");
+
+        ticket.IsActive = false;
+        
+        var hasActiveTickets = await _context.Tickets
+            .AnyAsync(t => t.BookingId == ticket.BookingId && t.Id != ticket.Id && t.IsActive);
+        
+        if (!hasActiveTickets)
+        {
+            ticket.Booking.Status = BookingStatus.Cancelled;
+        }
+
+        await _context.SaveChangesAsync();
+    }
+    
     public async Task DeleteTicketAsync(int ticketId)
     {
         var ticket = await _context.Tickets.FindAsync(ticketId);
