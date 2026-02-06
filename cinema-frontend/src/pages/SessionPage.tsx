@@ -92,6 +92,8 @@ const SessionPage = () => {
                 seatIds: selectedSeats.map((s) => s.seatId),
             });
 
+            await BookingService.confirmBooking(created.id);
+
             navigate(`/bookings/${created.id}`);
         } catch (err: any) {
             setPurchaseError(
@@ -207,7 +209,7 @@ const SessionPage = () => {
                         <div className="flex flex-col items-center gap-1.5">
                             {rows.map(({ row, seats: rowSeats }) => (
                                 <div key={row} className="flex items-center gap-2">
-                                    <span className="text-gray-600 text-xs w-5 text-right flex-shrink-0">{row}</span>
+                                    <span className="text-gray-600 text-xs w-5 text-right shrink-0">{row}</span>
                                     <div className="flex gap-1.5">
                                         {rowSeats.map((seat) => (
                                             <button
@@ -238,7 +240,7 @@ const SessionPage = () => {
                     </div>
 
                     {/* ── Checkout Panel ─────────────────────── */}
-                    <div className="xl:w-96 flex-shrink-0">
+                    <div className="xl:w-96 shrink-0">
                         <div className="bg-[#1a1d26] rounded-2xl border border-gray-800 p-6 sticky top-24">
                             <h2 className="text-xl font-bold mb-4">Обрані місця</h2>
 

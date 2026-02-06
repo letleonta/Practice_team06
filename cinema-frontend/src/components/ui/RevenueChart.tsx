@@ -1,5 +1,5 @@
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
-import {formatDateShortWithYear } from "../../utils/formatTime.ts";
+import {formatDateShortWithoutYear, formatDateShortWithYear} from "../../utils/formatTime.ts";
 import type { RevenuePointDto} from "../../types/booking.ts";
 
 const RevenueChart = ({ data }: { data: RevenuePointDto[] }) => {
@@ -26,7 +26,7 @@ const RevenueChart = ({ data }: { data: RevenuePointDto[] }) => {
                             dataKey="date"
                             stroke="#6b7280"
                             fontSize={10}
-                            tickFormatter={formatDateShortWithYear}
+                            tickFormatter={formatDateShortWithoutYear}
                             axisLine={false}
                             tickLine={false}
                             minTickGap={30}
