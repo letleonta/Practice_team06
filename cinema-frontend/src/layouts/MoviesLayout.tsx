@@ -7,6 +7,12 @@ import {GenreService} from "../services/genre.service.ts";
 import type {GenreDto} from "../types/genre.ts";
 import {notify} from "../utils/toast.ts";
 
+// Додаємо інтерфейс для типізації відповіді з бекенду, якщо він ще не глобальний
+interface PagedResponse<T> {
+    items: T[];
+    totalCount: number;
+}
+
 interface Props {
     title: string;
 }
@@ -23,23 +29,34 @@ const MoviesLayout = ({ title }: Props) => {
     const fetchMovies = useCallback(async () => {
         setIsLoading(true);
         try {
-            let result: MovieDto[];
+            // Використовуємо 'any', щоб уникнути конфлікту типів, поки ви не оновите типи в сервісі
+            let response: any;
 
             if (title === "Зараз у кіно") {
-                result = await MovieService.getNowPlaying(filter);
+                response = await MovieService.getNowPlaying(filter);
             } else if (title === "Скоро в прокаті") {
-                result = await MovieService.getUpcoming(filter);
+                response = await MovieService.getUpcoming(filter);
             } else {
                 console.error("Назва сторінки не збігається з очікуваною");
                 setIsLoading(false);
                 return;
             }
 
-            setMovies(result);
+            // ВИПРАВЛЕННЯ:
+            // Перевіряємо, чи прийшов об'єкт з items (PagedResult), чи просто масив (стара версія)
+            if (response && response.items && Array.isArray(response.items)) {
+                setMovies(response.items);
+            } else if (Array.isArray(response)) {
+                setMovies(response);
+            } else {
+                setMovies([]);
+                console.error("Невідомий формат відповіді від сервера:", response);
+            }
         }
         catch (error) {
             notify.error("Не вдалося завантажити фільми. Спробуйте пізніше.");
             console.error("Помилка при завантаженні фільмів:", error);
+            setMovies([]);
         }
         finally {
             setIsLoading(false);
@@ -54,7 +71,10 @@ const MoviesLayout = ({ title }: Props) => {
         const fetchGenres = async () => {
             try {
                 const data = await GenreService.getAll();
-                const names = data.map((g: GenreDto) => g.name);
+                // Тут також може бути PagedResult, якщо ви змінили GenreService
+                // Додаємо перевірку:
+                const items = Array.isArray(data) ? data : (data as any).items || [];
+                const names = items.map((g: GenreDto) => g.name);
                 setAvailableGenres(names);
             } catch (error) {
                 console.error("Помилка завантаження жанрів:", error);
