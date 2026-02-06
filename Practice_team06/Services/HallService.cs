@@ -1,4 +1,6 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using AutoMapper;
+using AutoMapper.QueryableExtensions;
+using Microsoft.EntityFrameworkCore;
 using Practice_team06.Models;
 using Practice_team06.DTOs.Hall;
 
@@ -7,25 +9,29 @@ namespace Practice_team06.Services;
 public class HallService : IHallService
 {
     private readonly PostgresContext _context;
+    private readonly IMapper _mapper;
 
-    public HallService(PostgresContext context) => _context = context;
+    public HallService(PostgresContext context, IMapper mapper)
+    {
+        _context = context;
+        _mapper = mapper;
+    }
 
     public async Task<IEnumerable<HallDto>> GetAllAsync()
     {
         return await _context.Halls
-            .Select(h => new HallDto {
-                Id = h.Id,
-                Name = h.Name,
-                PriceModifier = h.PriceModifier,
-                Description = h.Description
-            }).ToListAsync();
+            .AsNoTracking()
+            .ProjectTo<HallDto>(_mapper.ConfigurationProvider)
+            .ToListAsync();
     }
     
     public async Task<HallDto?> GetByIdAsync(int id)
     {
-        var h = await _context.Halls.FindAsync(id);
-        if (h == null) return null;
-        return new HallDto { Id = h.Id, Name = h.Name, PriceModifier = h.PriceModifier, Description = h.Description };
+        return await _context.Halls
+            .AsNoTracking()
+            .Where(h => h.Id == id)
+            .ProjectTo<HallDto>(_mapper.ConfigurationProvider)
+            .FirstOrDefaultAsync();
     }
 
     public async Task<HallDto> CreateAsync(CreateHallDto dto)
@@ -35,10 +41,12 @@ public class HallService : IHallService
             throw new InvalidOperationException("Зал з такою назвою вже існує.");
         }
 
-        var hall = new Hall { Name = dto.Name, PriceModifier = dto.PriceModifier, Description = dto.Description };
+        var hall = _mapper.Map<Hall>(dto);
+        
         _context.Halls.Add(hall);
         await _context.SaveChangesAsync();
-        return new HallDto { Id = hall.Id, Name = hall.Name, PriceModifier = hall.PriceModifier, Description = hall.Description };
+        
+        return _mapper.Map<HallDto>(hall);
     }
 
     public async Task<bool> DeleteAsync(int id)
