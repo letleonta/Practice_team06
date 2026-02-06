@@ -65,6 +65,7 @@ builder.Services.AddCors(options =>
     });
 });
 
+builder.Services.AddAutoMapper(_ => {}, typeof(ActorProfile).Assembly);
 builder.Services.AddAutoMapper(_ => {}, typeof(SeatProfile).Assembly);
 builder.Services.AddAutoMapper(_ => {}, typeof(BookingProfile).Assembly);
 builder.Services.AddAutoMapper(_ => {}, typeof(TicketProfile).Assembly);

@@ -22,11 +22,12 @@ import { Pagination } from "../../components/Pagination";
 import { PaginationInfo } from "../../components/PaginationInfo";
 import { DataTable, type Column } from "../../components/DataTable.tsx";
 import { notify } from "../../utils/toast";
-import {API_CONFIG} from "../../../config.ts";
+import { API_CONFIG } from "../../../config.ts";
+import { ConfirmModal } from "../../components/ui/ConfirmModal.tsx"; // Перевірте шлях до компонента
 
 const AdminDirectors = () => {
-    const { register, handleSubmit, reset, setValue } = useForm<CreateDirectorDto>();
     const addForm = useForm<CreateDirectorDto>();
+    const editForm = useForm<CreateDirectorDto>();
 
     const [searchTerm, setSearchTerm] = useState('');
     const [sortBy, setSortBy] = useState<'id' | 'firstname' | 'lastname'>('id');
@@ -37,6 +38,12 @@ const AdminDirectors = () => {
     const [directorMovies, setDirectorMovies] = useState<DirectorMovieDto[]>([]);
     const [loadingMovies, setLoadingMovies] = useState(false);
     const [isEditMode, setIsEditMode] = useState(false);
+
+    const [deleteModal, setDeleteModal] = useState<{ isOpen: boolean; id: number | null; name: string }>({
+        isOpen: false,
+        id: null,
+        name: ''
+    });
 
     const fetchDirectors = async (page: number, pageSize: number) => {
         const filter: DirectorFilterDto = {
@@ -59,85 +66,76 @@ const AdminDirectors = () => {
         error,
         goToPage,
         refresh,
-    } = UsePagination(
-        fetchDirectors,
-        [searchTerm, sortBy, isDesc],
-        { pageSize: 6 }
-    );
+    } = UsePagination(fetchDirectors, [searchTerm, sortBy, isDesc], { pageSize: 6 });
+
+    const openDeleteModal = (director: DirectorDto) => {
+        setDeleteModal({
+            isOpen: true,
+            id: director.id,
+            name: `${director.firstName} ${director.lastName}`
+        });
+    };
+
+    const handleConfirmDelete = async () => {
+        if (!deleteModal.id) return;
+        setIsSaving(true);
+        try {
+            await DirectorService.delete(deleteModal.id);
+            notify.success("Режисера видалено");
+            if (selectedDirector?.id === deleteModal.id) setSelectedDirector(null);
+            refresh();
+        } catch (err) {
+            notify.error("Не вдалося видалити");
+        } finally {
+            setIsSaving(false);
+            setDeleteModal({ isOpen: false, id: null, name: '' });
+        }
+    };
+
 
     const handleOpenDetails = async (director: DirectorDto) => {
         setSelectedDirector(director);
         setLoadingMovies(true);
         setIsEditMode(false);
+        editForm.reset();
         try {
-            // Припускаємо, що метод getDirectorMovies існує в сервісі
             const movies = await DirectorService.getDirectorMovies(director.id);
             setDirectorMovies(movies);
         } catch (err) {
-            console.error("Movies load error:", err);
             setDirectorMovies([]);
         } finally {
             setLoadingMovies(false);
         }
     };
 
-    const onSubmit = async (data: CreateDirectorDto) => {
+    const onAddSubmit = async (data: CreateDirectorDto) => {
         setIsSaving(true);
         try {
-            const payload = {
-                ...data,
-                firstName: data.firstName.trim(),
-                lastName: data.lastName.trim(),
-                photoUri: data.photoUri?.trim() === "" ? undefined : data.photoUri?.trim()
-            };
-
-            if (isEditMode && selectedDirector) {
-                await DirectorService.update(selectedDirector.id, payload as CreateDirectorDto);
-
-                setSelectedDirector({ ...selectedDirector, ...payload } as DirectorDto);
-
-                notify.success("Дані оновлено");
-                setIsEditMode(false);
-
-                refresh();
-
-            } else {
-                await DirectorService.create(payload as CreateDirectorDto);
-                notify.success("Режисера додано");
-                reset(); // Скидаємо форму редагування (якщо вона була)
-                addForm.reset(); // Скидаємо форму додавання
-                setSelectedDirector(null);
-
-                refresh();
-            }
-        } catch (err: unknown) {
-            console.error(err);
-            notify.error("Помилка операції");
+            await DirectorService.create({ ...data, photoUri: data.photoUri?.trim() || undefined });
+            notify.success("Режисера додано");
+            addForm.reset();
+            refresh();
+        } catch (err) {
+            notify.error("Помилка при додаванні");
         } finally {
             setIsSaving(false);
         }
     };
 
-    const handleDelete = async (id: number) => {
-        if (!window.confirm('Видалити цього режисера?')) return;
+    const onEditSubmit = async (data: CreateDirectorDto) => {
+        if (!selectedDirector) return;
+        setIsSaving(true);
         try {
-            await DirectorService.delete(id);
-            notify.success("Режисера видалено");
-            setSelectedDirector(null);
-
+            const payload = { ...data, photoUri: data.photoUri?.trim() || undefined };
+            await DirectorService.update(selectedDirector.id, payload);
+            setSelectedDirector({ ...selectedDirector, ...payload });
+            notify.success("Дані оновлено");
+            setIsEditMode(false);
             refresh();
-        } catch (err: unknown) {
-            console.error(err);
-            notify.error("Не вдалося видалити");
-        }
-    };
-
-    const handleSort = (sortKey: string) => {
-        if (sortBy === sortKey) {
-            setIsDesc(!isDesc);
-        } else {
-            setSortBy(sortKey as 'id' | 'firstname' | 'lastname');
-            setIsDesc(false);
+        } catch (err) {
+            notify.error("Помилка при оновленні");
+        } finally {
+            setIsSaving(false);
         }
     };
 
@@ -160,32 +158,9 @@ const AdminDirectors = () => {
                 </div>
             )
         },
-        {
-            key: 'id',
-            header: 'ID',
-            sortable: true,
-            sortKey: 'id',
-            width: 'w-24',
-            render: (director) => (
-                <span className="text-red-600 font-black text-lg tracking-tighter">
-                    #{director.id}
-                </span>
-            )
-        },
-        {
-            key: 'firstName',
-            header: "Ім'я",
-            sortable: true,
-            sortKey: 'firstname',
-            render: (director) => <span className="font-bold text-gray-100 uppercase">{director.firstName}</span>
-        },
-        {
-            key: 'lastName',
-            header: 'Прізвище',
-            sortable: true,
-            sortKey: 'lastname',
-            render: (director) => <span className="font-bold text-gray-100 uppercase">{director.lastName}</span>
-        },
+        { key: 'id', header: 'ID', sortable: true, sortKey: 'id', width: 'w-24', render: (d) => <span className="text-red-600 font-black text-lg tracking-tighter">#{d.id}</span> },
+        { key: 'firstName', header: "Ім'я", sortable: true, sortKey: 'firstname', render: (d) => <span className="font-bold text-gray-100 uppercase">{d.firstName}</span> },
+        { key: 'lastName', header: 'Прізвище', sortable: true, sortKey: 'lastname', render: (d) => <span className="font-bold text-gray-100 uppercase">{d.lastName}</span> },
         {
             key: 'actions',
             header: 'Дії',
@@ -193,12 +168,8 @@ const AdminDirectors = () => {
             align: 'right',
             render: (director) => (
                 <div className="flex justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                    <button onClick={(e) => { e.stopPropagation(); handleOpenDetails(director); }} className="p-2 text-gray-500 hover:text-white hover:bg-gray-800 rounded-xl transition-all">
-                        <Pencil size={16} />
-                    </button>
-                    <button onClick={(e) => { e.stopPropagation(); handleDelete(director.id); }} className="p-2 text-gray-500 hover:text-red-500 hover:bg-red-500/10 rounded-xl transition-all">
-                        <Trash2 size={16} />
-                    </button>
+                    <button onClick={(e) => { e.stopPropagation(); handleOpenDetails(director); }} className="p-2 text-gray-500 hover:text-white hover:bg-gray-800 rounded-xl transition-all"><Pencil size={16} /></button>
+                    <button onClick={(e) => { e.stopPropagation(); openDeleteModal(director); }} className="p-2 text-gray-500 hover:text-red-500 hover:bg-red-500/10 rounded-xl transition-all"><Trash2 size={16} /></button>
                 </div>
             )
         }
@@ -207,21 +178,29 @@ const AdminDirectors = () => {
     return (
         <div className="flex flex-col lg:flex-row gap-8 items-start text-white pb-10 font-sans relative">
 
+            {/* ВАШ КАСТОМНИЙ CONFIRM MODAL */}
+            <ConfirmModal
+                isOpen={deleteModal.isOpen}
+                title="Видалити режисера?"
+                description={<>Ви впевнені, що хочете видалити режисера <span className="text-white font-bold">"{deleteModal.name}"</span>? Усі дані про нього будуть стерті.</>}
+                onConfirm={handleConfirmDelete}
+                onClose={() => setDeleteModal({ ...deleteModal, isOpen: false })}
+                isLoading={isSaving}
+            />
+
             {/* ЛІВА ЧАСТИНА: ФОРМА ДОДАВАННЯ */}
             <div className="w-full lg:w-1/3 lg:sticky lg:top-24 bg-[#1a1d26] p-8 rounded-[32px] border border-gray-800 shadow-2xl">
                 <div className="flex items-center gap-3 mb-8">
-                    <div className="bg-red-600/20 p-2 rounded-lg text-red-600">
-                        {isEditMode ? <Pencil size={24} /> : <UserPlus size={24} />}
-                    </div>
+                    <div className="bg-red-600/20 p-2 rounded-lg text-red-600"><UserPlus size={24} /></div>
                     <h2 className="text-xl font-black uppercase tracking-tighter">Новий режисер</h2>
                 </div>
 
-                <form onSubmit={addForm.handleSubmit(onSubmit)} className="space-y-5 text-left text-white">
+                <form onSubmit={addForm.handleSubmit(onAddSubmit)} className="space-y-5 text-left text-white">
                     <input {...addForm.register('firstName', { required: true })} placeholder="Ім'я" className="w-full p-4 bg-gray-900 border border-gray-700 rounded-2xl outline-none focus:border-red-600 transition-all font-bold text-white" />
                     <input {...addForm.register('lastName', { required: true })} placeholder="Прізвище" className="w-full p-4 bg-gray-900 border border-gray-700 rounded-2xl outline-none focus:border-red-600 transition-all font-bold text-white" />
                     <input {...addForm.register('photoUri')} placeholder="URL фото" className="w-full p-4 bg-gray-900 border border-gray-700 rounded-2xl outline-none focus:border-red-600 transition-all text-sm text-white" />
 
-                    <button disabled={isSaving} className="w-full bg-red-600 hover:bg-red-700 py-4 rounded-2xl font-black uppercase text-[10px] tracking-widest transition-all shadow-lg shadow-red-600/20 mt-2">
+                    <button type="submit" disabled={isSaving} className="w-full bg-red-600 hover:bg-red-700 py-4 rounded-2xl font-black uppercase text-[10px] tracking-widest transition-all shadow-lg shadow-red-600/20 mt-2">
                         {isSaving ? <Loader2 className="animate-spin mx-auto" size={18}/> : 'Зберегти'}
                     </button>
                 </form>
@@ -231,13 +210,7 @@ const AdminDirectors = () => {
             <div className="w-full lg:w-2/3 flex flex-col gap-6">
                 <div className="relative">
                     <Search size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500" />
-                    <input
-                        type="text"
-                        placeholder="Пошук..."
-                        value={searchTerm}
-                        onChange={e => setSearchTerm(e.target.value)}
-                        className="w-full pl-12 pr-10 py-3.5 rounded-2xl bg-[#1a1d26] border border-gray-800 text-sm focus:border-red-600 outline-none transition-all shadow-xl text-white"
-                    />
+                    <input type="text" placeholder="Пошук..." value={searchTerm} onChange={e => setSearchTerm(e.target.value)} className="w-full pl-12 pr-10 py-3.5 rounded-2xl bg-[#1a1d26] border border-gray-800 text-sm focus:border-red-600 outline-none transition-all shadow-xl text-white" />
                 </div>
 
                 <DataTable
@@ -247,11 +220,11 @@ const AdminDirectors = () => {
                     error={error}
                     onRowClick={handleOpenDetails}
                     sortConfig={{ sortBy, isDesc }}
-                    onSort={handleSort}
+                    onSort={(key) => sortBy === key ? setIsDesc(!isDesc) : (setSortBy(key as any), setIsDesc(false))}
                 />
 
                 {!loading && totalPages > 0 && (
-                    <div className="bg-[#161820] p-4 rounded-3xl border border-gray-800 flex flex-col sm:flex-row items-center justify-between gap-4 font-sans">
+                    <div className="bg-[#161820] p-4 rounded-3xl border border-gray-800 flex flex-col sm:flex-row items-center justify-between gap-4">
                         <PaginationInfo currentPage={currentPage} pageSize={pageSize} totalCount={totalCount} itemName="режисерів" />
                         <Pagination currentPage={currentPage} totalPages={totalPages} onPageChange={goToPage} />
                     </div>
@@ -267,47 +240,24 @@ const AdminDirectors = () => {
                         <div className="p-8 border-b border-gray-800 flex items-center gap-6 bg-linear-to-r from-red-600/10 to-transparent">
                             <div className="w-24 h-24 rounded-2xl border-2 border-red-600 p-1 shadow-lg shadow-red-600/10 overflow-hidden bg-gray-900 shrink-0">
                                 {selectedDirector.photoUri ? (
-                                    <img
-                                        src={selectedDirector.photoUri.startsWith('http') ? selectedDirector.photoUri : `${BASE_URL}${selectedDirector.photoUri}`}
-                                        className="w-full h-full object-cover rounded-xl"
-                                        alt=""
-                                    />
+                                    <img src={selectedDirector.photoUri.startsWith('http') ? selectedDirector.photoUri : `${API_CONFIG.BASE_URL}${selectedDirector.photoUri}`} className="w-full h-full object-cover rounded-xl" />
                                 ) : (
-                                    <div className="w-full h-full flex items-center justify-center text-gray-700">
-                                        <UserIcon size={40} />
-                                    </div>
+                                    <div className="w-full h-full flex items-center justify-center text-gray-700"><UserIcon size={40} /></div>
                                 )}
                             </div>
 
-                            <div className="flex-1 text-left font-sans">
+                            <div className="flex-1 text-left">
                                 {!isEditMode ? (
-                                    <>
-                                        <h4 className="text-3xl font-black uppercase tracking-tighter text-white leading-none mb-1">
-                                            {selectedDirector.firstName}
-                                        </h4>
-                                        <h4 className="text-3xl font-black uppercase tracking-tighter text-white leading-none">
-                                            {selectedDirector.lastName}
-                                        </h4>
-                                    </>
+                                    <><h4 className="text-3xl font-black uppercase tracking-tighter text-white leading-none mb-1">{selectedDirector.firstName}</h4><h4 className="text-3xl font-black uppercase tracking-tighter text-white leading-none">{selectedDirector.lastName}</h4></>
                                 ) : (
-                                    <div className="space-y-2 pr-4 font-sans text-left">
-                                        <input
-                                            {...register('firstName', { required: true })}
-                                            className="w-full bg-[#0f1117] border border-red-600/30 rounded-xl p-2 text-xl font-bold outline-none focus:border-red-600 transition-all text-white font-sans"
-                                            placeholder="Ім'я"
-                                        />
-                                        <input
-                                            {...register('lastName', { required: true })}
-                                            className="w-full bg-[#0f1117] border border-red-600/30 rounded-xl p-2 text-xl font-bold outline-none focus:border-red-600 transition-all text-white font-sans"
-                                            placeholder="Прізвище"
-                                        />
+                                    <div className="space-y-2 pr-4 text-left">
+                                        <input {...editForm.register('firstName', { required: true })} className="w-full bg-[#0f1117] border border-red-600/30 rounded-xl p-2 text-xl font-bold outline-none focus:border-red-600 text-white" />
+                                        <input {...editForm.register('lastName', { required: true })} className="w-full bg-[#0f1117] border border-red-600/30 rounded-xl p-2 text-xl font-bold outline-none focus:border-red-600 text-white" />
                                     </div>
                                 )}
                             </div>
 
-                            <button onClick={() => { setSelectedDirector(null); setIsEditMode(false); }} className="p-2 self-start hover:bg-gray-800 rounded-full text-gray-500 hover:text-white transition-all">
-                                <X size={24} />
-                            </button>
+                            <button onClick={() => setSelectedDirector(null)} className="p-2 self-start hover:bg-gray-800 rounded-full text-gray-500 hover:text-white transition-all"><X size={24} /></button>
                         </div>
 
                         {/* Content Area */}
@@ -317,11 +267,7 @@ const AdminDirectors = () => {
                                     <label className="text-[10px] font-black text-red-600 uppercase tracking-[0.2em] mb-2 block font-sans">Посилання на фото (URI)</label>
                                     <div className="relative">
                                         <Upload size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" />
-                                        <input
-                                            {...register('photoUri')}
-                                            className="w-full bg-gray-900 border border-gray-800 rounded-xl py-3 pl-10 pr-4 text-sm outline-none focus:border-red-600 transition-all font-sans text-white font-sans"
-                                            placeholder="https://..."
-                                        />
+                                        <input {...editForm.register('photoUri')} className="w-full bg-gray-900 border border-gray-800 rounded-xl py-3 pl-10 pr-4 text-sm outline-none focus:border-red-600 text-white font-sans" />
                                     </div>
                                 </div>
                             )}
@@ -336,14 +282,12 @@ const AdminDirectors = () => {
                             ) : directorMovies.length > 0 ? (
                                 <div className="grid grid-cols-1 gap-3 font-sans">
                                     {directorMovies.map(movie => (
-                                        <div key={movie.movieId} className="bg-gray-900/50 border border-gray-800 p-4 rounded-2xl flex items-center justify-between group font-sans">
-                                            <div className="flex items-center gap-4 text-left font-sans">
+                                        <div key={movie.movieId} className="bg-gray-900/50 border border-gray-800 p-4 rounded-2xl flex items-center justify-between group">
+                                            <div className="flex items-center gap-4 text-left">
                                                 <div className="p-3 bg-red-600/10 rounded-xl text-red-600"><Film size={20} /></div>
                                                 <div className="text-left font-sans">
-                                                    <p className="font-bold text-base leading-tight uppercase text-white font-sans">{movie.title}</p>
-                                                    <p className="text-[10px] text-gray-500 font-black uppercase mt-1 flex items-center gap-1.5 font-sans">
-                                                        <Calendar size={10} className="text-red-600" /> {movie.releaseDate || 'Дата TBA'}
-                                                    </p>
+                                                    <p className="font-bold text-base uppercase text-white font-sans">{movie.title}</p>
+                                                    <p className="text-[10px] text-gray-500 uppercase mt-1 flex items-center gap-1.5 font-sans"><Calendar size={10} className="text-red-600" /> {movie.releaseDate || 'Дата TBA'}</p>
                                                 </div>
                                             </div>
                                         </div>
@@ -361,16 +305,16 @@ const AdminDirectors = () => {
                                     <button
                                         onClick={() => {
                                             setIsEditMode(true);
-                                            setValue('firstName', selectedDirector.firstName);
-                                            setValue('lastName', selectedDirector.lastName);
-                                            setValue('photoUri', selectedDirector.photoUri || '');
+                                            editForm.setValue('firstName', selectedDirector.firstName);
+                                            editForm.setValue('lastName', selectedDirector.lastName);
+                                            editForm.setValue('photoUri', selectedDirector.photoUri || '');
                                         }}
                                         className="flex-1 flex items-center justify-center gap-2 py-4 bg-gray-800 hover:bg-gray-700 text-white rounded-2xl font-black text-[10px] uppercase tracking-widest transition-all font-sans"
                                     >
-                                        <Pencil size={16} className="text-red-600 font-sans" /> Редагувати
+                                        <Pencil size={16} className="text-red-600" /> Редагувати
                                     </button>
                                     <button
-                                        onClick={() => handleDelete(selectedDirector.id)}
+                                        onClick={() => openDeleteModal(selectedDirector)}
                                         className="flex-1 flex items-center justify-center gap-2 py-4 bg-red-600/10 hover:bg-red-600 text-red-600 hover:text-white rounded-2xl font-black text-[10px] uppercase tracking-widest transition-all border border-red-600/20 font-sans"
                                     >
                                         <Trash2 size={16} /> Видалити
@@ -378,19 +322,10 @@ const AdminDirectors = () => {
                                 </>
                             ) : (
                                 <>
-                                    <button
-                                        onClick={handleSubmit(onSubmit)}
-                                        disabled={isSaving}
-                                        className="flex-1 flex items-center justify-center gap-2 py-4 bg-red-600 hover:bg-red-700 text-white rounded-2xl font-black text-[10px] uppercase tracking-widest transition-all shadow-lg shadow-red-600/30 font-sans"
-                                    >
-                                        {isSaving ? <Loader2 className="animate-spin font-sans" size={16} /> : <><Check size={16} className="font-sans" /> Зберегти зміни</>}
+                                    <button onClick={editForm.handleSubmit(onEditSubmit)} disabled={isSaving} className="flex-1 flex items-center justify-center gap-2 py-4 bg-red-600 hover:bg-red-700 text-white rounded-2xl font-black uppercase text-[10px] tracking-widest transition-all shadow-lg shadow-red-600/30">
+                                        {isSaving ? <Loader2 className="animate-spin" size={16} /> : <><Check size={16} /> Зберегти зміни</>}
                                     </button>
-                                    <button
-                                        onClick={() => setIsEditMode(false)}
-                                        className="px-8 py-4 bg-gray-800 hover:bg-gray-700 text-white rounded-2xl font-black text-[10px] uppercase tracking-widest transition-all font-sans"
-                                    >
-                                        Скасувати
-                                    </button>
+                                    <button onClick={() => setIsEditMode(false)} className="px-8 py-4 bg-gray-800 hover:bg-gray-700 text-white rounded-2xl font-black uppercase text-[10px] tracking-widest transition-all">Скасувати</button>
                                 </>
                             )}
                         </div>
