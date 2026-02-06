@@ -2,7 +2,7 @@
 
 namespace Practice_team06.DTOs.Booking;
 
-public class AdminBookingDto : BookingDto
+public class AdminBookingDetailsDto : BookingDetailsDto
 {
     [Required]
     [EmailAddress]
