@@ -1,27 +1,34 @@
 import { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { ArrowLeft, Calendar, Clock, Film, Ticket as TicketIcon } from 'lucide-react';
-import type {BookingDto} from "../types/booking.ts";
+import type {BookingDetailsDto} from "../types/booking.ts";
 import {getStatusColor, getStatusText} from "../utils/formatBookingStatus.ts";
 import {BookingService} from "../services/booking.service.ts";
 import {AgeRestrictionBadge} from "../components/AgeRestrictionBadge.tsx";
 import {notify} from "../utils/toast.ts";
 import {ConfirmModal} from "../components/ui/ConfirmModal.tsx";
+import {Pagination} from "../components/Pagination.tsx";
 
 const BookingDetailsPage = () => {
     const { bookingId } = useParams<{ bookingId: string }>();
-    const [booking, setBooking] = useState<BookingDto | null>(null);
+    const [booking, setBooking] = useState<BookingDetailsDto | null>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [cancelling, setCancelling] = useState(false);
     const [isCancelModalOpen, setIsCancelModalOpen] = useState(false);
 
+    const [ticketPage, setTicketPage] = useState(1);
+    const TICKET_PAGE_SIZE = 6;
+
     useEffect(() => {
         const fetchBooking = async () => {
             if (!bookingId) return;
             try {
-                const data = await BookingService.getBookingById(Number(bookingId));
-                setBooking(data);
+                const data = await BookingService.getBookingById(Number(bookingId), {
+                    Page: ticketPage,
+                    PageSize: TICKET_PAGE_SIZE
+                });
+                setBooking(data as BookingDetailsDto);
             } catch (err: any) {
                 console.error("Error fetching booking:", err);
                 setError("Не вдалося завантажити бронювання.");
@@ -31,15 +38,34 @@ const BookingDetailsPage = () => {
         };
 
         fetchBooking();
-    }, [bookingId]);
+    }, [bookingId, ticketPage]);
+
+    const getCancelStatus = () => {
+        if (!booking) return { canCancel: false, isTooLate: false };
+
+        const startString = booking.startTime.endsWith('Z') ? booking.startTime : `${booking.startTime}Z`;
+        const startTime = new Date(startString).getTime();
+        const now = new Date().getTime();
+
+        const CANCELLATION_LIMIT_MS = 30 * 60 * 1000; // 30 хв
+        const isTooLate = (startTime - now) < CANCELLATION_LIMIT_MS;
+        const canCancel = booking.status !== 'Cancelled' && !isTooLate;
+
+        return { canCancel, isTooLate };
+    };
+
+    const { canCancel, isTooLate } = getCancelStatus();
 
     const handleCancelBooking = async () => {
         if (!booking) return;
         setCancelling(true);
         try {
             await BookingService.cancelBooking(booking.id);
-            const updatedData = await BookingService.getBookingById(booking.id);
-            setBooking(updatedData);
+            const updatedData = await BookingService.getBookingById(Number(bookingId), {
+                Page: ticketPage,
+                PageSize: TICKET_PAGE_SIZE
+            });
+            setBooking(updatedData as BookingDetailsDto);
         } catch (err : any) {
             console.error("Помилка скасування:", err);
             const errorMessage = err.response?.data || err.message || "Помилка сервера";
@@ -109,7 +135,13 @@ const BookingDetailsPage = () => {
                         {booking.status !== 'Cancelled' && (
                             <button
                                 onClick={() => setIsCancelModalOpen(true)}
-                                className="px-6 py-2.5 rounded-xl border border-gray-700 text-gray-400 hover:bg-red-600 hover:text-white hover:border-red-600 transition-all font-bold text-sm uppercase tracking-wider"
+                                disabled={!canCancel}
+                                title={isTooLate ? "Скасування можливе не пізніше ніж за 30 хв до початку" : ""}
+                                className={`px-6 py-2.5 rounded-xl border font-bold text-sm uppercase tracking-wider transition-all
+                                ${canCancel
+                                    ? 'border-gray-700 text-gray-400 hover:bg-red-600 hover:text-white hover:border-red-600 cursor-pointer'
+                                    : 'border-gray-800 text-gray-600 cursor-not-allowed opacity-50 bg-gray-900/20'
+                                }`}
                             >
                                 Скасувати замовлення
                             </button>
@@ -208,7 +240,7 @@ const BookingDetailsPage = () => {
 
                     {/* Right Column - Tickets */}
                     <div className="lg:col-span-2">
-                        <div className="bg-[#1a1d26] rounded-2xl border border-gray-800 shadow-2xl overflow-hidden">
+                        <div className="bg-[#1a1d26] rounded-2xl border border-gray-800 shadow-2xl overflow-hidden flex flex-col">
                             {/* Header */}
                             <div className="p-6 border-b border-gray-800 bg-linear-to-r from-red-600/10 to-transparent">
                                 <div className="flex items-center justify-between">
@@ -217,59 +249,67 @@ const BookingDetailsPage = () => {
                                         Квитки
                                     </h2>
                                     <span className="bg-red-600/20 text-red-400 px-4 py-1 rounded-full text-sm font-semibold border border-red-600/30">
-                                        {booking.tickets.length} {booking.tickets.length === 1 ? 'квиток' : 'квитки'}
+                                        {booking.pagedTickets.totalCount} {booking.pagedTickets.totalCount === 1 ? 'квиток' : 'квитки'}
                                     </span>
                                 </div>
                             </div>
 
                             {/* Tickets List */}
-                            <div className="p-6">
-                                {booking.tickets.length === 0 ? (
+                            <div className="p-6 grow">
+                                {booking.pagedTickets.items.length === 0 ? (
                                     <div className="text-center py-12">
                                         <TicketIcon size={64} className="text-gray-700 mx-auto mb-4" />
                                         <p className="text-gray-500 text-lg">Квитки відсутні</p>
                                     </div>
                                 ) : (
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                        {booking.tickets.map((ticket, index) => (
-                                            <div
-                                                key={`${ticket.id}-${index}`}
-                                                className="relative bg-linear-to-br from-gray-800/50 to-gray-900/50 rounded-xl border border-gray-700 p-5 hover:border-red-600/50 transition-all hover:shadow-lg hover:shadow-red-600/10 group"
-                                            >
-                                                {/* Ticket Number Badge */}
-                                                <div className="absolute -top-2 -right-2 bg-red-600 text-white text-xs font-bold px-3 py-1 rounded-full shadow-lg">
-                                                    #{index + 1}
+                                    <>
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                            {booking.pagedTickets.items.map((ticket, index) => (
+                                                <div
+                                                    key={ticket.id}
+                                                    className="relative bg-linear-to-br from-gray-800/50 to-gray-900/50 rounded-xl border border-gray-700 p-5 hover:border-red-600/50 transition-all hover:shadow-lg hover:shadow-red-600/10 group"
+                                                >
+                                                    <div className="absolute -top-2 -right-2 bg-red-600 text-white text-xs font-bold px-3 py-1 rounded-full shadow-lg">
+                                                        #{(ticketPage - 1) * TICKET_PAGE_SIZE + index + 1}
+                                                    </div>
+
+                                                    <div className="space-y-3 mt-2">
+                                                        <div className="flex items-center justify-between">
+                                                            <span className="text-gray-500 text-sm">Ряд</span>
+                                                            <span className="text-white font-bold text-xl">
+                                                                {ticket.rowNumber}
+                                                            </span>
+                                                        </div>
+
+                                                        <div className="flex items-center justify-between">
+                                                            <span className="text-gray-500 text-sm">Місце</span>
+                                                            <span className="text-white font-bold text-xl">
+                                                                {ticket.seatNumber}
+                                                            </span>
+                                                        </div>
+
+                                                        <div className="pt-3 border-t border-gray-700 flex items-center justify-between">
+                                                            <span className="text-gray-500 text-sm">Ціна</span>
+                                                            <span className="text-red-500 font-black text-2xl">
+                                                                {ticket.actualPrice}₴
+                                                            </span>
+                                                        </div>
+                                                    </div>
+                                                    <div className="absolute bottom-0 left-0 right-0 h-1 bg-linear-to-r from-transparent via-red-600/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
                                                 </div>
+                                            ))}
+                                        </div>
 
-                                                {/* Ticket Info */}
-                                                <div className="space-y-3 mt-2">
-                                                    <div className="flex items-center justify-between">
-                                                        <span className="text-gray-500 text-sm">Ряд</span>
-                                                        <span className="text-white font-bold text-xl">
-                                                            {ticket.rowNumber || 'N/A'}
-                                                        </span>
-                                                    </div>
-
-                                                    <div className="flex items-center justify-between">
-                                                        <span className="text-gray-500 text-sm">Місце</span>
-                                                        <span className="text-white font-bold text-xl">
-                                                            {ticket.seatNumber || 'N/A'}
-                                                        </span>
-                                                    </div>
-
-                                                    <div className="pt-3 border-t border-gray-700 flex items-center justify-between">
-                                                        <span className="text-gray-500 text-sm">Ціна</span>
-                                                        <span className="text-red-500 font-black text-2xl">
-                                                            {ticket.actualPrice}₴
-                                                        </span>
-                                                    </div>
-                                                </div>
-
-                                                {/* Decorative element */}
-                                                <div className="absolute bottom-0 left-0 right-0 h-1 bg-linear-to-r from-transparent via-red-600/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                                        {booking.pagedTickets.totalCount > TICKET_PAGE_SIZE && (
+                                            <div className="mt-8 pt-6 border-t border-gray-800 flex justify-center">
+                                                <Pagination
+                                                    currentPage={ticketPage}
+                                                    totalPages={Math.ceil(booking.pagedTickets.totalCount / TICKET_PAGE_SIZE)}
+                                                    onPageChange={(page) => setTicketPage(page)}
+                                                />
                                             </div>
-                                        ))}
-                                    </div>
+                                        )}
+                                    </>
                                 )}
                             </div>
                         </div>

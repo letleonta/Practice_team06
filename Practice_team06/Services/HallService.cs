@@ -1,4 +1,6 @@
-﻿using Microsoft.EntityFrameworkCore;
+using AutoMapper;
+using AutoMapper.QueryableExtensions;
+using Microsoft.EntityFrameworkCore;
 using Practice_team06.DTOs.Common;
 using Practice_team06.Models;
 using Practice_team06.DTOs.Hall;
@@ -9,25 +11,29 @@ namespace Practice_team06.Services;
 public class HallService : IHallService
 {
     private readonly PostgresContext _context;
+    private readonly IMapper _mapper;
 
-    public HallService(PostgresContext context) => _context = context;
+    public HallService(PostgresContext context, IMapper mapper)
+    {
+        _context = context;
+        _mapper = mapper;
+    }
 
     public async Task<IEnumerable<HallDto>> GetAllAsync()
     {
         return await _context.Halls
-            .Select(h => new HallDto {
-                Id = h.Id,
-                Name = h.Name,
-                PriceModifier = h.PriceModifier,
-                Description = h.Description
-            }).ToListAsync();
+            .AsNoTracking()
+            .ProjectTo<HallDto>(_mapper.ConfigurationProvider)
+            .ToListAsync();
     }
     
     public async Task<HallDto?> GetByIdAsync(int id)
     {
-        var h = await _context.Halls.FindAsync(id);
-        if (h == null) return null;
-        return new HallDto { Id = h.Id, Name = h.Name, PriceModifier = h.PriceModifier, Description = h.Description };
+        return await _context.Halls
+            .AsNoTracking()
+            .Where(h => h.Id == id)
+            .ProjectTo<HallDto>(_mapper.ConfigurationProvider)
+            .FirstOrDefaultAsync();
     }
 
     public async Task<HallDto> CreateAsync(CreateHallDto dto)
@@ -37,10 +43,12 @@ public class HallService : IHallService
             throw new InvalidOperationException("Зал з такою назвою вже існує.");
         }
 
-        var hall = new Hall { Name = dto.Name, PriceModifier = dto.PriceModifier, Description = dto.Description };
+        var hall = _mapper.Map<Hall>(dto);
+        
         _context.Halls.Add(hall);
         await _context.SaveChangesAsync();
-        return new HallDto { Id = hall.Id, Name = hall.Name, PriceModifier = hall.PriceModifier, Description = hall.Description };
+        
+        return _mapper.Map<HallDto>(hall);
     }
 
     public async Task<bool> DeleteAsync(int id)
@@ -103,18 +111,19 @@ public class HallService : IHallService
         var oldSeats = _context.Seats.Where(s => s.HallId == dto.HallId);
         _context.Seats.RemoveRange(oldSeats);
 
-        // 3. Створюємо нові
         var seatsToCreate = new List<Seat>();
-        foreach (var row in dto.Rows)
+
+        foreach (var rowConfig in dto.Rows)
         {
-            for (short s = 1; s <= row.SeatCount; s++)
+            for (short s = 1; s <= rowConfig.SeatCount; s++)
             {
-                seatsToCreate.Add(new Seat {
+                seatsToCreate.Add(new Seat
+                {
                     HallId = dto.HallId,
-                    RowNumber = (short)row.RowNumber,
+                    RowNumber = rowConfig.RowNumber,
                     SeatNumber = s,
-                    PriceModifier = row.Type == SeatType.VIP ? 1.5m : 1.0m,
-                    SeatType = row.Type
+                    PriceModifier = rowConfig.Type == SeatType.VIP ? 1.5m : 1.0m,
+                    SeatType = rowConfig.Type,
                 });
             }
         }
@@ -170,7 +179,7 @@ public class HallService : IHallService
             seatsToAdd.Add(new Seat
             {
                 HallId = hallId,
-                RowNumber = (short)rowConfig.RowNumber,
+                RowNumber = rowConfig.RowNumber,
                 SeatNumber = s,
                 PriceModifier = rowConfig.Type == SeatType.VIP ? 1.5m : 1.0m,
                 SeatType = rowConfig.Type,

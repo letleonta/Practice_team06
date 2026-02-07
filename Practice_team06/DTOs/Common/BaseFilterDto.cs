@@ -2,7 +2,7 @@
 
 namespace Practice_team06.DTOs.Common;
 
-public abstract class BaseFilterDto 
+public class BaseFilterDto 
 {
     [Range(1, int.MaxValue, ErrorMessage = "Номер сторінки має бути не менше 1")]
     public int? Page { get; set; } = 1;

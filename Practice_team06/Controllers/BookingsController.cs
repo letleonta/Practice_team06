@@ -25,7 +25,7 @@ namespace Practice_team06.Controllers
         // Get all bookings
         [HttpGet]
         [Authorize(Roles = "Admin, Manager")]
-        public async Task<ActionResult<AdminBookingsWithStatsDto>> GetAllBookings([FromQuery] BookingFilterDto filter)
+        public async Task<ActionResult<PagedResult<AdminBookingDetailsDto>>> GetAllBookings([FromQuery] BookingFilterDto filter)
         {
             var bookings = await _bookingService.GetAllBookingsAsync(filter);
             return Ok(bookings);
@@ -54,17 +54,27 @@ namespace Practice_team06.Controllers
             }
         }
         
+        // GET: api/bookings/stats
+        // Get booking stats with filters
+        [HttpGet("stats")]
+        [Authorize(Roles = "Admin, Manager")]
+        public async Task<ActionResult<BookingsStatsDto>> GetStats([FromQuery] BookingFilterDto filter)
+        {
+            var stats = await _bookingService.GetBookingStatsAsync(filter);
+            return Ok(stats);
+        }
+        
         // GET: api/bookings/5
         // Get booking by id
         [HttpGet("{bookingId}")]
-        [Authorize(Roles = "Admin,Customer, Manager")]
-        public async Task<ActionResult<Booking>> GetBooking(int bookingId)
+        [Authorize]
+        public async Task<ActionResult<Booking>> GetBooking(int bookingId, [FromQuery] BaseFilterDto filter)
         {
             if (User.IsInRole("Admin") || User.IsInRole("Manager"))
             {
                 try
                 {
-                    var booking = await _bookingService.GetBookingByIdAsync(bookingId);
+                    var booking = await _bookingService.GetBookingByIdAsync<AdminBookingDetailsDto>(null, bookingId, filter);
                     return Ok(booking);
                 }
                 catch (KeyNotFoundException keyNotFoundException)
@@ -82,8 +92,8 @@ namespace Practice_team06.Controllers
 
                 try
                 {
-                    var booking = await _bookingService.GetBookingByIdAsync(userId, bookingId);
-                    return Ok(booking);
+                    var userBooking = await _bookingService.GetBookingByIdAsync<BookingDetailsDto>(userId, bookingId, filter);
+                    return Ok(userBooking);
                 }
                 catch (KeyNotFoundException keyNotFoundException)
                 {

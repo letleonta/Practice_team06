@@ -55,12 +55,24 @@ public class HallsController : ControllerBase
 
     [HttpDelete("{id}")]
     [Authorize(Roles = "Admin, Manager")]
-    public async Task<IActionResult> Delete(short id)
+    public async Task<IActionResult> Delete(int id)
     {
-        var result = await _hallService.DeleteAsync(id);
-        return result ? NoContent() : NotFound();
-    }
+        try
+        {
+            var result = await _hallService.DeleteAsync(id);
+        
+            if (!result) 
+            {
+                return NotFound(new { message = $"Зал з ID {id} не знайдено." });
+            }
 
+            return NoContent();
+        }
+        catch (Exception)
+        {
+            return BadRequest(new { message = "Неможливо видалити зал: на нього вже продано квитки або існують активні сеанси." });
+        }
+    }
     [HttpPost("generate-standard-seats")]
     [Authorize(Roles = "Admin, Manager")]
     public async Task<IActionResult> GenerateStandardSeats(GenerateStandardSeatsDto dto)
@@ -79,7 +91,7 @@ public class HallsController : ControllerBase
             var count = await _hallService.GenerateFlexibleSeatsAsync(dto);
             return Ok(new { message = $"Згенеровано {count} місць" });
         }
-        catch (InvalidOperationException ex) 
+        catch (InvalidOperationException ex)    
         {
             return BadRequest(new { message = ex.Message });
         }
@@ -109,6 +121,43 @@ public class HallsController : ControllerBase
         catch (InvalidOperationException ex) 
         {
             return BadRequest(ex.Message);
+        }
+    }
+    
+    [HttpPost("{id}/seats/add-to-row/{rowNumber}")]
+    [Authorize(Roles = "Admin, Manager")]
+    public async Task<IActionResult> AddSeatToRow(int id, int rowNumber)
+    {
+        var result = await _seatService.AddSeatToRowAsync(id, rowNumber);
+        return Ok(result);
+    }
+
+    [HttpDelete("{id}/rows/{rowNumber}")]
+    [Authorize(Roles = "Admin, Manager")]
+    public async Task<IActionResult> DeleteRow(int id, int rowNumber)
+    {
+        try 
+        {
+            var result = await _seatService.DeleteRowAsync(id, rowNumber);
+            return result ? NoContent() : NotFound();
+        }
+        catch (InvalidOperationException ex) 
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+    }
+    [HttpPost("{id}/rows/{rowNumber}/shift/{delta}")]
+    [Authorize(Roles = "Admin, Manager")]
+    public async Task<IActionResult> ShiftRow(int id, int rowNumber, int delta)
+    {
+        try 
+        {
+            await _seatService.ShiftRowAsync(id, rowNumber, delta);
+            return Ok();
+        }
+        catch (InvalidOperationException ex) 
+        {
+            return BadRequest(new { message = ex.Message });
         }
     }
 }
