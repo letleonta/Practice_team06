@@ -1,11 +1,11 @@
-import {useState} from 'react';
+import {useCallback, useEffect, useState} from 'react';
 import {
     Search, Filter, X, Eye,
     Calendar, Clock, User, Film, Ticket as TicketIcon,
-    TrendingUp, ChevronDown, Ticket, CreditCard
+    TrendingUp, ChevronDown, Ticket
 } from 'lucide-react';
 import { getStatusColor, getStatusText } from '../../utils/formatBookingStatus';
-import {type BookingsStatsDto, BookingStatus} from "../../types/booking.ts";
+import {type AdminBookingDetailsDto, type BookingsStatsDto, BookingStatus} from "../../types/booking.ts";
 import type { AdminBookingDto, BookingFilterDto } from "../../types/booking.ts";
 import { BookingService } from "../../services/booking.service";
 import { formatDateWithYear, formatTime } from "../../utils/formatTime";
@@ -18,13 +18,14 @@ import RevenueChart from "../../components/ui/RevenueChart.tsx";
 import {SimpleBarChart} from "../../components/ui/SimpleBarChart.tsx";
 import {BookingFilters} from "../../components/BookingFilters.tsx";
 import {DataTable, type Column} from "../../components/DataTable.tsx";
+import {StatCard} from "../../components/ui/StatCard.tsx";
 
 type StatusFilter = BookingStatus | 'ALL';
 type SortBy = 'date' | 'status' | 'userEmail';
 
 const AdminBookingsPage = () => {
-    // Filter state
     const [stats, setStats] = useState<BookingsStatsDto | null>(null);
+    const [statsLoading, setStatsLoading] = useState(false);
     const [statusFilter, setStatusFilter] = useState<StatusFilter>('ALL');
     const [sessionFrom, setSessionFrom] = useState('');
     const [sessionTo, setSessionTo] = useState('');
@@ -32,6 +33,8 @@ const AdminBookingsPage = () => {
     const [bookingTo, setBookingTo] = useState('');
     const [userEmail, setUserEmail] = useState('');
     const [searchQuery, setSearchQuery] = useState('');
+    const [ticketPage, setTicketPage] = useState(1);
+    const TICKET_PAGE_SIZE = 6;
 
     // Sort state
     const [sortBy, setSortBy] = useState<SortBy>('date');
@@ -39,10 +42,11 @@ const AdminBookingsPage = () => {
 
     // UI state
     const [filtersOpen, setFiltersOpen] = useState(false);
-    const [selectedBooking, setSelectedBooking] = useState<AdminBookingDto | null>(null);
+    const [selectedBooking, setSelectedBooking] = useState<AdminBookingDto | AdminBookingDetailsDto | null>(null);
+    const [detailsLoading, setDetailsLoading] = useState(false);
 
     // Fetch function for pagination hook
-    const fetchBookings = async (Page: number, PageSize: number) => {
+    const fetchBookings = useCallback(async (Page: number, PageSize: number) => {
         const filter: BookingFilterDto = {
             Status: statusFilter !== 'ALL' ? statusFilter : undefined,
             SessionFromDate: sessionFrom || undefined,
@@ -57,10 +61,50 @@ const AdminBookingsPage = () => {
             PageSize: PageSize,
         };
 
-        const response = await BookingService.getAllBookings(filter);
-        setStats(response.stats);
-        return response.bookingsPage;
+        return await BookingService.getAllBookings(filter);
+    }, [statusFilter, sessionFrom, sessionTo, bookingFrom, bookingTo, userEmail, searchQuery, sortBy, isDesc]);
+
+    const loadStats = async () => {
+        setStatsLoading(true);
+        try {
+            const filter: BookingFilterDto = {
+                Status: statusFilter !== 'ALL' ? statusFilter : undefined,
+                SessionFromDate: sessionFrom || undefined,
+                SessionToDate: sessionTo || undefined,
+                BookingFromDate: bookingFrom || undefined,
+                BookingToDate: bookingTo || undefined,
+                UserEmail: userEmail || undefined,
+                SearchQuery: searchQuery || undefined,
+            };
+            const data = await BookingService.getStats(filter);
+            setStats(data);
+        } finally {
+            setStatsLoading(false);
+        }
     };
+
+    useEffect(() => {
+        loadStats();
+    }, [statusFilter, sessionFrom, sessionTo, bookingFrom, bookingTo, userEmail, searchQuery]);
+
+    useEffect(() => {
+        const fetchDetails = async () => {
+            if (!selectedBooking?.id) return;
+            setDetailsLoading(true);
+            try {
+                const data = await BookingService.getBookingById(selectedBooking.id, {
+                    Page: ticketPage,
+                    PageSize: TICKET_PAGE_SIZE
+                });
+                setSelectedBooking(data as AdminBookingDetailsDto);
+            } catch (err) {
+                console.error("Error loading tickets:", err);
+            } finally {
+                setDetailsLoading(false);
+            }
+        };
+        fetchDetails();
+    }, [selectedBooking?.id, ticketPage]);
 
     // Use pagination hook
     const {
@@ -101,7 +145,6 @@ const AdminBookingsPage = () => {
         setSearchQuery('');
     };
 
-    // Define columns for DataTable
     const columns: Column<AdminBookingDto>[] = [
         {
             key: 'id',
@@ -231,61 +274,66 @@ const AdminBookingsPage = () => {
                 </div>
 
                 {/* Analytics */}
-                {stats && !loading && (
-                    <div className="max-w-7xl mx-auto w-full flex flex-col gap-6">
-                        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-                            <div className="lg:col-span-3 min-w-0">
-                                <RevenueChart data={stats.revenuePoints} />
-                            </div>
-
-                            <div className="flex flex-col gap-6">
-                                <div className="bg-[#1a1d26] border border-gray-800 rounded-3xl flex items-center justify-center gap-4 p-6 flex-1 shadow-sm">
-                                    <div className="bg-emerald-500/10 p-4 rounded-2xl">
-                                        <TrendingUp className="text-emerald-500" size={28} />
-                                    </div>
-                                    <div>
-                                        <p className="text-xs text-gray-500 uppercase font-bold tracking-widest mb-1">Загальний дохід</p>
-                                        <p className="text-3xl font-black text-white">{stats.totalRevenue?.toLocaleString()} ₴</p>
-                                    </div>
-                                </div>
-
-                                <div className="bg-[#1a1d26] border border-gray-800 rounded-3xl flex items-center justify-center gap-4 p-6 flex-1 shadow-sm">
-                                    <div className="bg-blue-500/10 p-4 rounded-2xl">
-                                        <CreditCard className="text-blue-500" size={28} />
-                                    </div>
-                                    <div>
-                                        <p className="text-xs text-gray-500 uppercase font-bold tracking-widest mb-1">Середній чек</p>
-                                        <p className="text-3xl font-black text-white">
-                                            {stats.paidCount > 0 ? Math.round(stats.totalRevenue / stats.paidCount).toLocaleString() : 0} ₴
-                                        </p>
-                                    </div>
-                                </div>
+                <div className="relative min-h-75 w-full">
+                    {statsLoading && (
+                        <div className="absolute inset-0 z-20 bg-[#161820]/60 backdrop-blur-sm flex items-center justify-center rounded-3xl transition-all">
+                            <div className="flex flex-col items-center gap-3">
+                                <div className="w-10 h-10 border-4 border-red-600 border-t-transparent rounded-full animate-spin"></div>
+                                <p className="text-sm font-bold text-gray-400 uppercase tracking-widest">Оновлення статистики...</p>
                             </div>
                         </div>
+                    )}
 
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                            <StatusPie stats={stats} />
+                    {stats ? (
+                        <div className={`flex flex-col gap-6 transition-all duration-300 ${statsLoading ? 'opacity-30 blur-[2px]' : 'opacity-100'}`}>
+                            <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+                                <div className="lg:col-span-3 min-w-0">
+                                    <RevenueChart data={stats.revenuePoints} />
+                                </div>
 
-                            <SimpleBarChart
-                                data={stats.hallPoints}
-                                dataKey="number"
-                                dataLabel="Прибуток"
-                                nameKey="hallName"
-                                color="#3b82f6"
-                                chartName="Найприбутковіші зали"
-                            />
+                                <div className="flex flex-col gap-6">
+                                    <StatCard
+                                        label="Загальна вартість проданих квитків"
+                                        value={`${stats.totalRevenue?.toLocaleString()} ₴`}
+                                        icon={<TrendingUp size={28} />}
+                                        iconColorClass="text-emerald-500"
+                                        bgColorClass="bg-emerald-500/10"
+                                    />
 
-                            <SimpleBarChart
-                                data={stats.genrePoints}
-                                dataKey="number"
-                                dataLabel="Кількість квитків"
-                                nameKey="genreName"
-                                color="#8b5cf6"
-                                chartName="Жанри-лідери"
-                            />
+                                    <StatCard
+                                        label="Загальна кількість проданих квитків"
+                                        value={stats.totalTicketsCount}
+                                        icon={<Ticket size={28} />}
+                                        iconColorClass="text-blue-500"
+                                        bgColorClass="bg-blue-500/10"
+                                    />
+                                </div>
+                            </div>
+
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                                <StatusPie stats={stats} />
+                                <SimpleBarChart
+                                    data={stats.hallPoints}
+                                    dataKey="number"
+                                    dataLabel="Прибуток"
+                                    nameKey="hallName"
+                                    color="#3b82f6"
+                                    chartName="Найприбутковіші зали"
+                                />
+                                <SimpleBarChart
+                                    data={stats.genrePoints}
+                                    dataKey="number"
+                                    dataLabel="Кількість квитків"
+                                    nameKey="genreName"
+                                    color="#8b5cf6"
+                                    chartName="Жанри-лідери"
+                                />
+                            </div>
                         </div>
-                    </div>
-                )}
+                    ) : (
+                        !statsLoading && <div className="text-center py-10 text-gray-500">Статистика відсутня за обраний період</div>
+                    )}
+                </div>
 
                 {/* Search + Filters toggle */}
                 <div className="flex flex-col sm:flex-row gap-3">
@@ -391,7 +439,7 @@ const AdminBookingsPage = () => {
             {selectedBooking && (
                 <div
                     className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm px-4"
-                    onClick={() => setSelectedBooking(null)}
+                    onClick={() => { setSelectedBooking(null); setTicketPage(1); }}
                 >
                     <div
                         className="bg-[#1a1d26] border border-gray-800 rounded-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto shadow-2xl"
@@ -412,65 +460,93 @@ const AdminBookingsPage = () => {
                         </div>
 
                         <div className="p-5 space-y-5">
-                            <div className="flex gap-4">
-                                {selectedBooking.posterUri ? (
-                                    <img src={selectedBooking.posterUri} alt={selectedBooking.title} className="w-20 h-32 object-cover rounded-lg bg-gray-900 shrink-0" />
-                                ) : (
-                                    <div className="w-20 h-32 bg-gray-800 rounded-lg flex items-center justify-center shrink-0">
-                                        <Film size={28} className="text-gray-600" />
-                                    </div>
-                                )}
-                                <div className="flex flex-col justify-between py-1">
-                                    <div className="flex flex-row justify-between items-center px-1">
-                                        <h3 className="text-white font-bold text-lg">{selectedBooking.title}</h3>
-                                        {selectedBooking.ageRestriction && (
-                                            <AgeRestrictionBadge
-                                                restriction={selectedBooking.ageRestriction}
-                                                className="w-fit block"
-                                            />
-                                        )}
-                                    </div>
-                                    <div className="space-y-1.5 text-sm">
-                                        <div className="flex items-center gap-2 text-gray-400">
-                                            <User size={14} className="text-red-600" />
-                                            <span>Email: <span className="text-gray-200 font-mono">{selectedBooking.userEmail}</span></span>
-                                        </div>
-                                        <div className="flex items-center gap-2 text-gray-400">
-                                            <Calendar size={14} className="text-red-600" />
-                                            <span>Сеанс: <span className="text-gray-200">{formatDateWithYear(selectedBooking.startTime)} в {formatTime(selectedBooking.startTime)}</span></span>
-                                        </div>
-                                        <div className="flex items-center gap-2 text-gray-400">
-                                            <Clock size={14} className="text-red-600" />
-                                            <span>Час броні: <span className="text-gray-200">{formatDateWithYear(selectedBooking.bookingTime)} в {formatTime(selectedBooking.bookingTime)}</span></span>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div>
-                                <div className="flex items-center justify-between mb-3">
-                                    <h4 className="text-sm font-semibold text-gray-300 flex items-center gap-2">
-                                        <TicketIcon size={15} className="text-red-600" /> Квитки
-                                    </h4>
-                                    <span className="text-xs text-gray-600">{selectedBooking.tickets.length} шт.</span>
-                                </div>
-                                <div className="grid grid-cols-2 gap-2">
-                                    {selectedBooking.tickets.map((t, i) => (
-                                        <div key={i} className="bg-gray-800/60 border border-gray-700 rounded-xl p-3 flex items-center justify-between">
-                                            <div>
-                                                <p className="text-xs text-gray-500">Ряд {t.rowNumber} · Місце {t.seatNumber}</p>
-                                                <p className="text-white font-semibold text-sm mt-0.5">Квиток #{i + 1}</p>
+                            {detailsLoading && !('pagedTickets' in selectedBooking) ? (
+                                <div className="py-20 flex justify-center"><div className="w-10 h-10 border-4 border-red-600 border-t-transparent rounded-full animate-spin"></div></div>
+                            ) : (
+                                <>
+                                    <div className="flex gap-4">
+                                        {selectedBooking.posterUri ? (
+                                            <img src={selectedBooking.posterUri} alt={selectedBooking.title}
+                                                 className="w-20 h-32 object-cover rounded-lg bg-gray-900 shrink-0"/>
+                                        ) : (
+                                            <div
+                                                className="w-20 h-32 bg-gray-800 rounded-lg flex items-center justify-center shrink-0">
+                                                <Film size={28} className="text-gray-600"/>
                                             </div>
-                                            <span className="text-red-500 font-black text-base">{t.actualPrice}₴</span>
+                                        )}
+                                        <div className="flex flex-col justify-between py-1">
+                                            <div className="flex flex-row justify-between items-center px-1">
+                                                <h3 className="text-white font-bold text-lg">{selectedBooking.title}</h3>
+                                                {selectedBooking.ageRestriction && (
+                                                    <AgeRestrictionBadge
+                                                        restriction={selectedBooking.ageRestriction}
+                                                        className="w-fit block"/>
+                                                )}
+                                            </div>
+                                            <div className="space-y-1.5 text-sm">
+                                                <div className="flex items-center gap-2 text-gray-400">
+                                                    <User size={14} className="text-red-600"/>
+                                                    <span>Email: <span
+                                                        className="text-gray-200 font-mono">{selectedBooking.userEmail}</span></span>
+                                                </div>
+                                                <div className="flex items-center gap-2 text-gray-400">
+                                                    <Calendar size={14} className="text-red-600"/>
+                                                    <span>Сеанс: <span
+                                                        className="text-gray-200">{formatDateWithYear(selectedBooking.startTime)} в {formatTime(selectedBooking.startTime)}</span></span>
+                                                </div>
+                                                <div className="flex items-center gap-2 text-gray-400">
+                                                    <Clock size={14} className="text-red-600"/>
+                                                    <span>Час броні: <span
+                                                        className="text-gray-200">{formatDateWithYear(selectedBooking.bookingTime)} в {formatTime(selectedBooking.bookingTime)}</span></span>
+                                                </div>
+                                            </div>
                                         </div>
-                                    ))}
-                                </div>
-                            </div>
-
-                            <div className="flex items-center justify-between pt-4 border-t border-gray-700">
-                                <span className="text-gray-500 text-sm">Загальна сума</span>
-                                <span className="text-3xl font-black text-red-600">{selectedBooking.totalPrice}₴</span>
-                            </div>
+                                    </div>
+                                    <div>
+                                        <div className="flex items-center justify-between mb-3">
+                                            <h4 className="text-sm font-semibold text-gray-300 flex items-center gap-2">
+                                                <TicketIcon size={15} className="text-red-600"/> Квитки
+                                            </h4>
+                                            <span
+                                                className="text-xs text-gray-600">{selectedBooking.ticketsCount} шт.</span>
+                                        </div>
+                                        <div className="grid grid-cols-2 gap-2">
+                                            {'pagedTickets' in selectedBooking ? (
+                                                <>
+                                                    {selectedBooking.pagedTickets.items.map((t, i) => (
+                                                        <div key={i} className="bg-gray-800/60 border border-gray-700 rounded-xl p-3 flex items-center justify-between">
+                                                            <div>
+                                                                <p className="text-[10px] text-gray-500 uppercase font-bold">Ряд {t.rowNumber} · Місце {t.seatNumber}</p>
+                                                                <p className="text-white font-semibold text-sm mt-0.5">
+                                                                    Квиток #{(ticketPage - 1) * TICKET_PAGE_SIZE + i + 1}
+                                                                </p>
+                                                            </div>
+                                                            <span className="text-red-500 font-black text-base">{t.actualPrice}₴</span>
+                                                        </div>
+                                                    ))}
+                                                    {/* ПАГІНАЦІЯ КВИТКІВ */}
+                                                    {selectedBooking.pagedTickets.totalCount > TICKET_PAGE_SIZE && (
+                                                        <div className="col-span-full flex justify-center pt-4">
+                                                            <Pagination
+                                                                currentPage={ticketPage}
+                                                                totalPages={Math.ceil(selectedBooking.pagedTickets.totalCount / TICKET_PAGE_SIZE)}
+                                                                onPageChange={(p) => setTicketPage(p)}
+                                                            />
+                                                        </div>
+                                                    )}
+                                                </>
+                                            ) : (
+                                                <div className="col-span-2 py-4 text-center text-gray-600 text-xs">Завантаження квитків...</div>
+                                            )}
+                                        </div>
+                                    </div>
+                                    <div className="flex items-center justify-between pt-4 border-t border-gray-700">
+                                        <span className="text-gray-500 text-sm">Загальна сума</span>
+                                        <span
+                                            className="text-3xl font-black text-red-600">{selectedBooking.totalPrice}₴</span>
+                                    </div>
+                                </>
+                            )}
                         </div>
                     </div>
                 </div>

@@ -1,5 +1,5 @@
 import { useForm } from 'react-hook-form';
-import { Plus, Loader2, type LucideIcon } from 'lucide-react';
+import { Loader2, type LucideIcon } from 'lucide-react';
 import { FormInput } from './Form/FormSection';
 
 interface FieldConfig {
@@ -23,6 +23,7 @@ interface Props {
 export const CreateCard = ({
                                title,
                                buttonText,
+                               icon: Icon, // Перейменовуємо в Icon для використання як компонента
                                fields,
                                loading,
                                onSubmit
@@ -38,7 +39,8 @@ export const CreateCard = ({
         <div className="w-full lg:w-1/3 lg:sticky lg:top-0 bg-[#1a1d26] p-8 rounded-4xl border border-gray-800 shadow-2xl">
             <div className="flex items-center gap-3 mb-8">
                 <div className="bg-red-600/20 p-2 rounded-lg">
-                    <Plus className="text-red-600" size={24} />
+                    {/* ВИПРАВЛЕНО: Використовуємо передану іконку замість Plus */}
+                    <Icon className="text-red-600" size={24} />
                 </div>
                 <h2 className="text-xl font-black tracking-tight uppercase">{title}</h2>
             </div>
@@ -65,7 +67,8 @@ export const CreateCard = ({
                         <Loader2 className="animate-spin" size={18} />
                     ) : (
                         <>
-                            <Plus size={16} />
+                            {/* ТУТ ТАКОЖ МОЖНА ЗАМІНИТИ Plus на Icon, якщо хочете однакові іконки */}
+                            <Icon size={16} />
                             {buttonText}
                         </>
                     )}
