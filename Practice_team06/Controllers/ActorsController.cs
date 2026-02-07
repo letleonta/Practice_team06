@@ -56,12 +56,12 @@ public class ActorsController : ControllerBase
     }
     
     [HttpGet("{id}/movies")]
-    public async Task<ActionResult<IEnumerable<ActorMovieDto>>> GetActorMovies(int id)
+    public async Task<ActionResult<PagedResult<ActorMovieDto>>> GetActorMovies(int id, [FromQuery] BaseFilterDto filter)
     {
-        var movies = await _actorService.GetActorMoviesAsync(id);
-        return Ok(movies);
+        var result = await _actorService.GetActorMoviesAsync(id, filter);
+        return Ok(result);
     }
-
+    
     [HttpPut("{id}")] 
     [Authorize(Roles = "Admin, Manager")]
     public async Task<IActionResult> UpdateActor(int id, CreateActorDto actorDto)

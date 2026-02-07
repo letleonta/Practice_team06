@@ -1,7 +1,7 @@
 ﻿import { useEffect, useState, useMemo } from 'react';
 import { LanguageService } from '../../services/language.service.ts';
 import type { LanguageDto, CreateLanguageDto } from '../../types/language';
-import { Globe, Trash2, Search } from 'lucide-react';
+import {Globe, Trash2, Search, Plus} from 'lucide-react';
 import { notify } from "../../utils/toast.ts";
 import { CreateCard } from "../../components/CreateCard.tsx";
 import { ConfirmModal } from "../../components/ui/ConfirmModal.tsx";
@@ -80,7 +80,7 @@ const AdminLanguages = () => {
             <CreateCard
                 title="Нова мова"
                 buttonText="Додати мову"
-                icon={Globe}
+                icon={Plus}
                 loading={loading}
                 onSubmit={handleCreateLanguage}
                 fields={[
@@ -88,7 +88,7 @@ const AdminLanguages = () => {
                         name: 'name',
                         label: "Назва",
                         placeholder: "Напр. Українська",
-                        icon: Globe
+                        icon: Plus
                     }
                 ]}
             />

@@ -95,6 +95,7 @@ const SessionPage = () => {
                 seatIds: selectedSeats.map((s) => s.seatId),
             });
 
+            await BookingService.confirmBooking(created.id);
             navigate(`/bookings/${created.id}`);
         } catch (err: any) {
             setPurchaseError(
@@ -232,18 +233,16 @@ const SessionPage = () => {
                     {/* ── Checkout Panel ─────────────────────── */}
                     <div className="xl:w-96 flex-shrink-0">
                         {user?.role === 'Admin' ? (
-                            // Показуємо плашку для адміна
                             <div className="bg-amber-500/5 border border-amber-500/20 rounded-2xl p-8 text-center sticky top-24">
                                 <div className="w-16 h-16 bg-amber-500/10 rounded-full flex items-center justify-center mx-auto mb-4">
                                     <ShieldAlert className="text-amber-500" size={32} />
                                 </div>
                                 <h2 className="text-amber-500 font-bold text-lg mb-2">Режим перегляду</h2>
                                 <p className="text-gray-400 text-sm leading-relaxed">
-                                    Як адміністратор, ви бачите схему залу та зайняті місця, але не можете здійснювати бронювання.
+                                    Як адміністратор, ви бачите схему залу, але не можете здійснювати бронювання.
                                 </p>
                             </div>
                         ) : (
-                            // Показуємо панель бронювання для всіх інших (Юзерів та гостей)
                             <div className="bg-[#1a1d26] rounded-2xl border border-gray-800 p-6 sticky top-24">
                                 <h2 className="text-xl font-bold mb-4">Обрані місця</h2>
 
@@ -276,7 +275,7 @@ const SessionPage = () => {
 
                                         <div className="border-t border-gray-700 pt-4 mb-5">
                                             <div className="flex items-center justify-between">
-                                                <span className="text-gray-400">Всього ({selectedSeats.length} {selectedSeats.length === 1 ? 'квиток' : 'квитки'})</span>
+                                                <span className="text-gray-400">Всього ({selectedSeats.length})</span>
                                                 <span className="text-3xl font-black text-red-600">{totalPrice}₴</span>
                                             </div>
                                         </div>
@@ -313,7 +312,6 @@ const SessionPage = () => {
                 </div>
             </div>
 
-            {/* Модалка підтвердження віку */}
             <ConfirmModal
                 isOpen={isConfirmOpen}
                 title="Вікове обмеження"
