@@ -8,12 +8,13 @@ namespace Practice_team06.Services;
 
 public interface IBookingService
 {
-    Task<AdminBookingsWithStatsDto> GetAllBookingsAsync(BookingFilterDto filter);
+    Task<PagedResult<AdminBookingDto>> GetAllBookingsAsync(BookingFilterDto filter);
     Task<PagedResult<BookingDto>> GetBookingsForUserAsync(int userId, BookingFilterDto filter);
-    Task<BookingDto> GetBookingByIdAsync(int userId, int bookingId);
-    Task<AdminBookingDto> GetBookingByIdAsync(int bookingId);
+    Task<T> GetBookingByIdAsync<T>(int? userId, int bookingId, BaseFilterDto filter) 
+        where T : class, IBookingWithTickets;
     Task<BookingDto> CreateBookingAsync(int userId, CreateBookingDto dto);
     Task ConfirmBookingAsync(int userId, int bookingId);
     Task CancelBookingAsync(int userId, int bookingId);
     Task DeleteBookingAsync(int bookingId);
+    Task<BookingsStatsDto> GetBookingStatsAsync(BookingFilterDto filter);
 }

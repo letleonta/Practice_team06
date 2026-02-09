@@ -1,4 +1,6 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using AutoMapper;
+using AutoMapper.QueryableExtensions;
+using Microsoft.EntityFrameworkCore;
 using Practice_team06.Models;
 using Practice_team06.DTOs.Genre;
 using Practice_team06.DTOs.Common;
@@ -9,10 +11,12 @@ namespace Practice_team06.Services;
 public class GenreService : IGenreService
 {
     private readonly PostgresContext _context;
+    private readonly IMapper _mapper;
 
-    public GenreService(PostgresContext context)
+    public GenreService(PostgresContext context, IMapper mapper)
     {
         _context = context;
+        _mapper = mapper;
     }
 
     public async Task<PagedResult<GenreDto>> GetAllAsync(GenreFilterDto filter)
@@ -38,11 +42,7 @@ public class GenreService : IGenreService
 
         // ===== DTO =====
         var items = await query
-            .Select(g => new GenreDto
-            {
-                Id = g.Id,
-                Name = g.Name
-            })
+            .ProjectTo<GenreDto>(_mapper.ConfigurationProvider)
             .ToListAsync();
 
         return new PagedResult<GenreDto>
@@ -56,48 +56,31 @@ public class GenreService : IGenreService
 
     public async Task<GenreDto?> GetByIdAsync(int id)
     {
-        var genre = await _context.Genres.FindAsync(id);
-        if (genre == null) return null;
-
-        return new GenreDto
-        {
-            Id = genre.Id,
-            Name = genre.Name
-        };
+        return await _context.Genres
+            .AsNoTracking()
+            .Where(g => g.Id == id)
+            .ProjectTo<GenreDto>(_mapper.ConfigurationProvider)
+            .FirstOrDefaultAsync();
     }
 
     public async Task<GenreDto> CreateAsync(CreateGenreDto genreDto)
     {
-        var genre = new Genre
-        {
-            Name = genreDto.Name
-        };
+        var genre = _mapper.Map<Genre>(genreDto);
 
         _context.Genres.Add(genre);
         await _context.SaveChangesAsync();
 
-        return new GenreDto
-        {
-            Id = genre.Id,
-            Name = genre.Name
-        };
+        return _mapper.Map<GenreDto>(genre);
     }
 
     public async Task<IEnumerable<GenreDto>> CreateRangeAsync(IEnumerable<CreateGenreDto> genresDto)
     {
-        var genres = genresDto.Select(dto => new Genre
-        {
-            Name = dto.Name
-        }).ToList();
+        var genres = _mapper.Map<List<Genre>>(genresDto);
 
         await _context.Genres.AddRangeAsync(genres);
         await _context.SaveChangesAsync();
 
-        return genres.Select(g => new GenreDto
-        {
-            Id = g.Id,
-            Name = g.Name
-        });
+        return _mapper.Map<IEnumerable<GenreDto>>(genres);
     }
 
     public async Task<bool> UpdateAsync(int id, CreateGenreDto genreDto)
@@ -105,9 +88,10 @@ public class GenreService : IGenreService
         var genre = await _context.Genres.FindAsync(id);
         if (genre == null) return false;
 
-        genre.Name = genreDto.Name;
-
+        _mapper.Map(genreDto, genre);
+        
         await _context.SaveChangesAsync();
+
         return true;
     }
 

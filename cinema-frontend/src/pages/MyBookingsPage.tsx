@@ -153,7 +153,7 @@ const MyBookingsPage = () => {
                                             <div className="flex items-center gap-2 text-sm">
                                                 <Ticket size={16} className="text-red-600 shrink-0" />
                                                 <span className="text-gray-400">
-                                                    {booking.tickets.length} квит.
+                                                    {booking.ticketsCount} квит.
                                                 </span>
                                             </div>
                                         </div>

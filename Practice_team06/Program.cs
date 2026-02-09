@@ -54,18 +54,32 @@ builder.Services.AddAuthentication(options =>
         };
     });
 
+var allowedOrigins = builder.Configuration
+    .GetSection("CorsSettings:AllowedOrigins")
+    .Get<string[]>();
+
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowReactApp", policy =>
     {
-        policy.WithOrigins("http://localhost:5173") 
-              .AllowAnyHeader()
-              .AllowAnyMethod()
-              .AllowCredentials();
+        if (allowedOrigins != null && allowedOrigins.Length > 0)
+        {
+            policy.WithOrigins(allowedOrigins)
+                .AllowAnyHeader()
+                .AllowAnyMethod()
+                .AllowCredentials();
+        }
     });
 });
 
 builder.Services.AddAutoMapper(_ => {}, typeof(ActorProfile).Assembly);
+builder.Services.AddAutoMapper(_ => {}, typeof(DirectorProfile).Assembly);
+builder.Services.AddAutoMapper(_ => {}, typeof(SeatProfile).Assembly);
+builder.Services.AddAutoMapper(_ => {}, typeof(HallProfile).Assembly);
+builder.Services.AddAutoMapper(_ => {}, typeof(BookingProfile).Assembly);
+builder.Services.AddAutoMapper(_ => {}, typeof(TicketProfile).Assembly);
+builder.Services.AddAutoMapper(_ => {}, typeof(GenreProfile).Assembly);
+builder.Services.AddAutoMapper(_ => {}, typeof(LanguageProfile).Assembly);
 
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IActorService, ActorService>();
@@ -98,41 +112,7 @@ using (var scope = app.Services.CreateScope())
     try
     {
         var context = services.GetRequiredService<PostgresContext>();
-        var userManager = services.GetRequiredService<UserManager<User>>();
-        
         await DbInitializer.SeedRolesAndAdminAsync(services);
-        
-        if (!await userManager.Users.AnyAsync(u => u.Email == "alice@example.com"))
-        {
-            var user1 = new User
-            {
-                UserName = "alice@example.com",
-                Email = "alice@example.com",
-                FirstName = "Alice",
-                LastName = "Smith",
-                BirthDate = new DateTime(1995, 5, 1), 
-                EmailConfirmed = true
-            };
-
-            var user2 = new User
-            {
-                UserName = "bob@example.com",
-                Email = "bob@example.com",
-                FirstName = "Bob",
-                LastName = "Johnson",
-                BirthDate = new DateTime(1990, 3, 15),
-                EmailConfirmed = true
-            };
-            
-            var result1 = await userManager.CreateAsync(user1, "Password123!");
-            if (result1.Succeeded) await userManager.AddToRoleAsync(user1, "Customer");
-            
-            var result2 = await userManager.CreateAsync(user2, "Password123!");
-            if (result2.Succeeded) await userManager.AddToRoleAsync(user2, "Customer");
-            
-            Console.WriteLine("Тестові користувачі Alice та Bob успішно додані.");
-        }
-        
         await DbInitializer.SeedDataAsync(context);
     }
     catch (Exception ex)

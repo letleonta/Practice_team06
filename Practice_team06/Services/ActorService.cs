@@ -97,14 +97,30 @@ public class ActorService : IActorService
         return true;
     }
     
-    public async Task<IEnumerable<ActorMovieDto>> GetActorMoviesAsync(int actorId)
+    public async Task<PagedResult<ActorMovieDto>> GetActorMoviesAsync(int actorId, BaseFilterDto filter)
     {
-        return await _context.MovieActors
+        var query = _context.MovieActors
             .Where(ma => ma.ActorId == actorId)
+            .AsQueryable();
+
+        var totalCount = await query.CountAsync();
+        
+        query = query.OrderByDescending(ma => ma.Movie.ReleaseDate);
+        
+        query = query.ApplyPagination(filter);
+
+        var items = await query
             .ProjectTo<ActorMovieDto>(_mapper.ConfigurationProvider)
             .ToListAsync();
+
+        return new PagedResult<ActorMovieDto>
+        {
+            Items = items,
+            TotalCount = totalCount,
+            Page = filter.Page ?? 1,
+            PageSize = filter.PageSize ?? 4
+        };
     }
-    
     private static IQueryable<Actor> ApplySorting(IQueryable<Actor> query, string? sortBy, bool isDescending)
     {
         if (string.IsNullOrWhiteSpace(sortBy)) return query.OrderBy(a => a.Id);
