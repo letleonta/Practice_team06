@@ -1,4 +1,8 @@
-﻿import type {BaseFilterDto} from "./common.ts";
+import type {DirectorDto} from "./director.ts";
+import type {ActorDto} from "./actor.ts";
+import type {GenreDto} from "./genre.ts";
+
+import type {BaseFilterDto} from "./common.ts";
 
 export interface MovieDto {
     id: number;
@@ -13,9 +17,9 @@ export interface MovieDto {
     ageRestriction: string;
     startDate?: string;
     endDate?: string;
-    directorName: string;
-    genres: string[];
-    actors: string[];
+    director?: DirectorDto;
+    actors: ActorDto[];
+    genres: GenreDto[]
     languageIds: number[];
 }
 export interface CreateMovieDto {

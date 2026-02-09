@@ -48,8 +48,11 @@ const MoviesLayout = ({ title }: Props) => {
     useEffect(() => {
         const fetchGenres = async () => {
             try {
-                const data = await GenreService.getAll();
-                const names = data.map((g: GenreDto) => g.name);
+                // Запитуємо першу сторінку з великим розміром, щоб отримати всі жанри для фільтра
+                const data = await GenreService.getAll({ Page: 1, PageSize: 100 });
+
+                // Оскільки тепер це PagedResult, беремо items
+                const names = data.items.map((g: GenreDto) => g.name);
                 setAvailableGenres(names);
             } catch (error) {
                 console.error("Помилка завантаження жанрів:", error);
