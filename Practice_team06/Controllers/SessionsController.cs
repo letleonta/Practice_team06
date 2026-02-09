@@ -42,6 +42,10 @@ public class SessionsController : ControllerBase
     [Authorize(Roles = "Admin, Manager")]
     public async Task<ActionResult<SessionDto>> Create([FromBody] CreateSessionDto dto)
     {
+        if (dto.StartTime < DateTime.UtcNow.AddMinutes(-1))
+        {
+            return BadRequest(new { message = "Не можна створювати сеанси у минулому часі." });
+        }
         try 
         {
             var created = await _sessionService.CreateSessionAsync(dto);
