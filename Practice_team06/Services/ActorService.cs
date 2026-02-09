@@ -76,27 +76,27 @@ public class ActorService : IActorService
         return _mapper.Map<IEnumerable<ActorDto>>(actors);
     }
 
-    public async Task<bool> UpdateAsync(int id, CreateActorDto actorDto)
+    public async Task<ActorDto> UpdateAsync(int id, CreateActorDto actorDto)
     {
         var actor = await _context.Actors.FindAsync(id);
-        if (actor == null) return false;
-        
-        _mapper.Map(actorDto, actor);
-
-        await _context.SaveChangesAsync();
-        return true;
-    }
+        if (actor == null) 
+            throw new KeyNotFoundException($"Актора з ID {id} не знайдено");
     
-    public async Task<bool> DeleteAsync(int id)
+        _mapper.Map(actorDto, actor);
+        await _context.SaveChangesAsync();
+
+        return _mapper.Map<ActorDto>(actor); 
+    }
+
+    public async Task DeleteAsync(int id)
     {
         var actor = await _context.Actors.FindAsync(id);
-        if (actor == null) return false;
+        if (actor == null) 
+            throw new KeyNotFoundException($"Актора з ID {id} не знайдено");
 
         _context.Actors.Remove(actor);
         await _context.SaveChangesAsync();
-        return true;
     }
-    
     public async Task<PagedResult<ActorMovieDto>> GetActorMoviesAsync(int actorId, BaseFilterDto filter)
     {
         var query = _context.MovieActors
