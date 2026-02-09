@@ -1,10 +1,21 @@
 import { axiosInstance } from "../api/axiosInstance";
-import type { SessionDto, CreateSessionDto } from "../types/session";
+import type { SessionDto, CreateSessionDto, SessionFilterDto } from "../types/session";
+import type { PagedResult } from "../types/common";
 
 export const SessionService = {
-    // Отримати майбутні сеанси для конкретного фільму
-    async getByMovieId(movieId: number) {
-        const response = await axiosInstance.get<SessionDto[]>(`/sessions/by-movie/${movieId}`);
+    // [GET] АДМІНКА: Отримати всі сеанси з пагінацією та фільтрами
+    async getAll(filter: SessionFilterDto) {
+        const response = await axiosInstance.get<PagedResult<SessionDto>>("/sessions", {
+            params: filter
+        });
+        return response.data;
+    },
+
+    // [GET] КЛІЄНТ: Отримати майбутні сеанси для конкретного фільму (список)
+    async getByMovieId(movieId: number, filter: SessionFilterDto) {
+        const response = await axiosInstance.get<PagedResult<SessionDto>>(`/sessions/by-movie/${movieId}`, {
+            params: filter
+        });
         return response.data;
     },
 

@@ -1,4 +1,8 @@
-﻿namespace Practice_team06.DTOs.Movie;
+﻿using Practice_team06.DTOs.Actor;
+using Practice_team06.DTOs.Director;
+using Practice_team06.DTOs.Genre;
+
+namespace Practice_team06.DTOs.Movie;
 
 public class MovieDto
 {
@@ -14,7 +18,7 @@ public class MovieDto
     public string AgeRestriction  { get; set; } = null!;
     public DateOnly? StartDate { get; set; }
     public DateOnly? EndDate { get; set; }
-    public string DirectorName { get; set; } = null!;
-    public List<string> Genres { get; set; } = new();
-    public List<string> Actors { get; set; } = new();
+    public DirectorDto? Director { get; set; }
+    public List<ActorDto> Actors { get; set; } = new();
+    public List<GenreDto> Genres { get; set; } = new();
 }

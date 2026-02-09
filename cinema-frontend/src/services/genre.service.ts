@@ -1,7 +1,7 @@
 import { axiosInstance } from "../api/axiosInstance";
 import type { GenreDto, CreateGenreDto, GenreFilterDto } from "../types/genre";
 
-import type { PagedResult } from "../types/pagedResult";
+import type { PagedResult } from "../types/common";
 
 export const GenreService = {
 
