@@ -16,7 +16,6 @@ import {
     Home,
     Tag,
     UserCheck,
-    Clapperboard,
     LayoutGrid,
     Globe,
     Ticket,
