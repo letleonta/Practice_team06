@@ -16,57 +16,58 @@ public class MoviesController : ControllerBase
     {
         _movieService = movieService;
     }
-
-    // Для ЮЗЕРІВ: Отримати всі фільми
+    
     [HttpGet]
     public async Task<ActionResult<PagedResult<MovieDto>>> GetAll([FromQuery] MovieFilterDto filter)
     {
-        return Ok(await _movieService.GetAllMoviesAsync(filter));
+        var result = await _movieService.GetAllMoviesAsync(filter);
+        return Ok(result);
     }
-
-    // Для ЮЗЕРІВ: "Скоро у прокаті"
+    
     [HttpGet("upcoming")]
     public async Task<ActionResult<PagedResult<MovieDto>>> GetUpcoming([FromQuery] MovieFilterDto filter)
     {
-        return Ok(await _movieService.GetUpcomingMoviesAsync(filter));
+        var result = await _movieService.GetUpcomingMoviesAsync(filter);
+        return Ok(result);
     }
-    // Для ЮЗЕРІВ: "Зараз у кіно"
+
+    // [GET] "Зараз у кіно"
     [HttpGet("now-playing")]
     public async Task<ActionResult<PagedResult<MovieDto>>> GetNowPlaying([FromQuery] MovieFilterDto filter)
     {
-        return Ok(await _movieService.GetNowPlayingMoviesAsync(filter));
+        var result = await _movieService.GetNowPlayingMoviesAsync(filter);
+        return Ok(result);
     }
     
-    // Для ЮЗЕРІВ: Отримати деталі одного фільму
+    // [GET] Отримати деталі одного фільму
     [HttpGet("{id}")]
     public async Task<ActionResult<MovieDto>> GetById(int id)
     {
         var movie = await _movieService.GetMovieByIdAsync(id);
-        if (movie == null) return NotFound();
+        if (movie == null) return NotFound(new { message = "Фільм не знайдено" });
         return Ok(movie);
     }
-    //АДМІН ЧАСТИНА
 
-    // Тільки Адмін може створювати
+    // --- АДМІН ЧАСТИНА ---
+
     [HttpPost]
     [Authorize(Roles = "Admin, Manager")]
     public async Task<ActionResult<MovieDto>> Create([FromBody] CreateMovieDto dto)
     {
         if (!ModelState.IsValid) return BadRequest(ModelState);
         
-        var created = await _movieService.CreateMovieAsync(dto);
-        return CreatedAtAction(nameof(GetById), new { id = created.Id }, created);
+        try 
+        {
+            var created = await _movieService.CreateMovieAsync(dto);
+            // Повертаємо 201 Created і посилання на отримання створеного ресурсу
+            return CreatedAtAction(nameof(GetById), new { id = created.Id }, created);
+        }
+        catch (ArgumentException ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
     }
 
-    // Тільки Адмін може видаляти
-    [HttpDelete("{id}")]
-    [Authorize(Roles = "Admin, Manager")]
-    public async Task<IActionResult> Delete(int id)
-    {
-        await _movieService.DeleteMovieAsync(id);
-        return NoContent();
-    }
-    // Тільки Адмін може оновлювати
     [HttpPut("{id}")]
     [Authorize(Roles = "Admin, Manager")]
     public async Task<ActionResult<MovieDto>> Update(int id, [FromBody] CreateMovieDto dto)
@@ -85,6 +86,26 @@ public class MoviesController : ControllerBase
         catch (ArgumentException ex)
         {
             return BadRequest(new { message = ex.Message });
+        }
+    }
+
+    [HttpDelete("{id}")]
+    [Authorize(Roles = "Admin, Manager")]
+    public async Task<IActionResult> Delete(int id)
+    {
+        try
+        {
+            await _movieService.DeleteMovieAsync(id);
+            return NoContent();
+        }
+        catch (InvalidOperationException ex)
+        {
+            // Якщо є активні сеанси
+            return BadRequest(new { message = ex.Message });
+        }
+        catch (Exception)
+        {
+            return StatusCode(500, new { message = "Сталася помилка при видаленні фільму." });
         }
     }
 }
