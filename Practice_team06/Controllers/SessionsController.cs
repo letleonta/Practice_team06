@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Practice_team06.DTOs.Common;
 using Practice_team06.DTOs.Session;
 using Practice_team06.Services;
 
@@ -16,14 +17,24 @@ public class SessionsController : ControllerBase
         _sessionService = sessionService;
     }
 
-    // Для ЮЗЕРІВ: Сеанси для конкретного фільму
+    // [GET] АДМІНКА: Отримати всі сеанси (Таблиця з пагінацією)
+    // Це новий метод, який використовує SessionFilterDto
+    [HttpGet]
+    public async Task<ActionResult<PagedResult<SessionDto>>> GetAll([FromQuery] SessionFilterDto filter)
+    {
+        var result = await _sessionService.GetAllSessionsAsync(filter);
+        return Ok(result);
+    }
+
+    // [GET] КЛІЄНТ: Сеанси для конкретного фільму (список без пагінації)
     [HttpGet("by-movie/{movieId}")]
     public async Task<ActionResult<List<SessionDto>>> GetByMovie(int movieId)
     {
-        return Ok(await _sessionService.GetSessionsByMovieIdAsync(movieId));
+        var result = await _sessionService.GetSessionsByMovieIdAsync(movieId);
+        return Ok(result);
     }
     
-    // Для ЮЗЕРІВ: Отримати деталі конкретного сеансу
+    // [GET] Деталі конкретного сеансу
     [HttpGet("{id}")]
     public async Task<ActionResult<SessionDto>> GetById(int id)
     {
@@ -37,33 +48,28 @@ public class SessionsController : ControllerBase
         return Ok(session);
     }
 
-    //АДМІН ЧАСТИНА 
+    // --- АДМІН ЧАСТИНА ---
+
     [HttpPost]
     [Authorize(Roles = "Admin, Manager")]
     public async Task<ActionResult<SessionDto>> Create([FromBody] CreateSessionDto dto)
     {
+        if (dto.StartTime < DateTime.UtcNow.AddMinutes(-1))
+        {
+            return BadRequest(new { message = "Не можна створювати сеанси у минулому часі." });
+        }
+
         try 
         {
             var created = await _sessionService.CreateSessionAsync(dto);
-            return Ok(created);
+            return CreatedAtAction(nameof(GetById), new { id = created.Id }, created);
         }
         catch (Exception ex)
         {
-            // Якщо накладання сеансів - поверне помилку 400
             return BadRequest(new { message = ex.Message });
         }
     }
 
-    
-    [HttpDelete("{id}")]
-    [Authorize(Roles = "Admin, Manager")]
-    public async Task<IActionResult> Delete(int id)
-    {
-        await _sessionService.DeleteSessionAsync(id);
-        return NoContent();
-    }
-    
-    
     [HttpPut("{id}")]
     [Authorize(Roles = "Admin, Manager")]
     public async Task<ActionResult<SessionDto>> Update(int id, [FromBody] CreateSessionDto dto)
@@ -79,9 +85,15 @@ public class SessionsController : ControllerBase
         }
         catch (Exception ex)
         {
-            // Помилка накладання часу або інша бізнес-помилка
             return BadRequest(new { message = ex.Message });
         }
     }
     
+    [HttpDelete("{id}")]
+    [Authorize(Roles = "Admin, Manager")]
+    public async Task<IActionResult> Delete(int id)
+    {
+        await _sessionService.DeleteSessionAsync(id);
+        return NoContent();
+    }
 }

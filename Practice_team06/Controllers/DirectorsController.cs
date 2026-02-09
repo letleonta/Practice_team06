@@ -70,19 +70,31 @@ public class DirectorsController : ControllerBase
     
     [HttpPut("{id}")] 
     [Authorize(Roles = "Admin, Manager")]
-    public async Task<IActionResult> UpdateDirector(int id, CreateDirectorDto directorDto)
+    public async Task<ActionResult<DirectorDto>> UpdateDirector(int id, CreateDirectorDto directorDto)
     {
-        var result = await _directorService.UpdateAsync(id, directorDto);
-        if (!result) return NotFound();
-        return NoContent();
+        try
+        {
+            var result = await _directorService.UpdateAsync(id, directorDto);
+            return Ok(result); 
+        }
+        catch (KeyNotFoundException ex)
+        {
+            return NotFound(ex.Message);
+        }
     }
 
     [HttpDelete("{id}")]
     [Authorize(Roles = "Admin, Manager")]
-    public async Task<IActionResult> DeleteDirector(int id)
+    public async Task<ActionResult> DeleteDirector(int id)
     {
-        var result = await _directorService.DeleteAsync(id);
-        if (!result) return NotFound();
-        return NoContent();
+        try
+        {
+            await _directorService.DeleteAsync(id);
+            return NoContent();
+        }
+        catch (KeyNotFoundException ex)
+        {
+            return NotFound(ex.Message);
+        }
     }
 }

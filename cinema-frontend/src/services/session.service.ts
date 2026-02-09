@@ -1,8 +1,17 @@
 import { axiosInstance } from "../api/axiosInstance";
-import type { SessionDto, CreateSessionDto } from "../types/session";
+import type { SessionDto, CreateSessionDto, SessionFilterDto } from "../types/session";
+import type { PagedResult } from "../types/common";
 
 export const SessionService = {
-    // Отримати майбутні сеанси для конкретного фільму
+    // [GET] АДМІНКА: Отримати всі сеанси з пагінацією та фільтрами
+    async getAll(filter: SessionFilterDto) {
+        const response = await axiosInstance.get<PagedResult<SessionDto>>("/sessions", {
+            params: filter
+        });
+        return response.data;
+    },
+
+    // [GET] КЛІЄНТ: Отримати майбутні сеанси для конкретного фільму (список)
     async getByMovieId(movieId: number) {
         const response = await axiosInstance.get<SessionDto[]>(`/sessions/by-movie/${movieId}`);
         return response.data;
@@ -16,7 +25,6 @@ export const SessionService = {
 
     // Створити сеанс (Адмін)
     async create(data: CreateSessionDto) {
-        // Тут важливо обробити помилку overlap, яку кидає бек
         const response = await axiosInstance.post<SessionDto>("/sessions", data);
         return response.data;
     },
