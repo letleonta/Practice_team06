@@ -1,5 +1,7 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Practice_team06.DTOs.Common;
+using Practice_team06.DTOs.Genre;
 using Practice_team06.DTOs.Language;
 using Practice_team06.Services;
 
@@ -15,20 +17,17 @@ public class LanguagesController : ControllerBase
     {
         _service = service;
     }
+
     [HttpGet]
-    [Authorize(Roles = "Admin, Customer, Manager")]
-    public async Task<IActionResult> GetLanguages(
-        [FromQuery] string? search,
-        [FromQuery] string? sortBy,
-        [FromQuery] bool isDescending = false)
+    public async Task<ActionResult<PagedResult<LanguageDto>>> GetLanguages(
+        [FromQuery] LanguageFilterDto filter)
     {
-        var result = await _service.GetAllAsync(search, sortBy, isDescending);
+        var result = await _service.GetAllAsync(filter);
         return Ok(result);
     }
 
     [HttpGet("{id:int}")]
-    [Authorize(Roles = "Admin, Customer, Manager")]
-    public async Task<IActionResult> GetLanguage(int id)
+    public async Task<ActionResult<LanguageDto>> GetLanguage(int id)
     {
         var language = await _service.GetByIdAsync(id);
         if (language == null) return NotFound();
@@ -38,23 +37,31 @@ public class LanguagesController : ControllerBase
 
     [HttpPost]
     [Authorize(Roles = "Admin, Manager")]
-    public async Task<IActionResult> CreateLanguage([FromBody] CreateLanguageDto dto)
+    public async Task<ActionResult<LanguageDto>> CreateLanguage(
+        [FromBody] CreateLanguageDto dto)
     {
         var created = await _service.CreateAsync(dto);
         return CreatedAtAction(nameof(GetLanguage), new { id = created.Id }, created);
     }
 
-    [HttpPost("range")]
+    [HttpPost("bulk")]
     [Authorize(Roles = "Admin, Manager")]
-    public async Task<IActionResult> CreateLanguages([FromBody] IEnumerable<CreateLanguageDto> dto)
+    public async Task<ActionResult<IEnumerable<LanguageDto>>> CreateLanguages(
+        [FromBody] IEnumerable<CreateLanguageDto>? dto)
     {
-        var created = await _service.CreateRangeAsync(dto);
+        var list = dto?.ToList();
+        if (list == null || list.Count == 0)
+            return BadRequest("Список мов не може бути порожнім.");
+
+        var created = await _service.CreateRangeAsync(list);
         return Ok(created);
     }
 
     [HttpPut("{id:int}")]
     [Authorize(Roles = "Admin, Manager")]
-    public async Task<IActionResult> UpdateLanguage(int id, [FromBody] CreateLanguageDto dto)
+    public async Task<IActionResult> UpdateLanguage(
+        int id,
+        [FromBody] CreateLanguageDto dto)
     {
         var updated = await _service.UpdateAsync(id, dto);
         if (!updated) return NotFound();
