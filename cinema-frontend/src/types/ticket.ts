@@ -1,8 +1,12 @@
 export interface TicketDto {
     id: number;
-    seatId: number;
+    movieTitle: string;
+    moviePoster: string;
+    startTime: string;
+    ageRestriction: string;
     actualPrice: number;
     isActive: boolean;
+    hallName?: string;
     rowNumber?: number;
     seatNumber?: number;
 }

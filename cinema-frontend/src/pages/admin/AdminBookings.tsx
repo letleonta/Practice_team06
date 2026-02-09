@@ -2,7 +2,7 @@ import {useCallback, useEffect, useState} from 'react';
 import {
     Search, Filter, X, Eye,
     Calendar, Clock, User, Film, Ticket as TicketIcon,
-    TrendingUp, ChevronDown, Ticket
+    TrendingUp, ChevronDown, Ticket, Trash2, RotateCcw
 } from 'lucide-react';
 import { getStatusColor, getStatusText } from '../../utils/formatBookingStatus';
 import {type AdminBookingDetailsDto, type BookingsStatsDto, BookingStatus} from "../../types/booking.ts";
@@ -19,6 +19,9 @@ import {SimpleBarChart} from "../../components/ui/SimpleBarChart.tsx";
 import {BookingFilters} from "../../components/BookingFilters.tsx";
 import {DataTable, type Column} from "../../components/DataTable.tsx";
 import {StatCard} from "../../components/ui/StatCard.tsx";
+import {AdminModal} from "../../components/AdminModal.tsx";
+import {notify} from "../../utils/toast.ts";
+import {ConfirmModal} from "../../components/ui/ConfirmModal.tsx";
 
 type StatusFilter = BookingStatus | 'ALL';
 type SortBy = 'date' | 'status' | 'userEmail';
@@ -36,14 +39,21 @@ const AdminBookingsPage = () => {
     const [ticketPage, setTicketPage] = useState(1);
     const TICKET_PAGE_SIZE = 6;
 
-    // Sort state
     const [sortBy, setSortBy] = useState<SortBy>('date');
     const [isDesc, setIsDesc] = useState(true);
 
-    // UI state
     const [filtersOpen, setFiltersOpen] = useState(false);
     const [selectedBooking, setSelectedBooking] = useState<AdminBookingDto | AdminBookingDetailsDto | null>(null);
     const [detailsLoading, setDetailsLoading] = useState(false);
+    const [isSaving, setIsSaving] = useState(false);
+    const [confirmCancel, setConfirmCancel] = useState<{isOpen: boolean; id: number | null}>({ isOpen: false, id: null });
+    const [confirmDelete, setConfirmDelete] = useState<{isOpen: boolean; id: number | null}>({ isOpen: false, id: null });
+
+    const [refreshTrigger, setRefreshTrigger] = useState(0);
+    const handleRefresh = () => setRefreshTrigger(prev => prev + 1);
+
+    const handleCancelClick = (id: number) => setConfirmCancel({ isOpen: true, id });
+    const handleDeleteClick = (id: number) => setConfirmDelete({ isOpen: true, id });
 
     // Fetch function for pagination hook
     const fetchBookings = useCallback(async (Page: number, PageSize: number) => {
@@ -118,7 +128,11 @@ const AdminBookingsPage = () => {
         goToPage
     } = UsePagination(
         fetchBookings,
-        [statusFilter, sessionFrom, sessionTo, bookingFrom, bookingTo, userEmail, searchQuery, sortBy, isDesc],
+        [
+            statusFilter, sessionFrom, sessionTo, bookingFrom,
+            bookingTo, userEmail, searchQuery, sortBy, isDesc,
+            refreshTrigger
+        ],
         { pageSize: 6 }
     );
 
@@ -132,7 +146,42 @@ const AdminBookingsPage = () => {
         }
     };
 
-    // Helpers
+    const onConfirmCancel = async () => {
+        if (!confirmCancel.id) return;
+        setIsSaving(true);
+        try {
+            await BookingService.cancelBooking(confirmCancel.id);
+            notify.success("Бронювання успішно скасовано");
+
+            loadStats();
+            handleRefresh();
+            setSelectedBooking(null);
+        } catch (err) {
+            console.error("Cancel error:", err);
+        } finally {
+            setIsSaving(false);
+            setConfirmCancel({ isOpen: false, id: null });
+        }
+    };
+
+    const onConfirmDelete = async () => {
+        if (!confirmDelete.id) return;
+        setIsSaving(true);
+        try {
+            await BookingService.deleteBooking(confirmDelete.id);
+            notify.success("Запис видалено");
+
+            loadStats();
+            handleRefresh();
+            setSelectedBooking(null);
+        } catch (err) {
+            console.error("Delete error:", err);
+        } finally {
+            setIsSaving(false);
+            setConfirmDelete({ isOpen: false, id: null });
+        }
+    };
+
     const hasActiveFilters = statusFilter !== 'ALL' || sessionFrom || sessionTo || bookingFrom || bookingTo || userEmail;
 
     const resetAllFilters = () => {
@@ -284,7 +333,7 @@ const AdminBookingsPage = () => {
                         </div>
                     )}
 
-                    {stats ? (
+                    {stats && bookings.length > 0 ? (
                         <div className={`flex flex-col gap-6 transition-all duration-300 ${statsLoading ? 'opacity-30 blur-[2px]' : 'opacity-100'}`}>
                             <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
                                 <div className="lg:col-span-3 min-w-0">
@@ -331,7 +380,18 @@ const AdminBookingsPage = () => {
                             </div>
                         </div>
                     ) : (
-                        !statsLoading && <div className="text-center py-10 text-gray-500">Статистика відсутня за обраний період</div>
+                        !statsLoading && <div className="flex flex-col items-center justify-center min-h-100 w-full py-10">
+                            <TrendingUp size={48} className="text-gray-800 mb-4" strokeWidth={1} />
+
+                            <div className="space-y-1">
+                                <p className="text-gray-400 font-medium tracking-tight">
+                                    Статистика відсутня
+                                </p>
+                                <p className="text-gray-600 text-sm">
+                                    За обраний період даних не знайдено
+                                </p>
+                            </div>
+                        </div>
                     )}
                 </div>
 
@@ -401,7 +461,6 @@ const AdminBookingsPage = () => {
                     </div>
                 )}
 
-                {/* DataTable */}
                 <DataTable
                     data={bookings}
                     columns={columns}
@@ -414,7 +473,6 @@ const AdminBookingsPage = () => {
                     onSort={handleSort}
                 />
 
-                {/* Pagination */}
                 {!loading && !error && totalPages > 0 && (
                     <div className="border-t border-gray-800 bg-[#161820] p-4 rounded-2xl">
                         <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
@@ -435,122 +493,149 @@ const AdminBookingsPage = () => {
                 )}
             </div>
 
-            {/* Detail Modal */}
-            {selectedBooking && (
-                <div
-                    className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm px-4"
-                    onClick={() => { setSelectedBooking(null); setTicketPage(1); }}
-                >
-                    <div
-                        className="bg-[#1a1d26] border border-gray-800 rounded-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto shadow-2xl"
-                        onClick={e => e.stopPropagation()}
-                    >
-                        <div className="flex items-center justify-between p-5 border-b border-gray-800 bg-linear-to-r from-red-600/10 to-transparent rounded-t-2xl">
-                            <h2 className="text-lg font-black">
-                                Бронювання <span className="text-red-600">#{selectedBooking.id}</span>
-                            </h2>
-                            <div className="flex items-center gap-3">
-                                <span className={`px-3 py-0.5 rounded-full text-xs font-semibold border ${getStatusColor(selectedBooking.status)}`}>
-                                    {getStatusText(selectedBooking.status)}
-                                </span>
-                                <button onClick={() => setSelectedBooking(null)} className="text-gray-500 hover:text-white transition-colors">
-                                    <X size={20} />
-                                </button>
+            <AdminModal
+                isOpen={!!selectedBooking}
+                onClose={() => { setSelectedBooking(null); setTicketPage(1); }}
+                maxWidth="max-w-xl"
+                title={
+                    <h2 className="text-xl font-black tracking-tighter">
+                        Бронювання <span className="text-red-600">#{selectedBooking?.id}</span>
+                    </h2>
+                }
+                headerExtra={selectedBooking && (
+                    <span className={`px-3 py-1 rounded-full text-xs font-semibold border tracking-widest ${getStatusColor(selectedBooking.status)}`}>
+            {getStatusText(selectedBooking.status)}
+        </span>
+                )}
+                footer={selectedBooking && (
+                    <>
+                        {selectedBooking.status !== 'Cancelled' && (
+                            <button
+                                onClick={() => handleCancelClick(selectedBooking.id)}
+                                className="flex-1 flex items-center justify-center gap-2 py-4 bg-gray-800 hover:bg-orange-600/20 text-white hover:text-orange-500 rounded-2xl font-black text-[10px] uppercase tracking-widest transition-all border border-transparent hover:border-orange-600/30"
+                            >
+                                <RotateCcw size={16} /> Скасувати бронювання
+                            </button>
+                        )}
+
+                        <button
+                            onClick={() => handleDeleteClick(selectedBooking.id)}
+                            className="flex-1 flex items-center justify-center gap-2 py-4 bg-red-600/10 hover:bg-red-600 text-red-600 hover:text-white rounded-2xl font-black text-[10px] uppercase tracking-widest transition-all border border-red-600/20"
+                        >
+                            <Trash2 size={16} /> Видалити запис
+                        </button>
+                    </>
+                )}
+            >
+                {detailsLoading && !('pagedTickets' in selectedBooking!) ? (
+                    <div className="py-20 flex justify-center">
+                        <div className="w-12 h-12 border-4 border-red-600 border-t-transparent rounded-full animate-spin" />
+                    </div>
+                ) : selectedBooking && (
+                    <div className="space-y-6">
+                        <div className="flex gap-6">
+                            {selectedBooking.posterUri ? (
+                                <img src={selectedBooking.posterUri} alt={selectedBooking.title}
+                                     className="w-24 h-36 object-cover rounded-2xl shadow-lg bg-gray-900 shrink-0 border border-gray-800"/>
+                            ) : (
+                                <div className="w-24 h-36 bg-gray-800 rounded-2xl flex items-center justify-center shrink-0 border border-gray-700">
+                                    <Film size={32} className="text-gray-600"/>
+                                </div>
+                            )}
+                            <div className="flex flex-col justify-center gap-3">
+                                <div>
+                                    <h3 className="text-xl font-black uppercase leading-tight text-white mb-2">{selectedBooking.title}</h3>
+                                    {selectedBooking.ageRestriction && (
+                                        <AgeRestrictionBadge restriction={selectedBooking.ageRestriction} className="w-fit" />
+                                    )}
+                                </div>
+                                <div className="space-y-1.5 text-sm">
+                                    <div className="flex items-center gap-2 text-gray-400">
+                                        <User size={14} className="text-red-600"/>
+                                        <span>Email: <span className="text-gray-200 font-mono">{selectedBooking.userEmail}</span></span>
+                                    </div>
+                                    <div className="flex items-center gap-2 text-gray-400">
+                                        <Calendar size={14} className="text-red-600"/>
+                                        <span>Сеанс: <span className="text-gray-200">{formatDateWithYear(selectedBooking.startTime)} в {formatTime(selectedBooking.startTime)}</span></span>
+                                    </div>
+                                    <div className="flex items-center gap-2 text-gray-400">
+                                        <Clock size={14} className="text-red-600"/>
+                                        <span>Час бронювання: <span className="text-gray-200">{formatDateWithYear(selectedBooking.bookingTime)} о {formatTime(selectedBooking.bookingTime)}</span></span>
+                                    </div>
+                                </div>
                             </div>
                         </div>
 
-                        <div className="p-5 space-y-5">
-                            {detailsLoading && !('pagedTickets' in selectedBooking) ? (
-                                <div className="py-20 flex justify-center"><div className="w-10 h-10 border-4 border-red-600 border-t-transparent rounded-full animate-spin"></div></div>
-                            ) : (
-                                <>
-                                    <div className="flex gap-4">
-                                        {selectedBooking.posterUri ? (
-                                            <img src={selectedBooking.posterUri} alt={selectedBooking.title}
-                                                 className="w-20 h-32 object-cover rounded-lg bg-gray-900 shrink-0"/>
-                                        ) : (
-                                            <div
-                                                className="w-20 h-32 bg-gray-800 rounded-lg flex items-center justify-center shrink-0">
-                                                <Film size={28} className="text-gray-600"/>
+                        {/* Список квитків */}
+                        <div className="pt-2">
+                            <div className="flex items-center justify-between mb-3">
+                                <h4 className="text-sm font-semibold text-gray-300 flex items-center gap-2">
+                                    <TicketIcon size={14} className="text-red-600"/> Квитки ({selectedBooking.ticketsCount} шт.)
+                                </h4>
+                            </div>
+
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                {'pagedTickets' in selectedBooking ? (
+                                    <>
+                                        {selectedBooking.pagedTickets.items.map((t, i) => (
+                                            <div key={i} className="bg-gray-900/50 border border-gray-800 rounded-2xl p-4 flex items-center justify-between group hover:border-red-600/30 transition-colors">
+                                                <div>
+                                                    <p className="text-[10px] text-gray-500 uppercase font-black tracking-tight">Ряд {t.rowNumber} · Місце {t.seatNumber}</p>
+                                                    <p className="text-white font-bold text-sm mt-1 opacity-80">
+                                                        Квиток #{(ticketPage - 1) * TICKET_PAGE_SIZE + i + 1}
+                                                    </p>
+                                                </div>
+                                                <span className="text-red-600 font-black text-lg">{t.actualPrice}₴</span>
+                                            </div>
+                                        ))}
+                                        {selectedBooking.pagedTickets.totalCount > TICKET_PAGE_SIZE && (
+                                            <div className="col-span-full flex justify-center pt-4">
+                                                <Pagination
+                                                    currentPage={ticketPage}
+                                                    totalPages={Math.ceil(selectedBooking.pagedTickets.totalCount / TICKET_PAGE_SIZE)}
+                                                    onPageChange={(p) => setTicketPage(p)}
+                                                />
                                             </div>
                                         )}
-                                        <div className="flex flex-col justify-between py-1">
-                                            <div className="flex flex-row justify-between items-center px-1">
-                                                <h3 className="text-white font-bold text-lg">{selectedBooking.title}</h3>
-                                                {selectedBooking.ageRestriction && (
-                                                    <AgeRestrictionBadge
-                                                        restriction={selectedBooking.ageRestriction}
-                                                        className="w-fit block"/>
-                                                )}
-                                            </div>
-                                            <div className="space-y-1.5 text-sm">
-                                                <div className="flex items-center gap-2 text-gray-400">
-                                                    <User size={14} className="text-red-600"/>
-                                                    <span>Email: <span
-                                                        className="text-gray-200 font-mono">{selectedBooking.userEmail}</span></span>
-                                                </div>
-                                                <div className="flex items-center gap-2 text-gray-400">
-                                                    <Calendar size={14} className="text-red-600"/>
-                                                    <span>Сеанс: <span
-                                                        className="text-gray-200">{formatDateWithYear(selectedBooking.startTime)} в {formatTime(selectedBooking.startTime)}</span></span>
-                                                </div>
-                                                <div className="flex items-center gap-2 text-gray-400">
-                                                    <Clock size={14} className="text-red-600"/>
-                                                    <span>Час броні: <span
-                                                        className="text-gray-200">{formatDateWithYear(selectedBooking.bookingTime)} в {formatTime(selectedBooking.bookingTime)}</span></span>
-                                                </div>
-                                            </div>
-                                        </div>
+                                    </>
+                                ) : (
+                                    <div className="col-span-full py-10 text-center border-2 border-dashed border-gray-800 rounded-3xl text-gray-600 text-[10px] font-black uppercase tracking-widest">
+                                        Завантаження квитків...
                                     </div>
-                                    <div>
-                                        <div className="flex items-center justify-between mb-3">
-                                            <h4 className="text-sm font-semibold text-gray-300 flex items-center gap-2">
-                                                <TicketIcon size={15} className="text-red-600"/> Квитки
-                                            </h4>
-                                            <span
-                                                className="text-xs text-gray-600">{selectedBooking.ticketsCount} шт.</span>
-                                        </div>
-                                        <div className="grid grid-cols-2 gap-2">
-                                            {'pagedTickets' in selectedBooking ? (
-                                                <>
-                                                    {selectedBooking.pagedTickets.items.map((t, i) => (
-                                                        <div key={i} className="bg-gray-800/60 border border-gray-700 rounded-xl p-3 flex items-center justify-between">
-                                                            <div>
-                                                                <p className="text-[10px] text-gray-500 uppercase font-bold">Ряд {t.rowNumber} · Місце {t.seatNumber}</p>
-                                                                <p className="text-white font-semibold text-sm mt-0.5">
-                                                                    Квиток #{(ticketPage - 1) * TICKET_PAGE_SIZE + i + 1}
-                                                                </p>
-                                                            </div>
-                                                            <span className="text-red-500 font-black text-base">{t.actualPrice}₴</span>
-                                                        </div>
-                                                    ))}
-                                                    {/* ПАГІНАЦІЯ КВИТКІВ */}
-                                                    {selectedBooking.pagedTickets.totalCount > TICKET_PAGE_SIZE && (
-                                                        <div className="col-span-full flex justify-center pt-4">
-                                                            <Pagination
-                                                                currentPage={ticketPage}
-                                                                totalPages={Math.ceil(selectedBooking.pagedTickets.totalCount / TICKET_PAGE_SIZE)}
-                                                                onPageChange={(p) => setTicketPage(p)}
-                                                            />
-                                                        </div>
-                                                    )}
-                                                </>
-                                            ) : (
-                                                <div className="col-span-2 py-4 text-center text-gray-600 text-xs">Завантаження квитків...</div>
-                                            )}
-                                        </div>
-                                    </div>
-                                    <div className="flex items-center justify-between pt-4 border-t border-gray-700">
-                                        <span className="text-gray-500 text-sm">Загальна сума</span>
-                                        <span
-                                            className="text-3xl font-black text-red-600">{selectedBooking.totalPrice}₴</span>
-                                    </div>
-                                </>
-                            )}
+                                )}
+                            </div>
+                        </div>
+
+                        <div className="flex items-center justify-between pt-6 border-t border-gray-800">
+                            <span className="text-gray-500 font-black uppercase text-sm tracking-widest">Загальна вартість</span>
+                            <span className="text-3xl font-black text-red-600 leading-none">{selectedBooking.totalPrice}₴</span>
                         </div>
                     </div>
-                </div>
-            )}
+                )}
+            </AdminModal>
+
+            <ConfirmModal
+                isOpen={confirmCancel.isOpen}
+                variant="warning"
+                title="Скасувати бронювання?"
+                description="Квитки будуть анульовані та повернуться у вільний продаж. Цю дію можна змінити лише через базу даних."
+                confirmText="Так, скасувати"
+                cancelText="Ні"
+                onConfirm={onConfirmCancel}
+                onClose={() => setConfirmCancel({ isOpen: false, id: null })}
+                isLoading={isSaving}
+            />
+
+            <ConfirmModal
+                isOpen={confirmDelete.isOpen}
+                variant="danger"
+                title="Остаточне видалення"
+                description="Ви впевнені, що хочете видалити цей запис? Це повністю видалить інформацію про покупку з історії системи."
+                confirmText="Видалити назавжди"
+                onConfirm={onConfirmDelete}
+                onClose={() => setConfirmDelete({ isOpen: false, id: null })}
+                isLoading={isSaving}
+            />
 
             <style>{`
                 @keyframes fadeDown {
