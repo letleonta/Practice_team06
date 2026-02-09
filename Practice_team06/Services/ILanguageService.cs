@@ -1,14 +1,12 @@
-﻿using Practice_team06.DTOs.Language;
+﻿using Practice_team06.DTOs.Common;
+using Practice_team06.DTOs.Genre;
+using Practice_team06.DTOs.Language;
 
 namespace Practice_team06.Services;
 
 public interface ILanguageService
 {
-    Task<IEnumerable<LanguageDto>> GetAllAsync(
-        string? search = null,
-        string? sortBy = null,
-        bool isDescending = false);
-
+    Task<PagedResult<LanguageDto>> GetAllAsync(LanguageFilterDto filter);
     Task<LanguageDto?> GetByIdAsync(int id);
     Task<LanguageDto> CreateAsync(CreateLanguageDto dto);
     Task<IEnumerable<LanguageDto>> CreateRangeAsync(IEnumerable<CreateLanguageDto> dto);
