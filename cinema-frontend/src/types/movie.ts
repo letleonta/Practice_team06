@@ -8,7 +8,7 @@ export interface MovieDto {
     id: number;
     title: string;
     description?: string;
-    durationMin?: number;
+    durationMin: number;
     releaseDate?: string;
     basePrice: number;
     rating?: number;

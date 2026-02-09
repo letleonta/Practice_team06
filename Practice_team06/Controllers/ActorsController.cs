@@ -64,19 +64,31 @@ public class ActorsController : ControllerBase
     
     [HttpPut("{id}")] 
     [Authorize(Roles = "Admin, Manager")]
-    public async Task<IActionResult> UpdateActor(int id, CreateActorDto actorDto)
+    public async Task<ActionResult<ActorDto>> UpdateActor(int id, CreateActorDto actorDto)
     {
-        var result = await _actorService.UpdateAsync(id, actorDto);
-        if (!result) return NotFound();
-        return NoContent();
+        try
+        {
+            var updatedActor = await _actorService.UpdateAsync(id, actorDto);
+            return Ok(updatedActor); 
+        }
+        catch (KeyNotFoundException ex)
+        {
+            return NotFound(ex.Message);
+        }
     }
 
     [HttpDelete("{id}")] 
     [Authorize(Roles = "Admin, Manager")]
-    public async Task<IActionResult> DeleteActor(int id)
+    public async Task<ActionResult> DeleteActor(int id) 
     {
-        var result = await _actorService.DeleteAsync(id);
-        if (!result) return NotFound();
-        return NoContent();
+        try
+        {
+            await _actorService.DeleteAsync(id);
+            return NoContent(); 
+        }
+        catch (KeyNotFoundException ex)
+        {
+            return NotFound(ex.Message);
+        }
     }
 }

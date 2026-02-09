@@ -28,8 +28,11 @@ public class SeatsController : ControllerBase
     
     [HttpPut("{id}")]
     [Authorize(Roles = "Admin, Manager")]
-    public async Task<IActionResult> Update(int id, UpdateSeatDto dto)
+    public async Task<IActionResult> Update(int id, [FromBody] UpdateSeatDto dto) 
     {
+        if (!ModelState.IsValid)
+            return BadRequest(ModelState);
+
         var result = await _seatService.UpdateSeatAsync(id, dto);
         return result == null ? NotFound() : Ok(result);
     }
@@ -42,7 +45,7 @@ public class SeatsController : ControllerBase
     }
     
     [HttpGet("available/{sessionId}")]
-    //[Authorize(Roles = "Admin, Customer")]
+    [Authorize(Roles = "Manager, Admin, Customer")]
     public async Task<IActionResult> GetAvailableSeats(int sessionId)
     {
         var seats = await _seatService.GetSeatsForSessionAsync(sessionId);

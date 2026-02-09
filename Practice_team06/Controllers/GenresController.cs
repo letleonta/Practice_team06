@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Practice_team06.DTOs.Genre;
+using Practice_team06.DTOs.Common;
 using Practice_team06.Services;
 
 namespace Practice_team06.Controllers;
@@ -15,27 +16,23 @@ public class GenresController : ControllerBase
     {
         _genreService = genreService;
     }
-    
+
     [HttpGet]
-    [Authorize(Roles = "Admin, Customer, Manager")]
-    public async Task<ActionResult<IEnumerable<GenreDto>>> GetGenres(
-        [FromQuery] string? search = null,
-        [FromQuery] string? sortBy = null,
-        [FromQuery] bool isDescending = false)
+    public async Task<ActionResult<PagedResult<GenreDto>>> GetGenres([FromQuery] GenreFilterDto filter)
     {
-        var genres = await _genreService.GetAllAsync(search, sortBy, isDescending);
+        var genres = await _genreService.GetAllAsync(filter);
         return Ok(genres);
     }
-    
+
     [HttpGet("{id}")]
-    [Authorize(Roles = "Admin, Customer, Manager")]
     public async Task<ActionResult<GenreDto>> GetGenre(int id)
     {
         var genre = await _genreService.GetByIdAsync(id);
         if (genre == null) return NotFound();
+
         return Ok(genre);
     }
-    
+
     [HttpPost]
     [Authorize(Roles = "Admin, Manager")]
     public async Task<ActionResult<GenreDto>> CreateGenre(CreateGenreDto genreDto)
@@ -43,19 +40,17 @@ public class GenresController : ControllerBase
         var createdGenre = await _genreService.CreateAsync(genreDto);
         return CreatedAtAction(nameof(GetGenre), new { id = createdGenre.Id }, createdGenre);
     }
-    
+
     [HttpPost("bulk")]
     [Authorize(Roles = "Admin, Manager")]
     public async Task<ActionResult<IEnumerable<GenreDto>>> CreateGenres(IEnumerable<CreateGenreDto>? genresDto)
     {
-        var genresList = genresDto?.ToList();
-        if (genresList == null || genresList.Count == 0)
-        {
+        var list = genresDto?.ToList();
+        if (list == null || list.Count == 0)
             return BadRequest("Список жанрів не може бути порожнім.");
-        }
 
-        var createdGenres = await _genreService.CreateRangeAsync(genresList);
-        return Ok(createdGenres);
+        var created = await _genreService.CreateRangeAsync(list);
+        return Ok(created);
     }
 
     [HttpPut("{id}")]
@@ -64,6 +59,7 @@ public class GenresController : ControllerBase
     {
         var result = await _genreService.UpdateAsync(id, genreDto);
         if (!result) return NotFound();
+
         return NoContent();
     }
 
@@ -73,6 +69,7 @@ public class GenresController : ControllerBase
     {
         var result = await _genreService.DeleteAsync(id);
         if (!result) return NotFound();
+
         return NoContent();
     }
 }
