@@ -1,7 +1,10 @@
 ﻿using AutoMapper;
 using AutoMapper.QueryableExtensions;
 using Microsoft.EntityFrameworkCore;
+using Practice_team06.DTOs.Common;
+using Practice_team06.DTOs.Genre;
 using Practice_team06.DTOs.Language;
+using Practice_team06.Extensions;
 using Practice_team06.Models;
 
 namespace Practice_team06.Services;
@@ -17,28 +20,33 @@ public class LanguageService : ILanguageService
         _mapper = mapper;
     }
 
-    public async Task<IEnumerable<LanguageDto>> GetAllAsync(
-        string? search = null,
-        string? sortBy = null,
-        bool isDescending = false)
+    public async Task<PagedResult<LanguageDto>> GetAllAsync(LanguageFilterDto filter)
     {
-        var query = _context.Languages.AsNoTracking();
+        var query = _context.Languages.AsQueryable();
 
-        // Пошук
-        if (!string.IsNullOrWhiteSpace(search))
+        if (!string.IsNullOrWhiteSpace(filter.Search))
         {
-            var s = search.Trim().ToLower();
+            var s = filter.Search.Trim().ToLower();
             query = query.Where(l => l.Name.ToLower().Contains(s));
         }
 
-        // Сортування
-        query = !string.IsNullOrWhiteSpace(sortBy) && sortBy.ToLower() == "name"
-            ? (isDescending ? query.OrderByDescending(l => l.Name) : query.OrderBy(l => l.Name))
-            : (isDescending ? query.OrderByDescending(l => l.Id) : query.OrderBy(l => l.Id));
+        var totalCount = await query.CountAsync();
 
-        return await query
+        query = ApplySorting(query, filter.SortBy, filter.IsDescending);
+
+        query = query.ApplyPagination(filter);
+
+        var items = await query
             .ProjectTo<LanguageDto>(_mapper.ConfigurationProvider)
             .ToListAsync();
+
+        return new PagedResult<LanguageDto>
+        {
+            Items = items,
+            TotalCount = totalCount,
+            Page = filter.Page ?? 1,
+            PageSize = filter.PageSize ?? 6
+        };
     }
 
     public async Task<LanguageDto?> GetByIdAsync(int id)
@@ -76,8 +84,8 @@ public class LanguageService : ILanguageService
         if (language == null) return false;
 
         _mapper.Map(dto, language);
-        
         await _context.SaveChangesAsync();
+
         return true;
     }
 
@@ -90,5 +98,27 @@ public class LanguageService : ILanguageService
         await _context.SaveChangesAsync();
 
         return true;
+    }
+
+    private static IQueryable<Language> ApplySorting(
+        IQueryable<Language> query,
+        string? sortBy,
+        bool isDescending)
+    {
+        if (string.IsNullOrWhiteSpace(sortBy))
+            return query.OrderBy(l => l.Id);
+
+        return sortBy.ToLower() switch
+        {
+            "name" => isDescending
+                ? query.OrderByDescending(l => l.Name)
+                : query.OrderBy(l => l.Name),
+
+            "id" => isDescending
+                ? query.OrderByDescending(l => l.Id)
+                : query.OrderBy(l => l.Id),
+
+            _ => query.OrderBy(l => l.Id)
+        };
     }
 }
