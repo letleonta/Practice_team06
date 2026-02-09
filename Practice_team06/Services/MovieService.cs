@@ -160,7 +160,7 @@ public class MovieService : IMovieService
         
         if (movie.Sessions.Any())
         {
-            throw new InvalidOperationException($"Неможливо видалити фільм '{movie.Title}', оскільки у нього є історія сеансів. Це порушить звітність. Архівуйте фільм замість видалення.");
+            throw new InvalidOperationException($"Неможливо видалити фільм '{movie.Title}', оскільки у нього є історія сеансів.");
         }
 
         _context.Movies.Remove(movie);
