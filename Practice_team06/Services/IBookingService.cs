@@ -14,7 +14,7 @@ public interface IBookingService
         where T : class, IBookingWithTickets;
     Task<BookingDto> CreateBookingAsync(int userId, CreateBookingDto dto);
     Task ConfirmBookingAsync(int userId, int bookingId);
-    Task CancelBookingAsync(int userId, int bookingId);
+    Task CancelBookingAsync(int? userId, int bookingId);
     Task DeleteBookingAsync(int bookingId);
     Task<BookingsStatsDto> GetBookingStatsAsync(BookingFilterDto filter);
 }
