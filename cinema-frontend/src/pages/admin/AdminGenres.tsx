@@ -58,7 +58,7 @@ const AdminGenres = () => {
             PageSize: ps
         };
         return await GenreService.getAll(filter);
-    }, [searchTerm, sortBy, isDesc], { pageSize: 5 });
+    }, [searchTerm, sortBy, isDesc], { pageSize: 6 });
 
     const handleOpenDetails = (genre: GenreDto) => {
         setSelectedGenre(genre);
