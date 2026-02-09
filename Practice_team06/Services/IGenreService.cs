@@ -1,10 +1,11 @@
-﻿using Practice_team06.DTOs.Genre;
+﻿using Practice_team06.DTOs.Common;
+using Practice_team06.DTOs.Genre;
 
 namespace Practice_team06.Services;
 
 public interface IGenreService
 {
-    Task<IEnumerable<GenreDto>> GetAllAsync(string? search = null, string? sortBy = null, bool isDescending = false);
+    Task<PagedResult<GenreDto>> GetAllAsync(GenreFilterDto filter);
     Task<GenreDto?> GetByIdAsync(int id);
     Task<GenreDto> CreateAsync(CreateGenreDto genreDto);
     Task<IEnumerable<GenreDto>> CreateRangeAsync(IEnumerable<CreateGenreDto> genresDto);

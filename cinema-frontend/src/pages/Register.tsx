@@ -12,7 +12,7 @@ const FieldError = ({ message }: { message?: string }) => {
 
     return (
         <div className="mt-1.5 ml-1 animate-in fade-in slide-in-from-top-2 duration-200">
-            <p className="text-red-500 text-[12px] font-bold uppercase tracking-tight flex items-center gap-1.5 leading-tight">
+            <p className="text-red-500 text-xs font-bold tracking-widest flex items-center gap-2 drop-shadow-[0_0_5px_rgba(239,68,68,0.5)]">
                 <AlertCircle size={14} className="min-w-3.5" />
                 {message}
             </p>
@@ -40,11 +40,8 @@ const Register = () => {
 
             if (result.succeeded && result.response) {
                 const token = result.response.token;
-
                 setAuth(token);
-
                 notify.success('Реєстрація успішна! Ласкаво просимо.');
-
                 navigate('/');
             } else {
                 setError(result.errors?.[0] || 'Помилка реєстрації');
@@ -63,7 +60,6 @@ const Register = () => {
                     <p className="text-gray-400 text-sm font-medium">Створіть акаунт для доступу до бронювання</p>
                 </div>
 
-                {/* Загальна помилка сервера */}
                 {error && (
                     <div className="mb-6 bg-red-500/10 border border-red-500/50 text-red-500 p-3 rounded-2xl text-sm text-center font-bold animate-in zoom-in-95 duration-300">
                         {error}
@@ -71,24 +67,47 @@ const Register = () => {
                 )}
 
                 <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-2">
-                    {/* Ім'я та Прізвище */}
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                        <div className="flex flex-col">
-                            <input
-                                {...register('firstName', { required: "Ім'я обов'язкове" })}
-                                placeholder="Ім'я"
-                                className={`w-full p-4 rounded-2xl bg-gray-900 border ${errors.firstName ? 'border-red-500' : 'border-gray-800'} focus:border-red-600 outline-none transition-all text-sm`}
-                            />
-                            <FieldError message={errors.firstName?.message} />
+
+                    {/* Спільний контейнер для Імені та Прізвища */}
+                    <div className="flex flex-col">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <div className="flex flex-col">
+                                <input
+                                    {...register('firstName', {
+                                        required: "Ім'я обов'язкове",
+                                        pattern: {
+                                            value: /^[a-zA-Zа-яА-ЯіІїЇєЄґҐ\s'-]+$/i,
+                                            message: "Ім'я може містити лише літери"
+                                        }
+                                    })}
+                                    placeholder="Ім'я"
+                                    className={`w-full p-4 rounded-2xl bg-gray-900 border ${errors.firstName ? 'border-red-500' : 'border-gray-800'} focus:border-red-600 outline-none transition-all text-sm`}
+                                />
+                            </div>
+                            <div className="flex flex-col">
+                                <input
+                                    {...register('lastName', {
+                                        required: "Прізвище обов'язкове",
+                                        pattern: {
+                                            value: /^[a-zA-Zа-яА-ЯіІїЇєЄґҐ\s'-]+$/i,
+                                            message: "Прізвище може містити лише літери"
+                                        }
+                                    })}
+                                    placeholder="Прізвище"
+                                    className={`w-full p-4 rounded-2xl bg-gray-900 border ${errors.lastName ? 'border-red-500' : 'border-gray-800'} focus:border-red-600 outline-none transition-all text-sm`}
+                                />
+                            </div>
                         </div>
-                        <div className="flex flex-col">
-                            <input
-                                {...register('lastName', { required: "Прізвище обов'язкове" })}
-                                placeholder="Прізвище"
-                                className={`w-full p-4 rounded-2xl bg-gray-900 border ${errors.lastName ? 'border-red-500' : 'border-gray-800'} focus:border-red-600 outline-none transition-all text-sm`}
+                        {/* Об'єднане повідомлення про помилку */}
+                        {(errors.firstName || errors.lastName) && (
+                            <FieldError
+                                message={
+                                    (errors.firstName?.type === 'pattern' || errors.lastName?.type === 'pattern')
+                                        ? "Ім'я та прізвище мають містити лише літери"
+                                        : (errors.firstName?.message || errors.lastName?.message)
+                                }
                             />
-                            <FieldError message={errors.lastName?.message} />
-                        </div>
+                        )}
                     </div>
 
                     {/* Дата народження */}
@@ -96,7 +115,15 @@ const Register = () => {
                         <div className="relative">
                             <Calendar className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500" size={18} />
                             <input
-                                {...register('birthDate', { required: "Вкажіть дату народження" })}
+                                {...register('birthDate', {
+                                    required: "Вкажіть дату народження",
+                                    validate: (value) => {
+                                        const selectedDate = new Date(value);
+                                        const today = new Date();
+                                        today.setHours(0, 0, 0, 0);
+                                        return selectedDate <= today || "Дата не може бути у майбутньому";
+                                    }
+                                })}
                                 type="date"
                                 className={`w-full pl-12 pr-4 py-4 rounded-2xl bg-gray-900 border ${errors.birthDate ? 'border-red-500' : 'border-gray-800'} focus:border-red-600 outline-none transition-all text-sm`}
                             />
@@ -133,7 +160,7 @@ const Register = () => {
                                     required: "Вигадайте пароль",
                                     minLength: { value: 6, message: "Мінімум 6 символів" },
                                     validate: {
-                                        hasUpper: (v) => /[A-Z]/.test(v) || "Має бути велика літера",
+                                        hasUpper: (v) => /\p{Lu}/u.test(v) || "Має бути велика літера",
                                         hasNumber: (v) => /[0-9]/.test(v) || "Має бути цифра",
                                         hasSpecial: (v) => /[!@#$%^&*(),.?":{}|<>]/.test(v) || "Додайте спецсимвол (!@#_)"
                                     }

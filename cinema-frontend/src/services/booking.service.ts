@@ -2,12 +2,12 @@ import { axiosInstance } from "../api/axiosInstance";
 import type {
     BookingDto,
     AdminBookingDto,
-    BookingFilterDto, CreateBookingDto, AdminBookingsWithStatsDto
+    BookingFilterDto, CreateBookingDto, BookingsStatsDto, BookingDetailsDto, AdminBookingDetailsDto
 } from "../types/booking";
-import type {PagedResult} from "../types/pagedResult.ts";
+
+import type {BaseFilterDto, PagedResult} from "../types/common.ts";
 
 export const BookingService = {
-    // --- ДЛЯ АДМІНІСТРАТОРА ---
     async getAllBookings(filter: BookingFilterDto) {
         const params = new URLSearchParams();
 
@@ -16,7 +16,7 @@ export const BookingService = {
                 params.append(key, value.toString());
             }
         });
-        const response = await axiosInstance.get<AdminBookingsWithStatsDto>("/bookings", {
+        const response = await axiosInstance.get<PagedResult<AdminBookingDto>>("/bookings", {
             params: params
         });
         return response.data;
@@ -26,7 +26,6 @@ export const BookingService = {
         await axiosInstance.delete(`/bookings/${bookingId}`);
     },
 
-    // --- ДЛЯ КЛІЄНТА (CUSTOMER) ---
     async getMyBookings(filter: BookingFilterDto) {
         const params = new URLSearchParams();
 
@@ -38,6 +37,11 @@ export const BookingService = {
         const response = await axiosInstance.get<PagedResult<BookingDto>>("/bookings/my", {
             params: params
         });
+        return response.data;
+    },
+
+    async getStats(filter: BookingFilterDto): Promise<BookingsStatsDto> {
+        const response = await axiosInstance.get<BookingsStatsDto>('/bookings/stats', { params: filter });
         return response.data;
     },
 
@@ -54,8 +58,11 @@ export const BookingService = {
         await axiosInstance.put(`/bookings/${bookingId}/confirm`);
     },
 
-    async getBookingById(bookingId: number) {
-        const response = await axiosInstance.get<AdminBookingDto | BookingDto>(`/bookings/${bookingId}`);
+    async getBookingById(bookingId: number, filter: BaseFilterDto) {
+        const response = await axiosInstance.get<BookingDetailsDto | AdminBookingDetailsDto>(
+            `/bookings/${bookingId}`,
+            { params: filter }
+        );
         return response.data;
     }
 };

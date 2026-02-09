@@ -5,7 +5,8 @@ import type {
     ActorMovieDto,
     CreateActorDto
 } from "../types/actor";
-import type {PagedResult} from "../types/pagedResult";
+
+import type {BaseFilterDto, PagedResult} from "../types/common.ts";
 
 export const ActorService = {
     async getAll(filter: ActorFilterDto): Promise<PagedResult<ActorDto>> {
@@ -20,8 +21,8 @@ export const ActorService = {
         return response.data;
     },
 
-    async getActorMovies(id: number) {
-        const response = await axiosInstance.get<ActorMovieDto[]>(`/actors/${id}/movies`);
+    async getActorMovies(id: number, filter: BaseFilterDto): Promise<PagedResult<ActorMovieDto>> {
+        const response = await axiosInstance.get(`/actors/${id}/movies`, { params: filter });
         return response.data;
     },
 
