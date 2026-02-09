@@ -11,4 +11,6 @@ export interface LanguageFilterDto {
     search?: string;
     sortBy?: 'name' | 'id';
     isDescending?: boolean;
+    Page?: number;
+    PageSize?: number;
 }

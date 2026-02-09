@@ -11,6 +11,11 @@ export const TicketService = {
         return response.data;
     },
 
+    async refund(ticketId: number) {
+        const response = await axiosInstance.put(`/tickets/${ticketId}/refund`, ticketId);
+        return response.data;
+    },
+
     // Видалити квиток (Тільки адмін)
     async delete(ticketId: number) {
         await axiosInstance.delete(`/tickets/${ticketId}`);
