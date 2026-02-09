@@ -1,10 +1,12 @@
 ﻿using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
+using AutoMapper;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Practice_team06.DTOs.Auth;
+using Practice_team06.DTOs.User;
 using Practice_team06.Models;
 
 namespace Practice_team06.Services;
@@ -15,29 +17,25 @@ public class AuthService : IAuthService
     private readonly RoleManager<IdentityRole<int>> _roleManager;
     private readonly SignInManager<User> _signInManager;
     private readonly IConfiguration _configuration;
+    private readonly IMapper _mapper; 
 
     public AuthService(
         UserManager<User> userManager,
         RoleManager<IdentityRole<int>> roleManager,
         SignInManager<User> signInManager,
-        IConfiguration configuration)
+        IConfiguration configuration,
+        IMapper mapper) 
     {
         _userManager = userManager;
         _roleManager = roleManager;
         _signInManager = signInManager;
         _configuration = configuration;
+        _mapper = mapper; 
     }
 
-   public async Task<AuthResultDto> RegisterAsync(RegisterDto dto)
+    public async Task<AuthResultDto> RegisterAsync(RegisterDto dto)
     {
-        var user = new User
-        {
-            UserName = dto.Email,
-            Email = dto.Email,
-            FirstName = dto.FirstName,
-            LastName = dto.LastName,
-            BirthDate = dto.BirthDate
-        };
+        var user = _mapper.Map<User>(dto);
 
         var result = await _userManager.CreateAsync(user, dto.Password);
         
@@ -48,7 +46,6 @@ public class AuthService : IAuthService
 
         await _userManager.AddToRoleAsync(user, "Customer");
 
-        // ГЕНЕРУЄМО ТОКЕН ВІДРАЗУ
         var response = await GenerateToken(user);
         return new AuthResultDto { Succeeded = true, Response = response };
     }
@@ -63,7 +60,7 @@ public class AuthService : IAuthService
         return await GenerateToken(user);
     }
 
-    // ПРИВАТНИЙ МЕТОД ДЛЯ ГЕНЕРАЦІЇ JWT (щоб не дублювати код)
+    //МЕТОД ДЛЯ ГЕНЕРАЦІЇ JWT
     private async Task<LoginResponseDto> GenerateToken(User user)
     {
         var roles = await _userManager.GetRolesAsync(user);
@@ -105,22 +102,19 @@ public class AuthService : IAuthService
     {
         var user = await _userManager.FindByIdAsync(userId.ToString());
         if (user == null) return null;
-
-        // 1. Перевіряємо, чи пароль вірний
+        
         var isPasswordValid = await _userManager.CheckPasswordAsync(user, dto.CurrentPassword);
         if (!isPasswordValid)
         {
             throw new Exception("Невірний поточний пароль.");
         }
-
-        // 2. Перевіряємо, чи новий Email не зайнятий
+        
         var existingUser = await _userManager.FindByEmailAsync(dto.NewEmail);
         if (existingUser != null && existingUser.Id != userId)
         {
             throw new Exception("Цей Email вже використовується іншим користувачем.");
         }
-
-        // 3. Оновлюємо пошту та логін
+        
         user.Email = dto.NewEmail;
         user.UserName = dto.NewEmail;
 
@@ -129,8 +123,7 @@ public class AuthService : IAuthService
         {
             throw new Exception("Помилка при оновленні профілю.");
         }
-
-        // 4. Генеруємо новий токен з новими клеймами
+        
         return await GenerateToken(user);
     }
 
@@ -157,45 +150,37 @@ public class AuthService : IAuthService
 
         if (!await _roleManager.RoleExistsAsync(roleName))
             return IdentityResult.Failed(new IdentityError { Description = $"Ролі '{roleName}' не існує" });
-
-        // 1. Отримуємо всі поточні ролі користувача
+        
         var currentRoles = await _userManager.GetRolesAsync(user);
-
-        // 2. Якщо користувач вже має ТІЛЬКИ цю роль і ніяких інших — нічого не робимо
+        
         if (currentRoles.Count == 1 && currentRoles.Contains(roleName))
         {
             return IdentityResult.Success;
         }
-
-        // 3. Видаляємо всі існуючі ролі
+        
         if (currentRoles.Any())
         {
             var removeResult = await _userManager.RemoveFromRolesAsync(user, currentRoles);
             if (!removeResult.Succeeded) return removeResult;
         }
-
-        // 4. Додаємо нову чисту роль
+        
         return await _userManager.AddToRoleAsync(user, roleName);
     }
 
-    public async Task<IEnumerable<object>> GetAllUsersWithRolesAsync()
+    public async Task<IEnumerable<UserDto>> GetAllUsersWithRolesAsync()
     {
         var users = await _userManager.Users.ToListAsync();
-        var userList = new List<object>();
+        var userDtos = new List<UserDto>();
 
         foreach (var user in users)
         {
+            var dto = _mapper.Map<UserDto>(user);
             var roles = await _userManager.GetRolesAsync(user);
-            userList.Add(new
-            {
-                user.Id,
-                user.Email,
-                user.FirstName,
-                user.LastName,
-                Roles = roles
-            });
+            dto.Roles = roles.ToList();
+        
+            userDtos.Add(dto);
         }
 
-        return userList;
+        return userDtos;
     }
 }
