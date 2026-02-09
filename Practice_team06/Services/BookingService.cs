@@ -85,8 +85,14 @@ public class BookingService : IBookingService
 
         var ticketsQuery = _context.Tickets
             .AsNoTracking()
-            .Where(t => t.BookingId == bookingId)
-            .OrderBy(t => t.Id);
+            .Where(t => t.BookingId == bookingId);
+
+        if (userId.HasValue)
+        {
+            ticketsQuery = ticketsQuery.Where(t => t.IsActive);
+        }
+        
+        ticketsQuery = ticketsQuery.OrderBy(t => t.Id);
 
         var totalCount = await ticketsQuery.CountAsync();
         var ticketItems = await ticketsQuery
@@ -188,13 +194,14 @@ public class BookingService : IBookingService
         await _context.SaveChangesAsync();
     }
 
-    public async Task CancelBookingAsync(int userId, int bookingId)
+    public async Task CancelBookingAsync(int? userId, int bookingId)
     {
         var booking = await _context.Bookings
             .Include(b => b.Session)
-            .FirstOrDefaultAsync(b => b.Id == bookingId && b.UserId == userId);
+            .FirstOrDefaultAsync(b => b.Id == bookingId && (userId == null || b.UserId == userId));
 
-        if (booking == null) throw new KeyNotFoundException("Бронювання не знайдено.");
+        if (booking == null) 
+            throw new KeyNotFoundException("Бронювання не знайдено або у вас немає прав для його скасування.");
 
         var timeUntilSession = booking.Session.StartTime - DateTime.UtcNow;
         var minutesRemaining = timeUntilSession.TotalMinutes;
