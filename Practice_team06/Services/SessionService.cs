@@ -60,14 +60,10 @@ public class SessionService : ISessionService
         };
     }
 
-    public async Task<List<SessionDto>> GetSessionsByMovieIdAsync(int movieId)
+    public async Task<PagedResult<SessionDto>> GetSessionsByMovieIdAsync(int movieId, SessionFilterDto filter)
     {
-        return await _context.Sessions
-            .AsNoTracking()
-            .Where(s => s.MovieId == movieId)
-            .OrderBy(s => s.StartTime)
-            .ProjectTo<SessionDto>(_mapper.ConfigurationProvider)
-            .ToListAsync();
+        filter.MovieId = movieId;
+        return await GetAllSessionsAsync(filter);
     }
 
     public async Task<SessionDto?> GetSessionByIdAsync(int id)
