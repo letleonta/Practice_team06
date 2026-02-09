@@ -1,6 +1,8 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using Practice_team06.Models;
 using Practice_team06.DTOs.Genre;
+using Practice_team06.DTOs.Common;
+using Practice_team06.Extensions;
 
 namespace Practice_team06.Services;
 
@@ -13,41 +15,43 @@ public class GenreService : IGenreService
         _context = context;
     }
 
-    public async Task<IEnumerable<GenreDto>> GetAllAsync(string? search = null, string? sortBy = null, bool isDescending = false)
+    public async Task<PagedResult<GenreDto>> GetAllAsync(GenreFilterDto filter)
     {
-        // 1. Базовий запит
         var query = _context.Genres.AsQueryable();
 
-        // 2. Пошук
-        if (!string.IsNullOrWhiteSpace(search))
+        // ===== Пошук =====
+        if (!string.IsNullOrWhiteSpace(filter.Search))
         {
-            var s = search.Trim().ToLower();
+            var s = filter.Search.Trim().ToLower();
             query = query.Where(g => g.Name.ToLower().Contains(s));
         }
 
-        // 3. Сортування
-        if (!string.IsNullOrWhiteSpace(sortBy))
-        {
-            query = sortBy.ToLower() switch
-            {
-                "name" => isDescending ? query.OrderByDescending(g => g.Name) : query.OrderBy(g => g.Name),
-                "id"   => isDescending ? query.OrderByDescending(g => g.Id) : query.OrderBy(g => g.Id),
-                _      => query.OrderBy(g => g.Id)
-            };
-        }
-        else
-        {
-            query = query.OrderBy(g => g.Id);
-        }
+        // ===== Кількість записів =====
+        var totalCount = await query.CountAsync();
 
-        // 4. DTO
-        return await query
+        // ===== Сортування =====
+        query = ApplySorting(query, filter.SortBy, filter.IsDescending);
+
+        // ===== Пагінація =====
+        // Тепер filter має Page і PageSize від BaseFilterDto
+        query = query.ApplyPagination(filter);
+
+        // ===== DTO =====
+        var items = await query
             .Select(g => new GenreDto
             {
                 Id = g.Id,
                 Name = g.Name
             })
             .ToListAsync();
+
+        return new PagedResult<GenreDto>
+        {
+            Items = items,
+            TotalCount = totalCount,
+            Page = filter.Page ?? 1,
+            PageSize = filter.PageSize ?? 6
+        };
     }
 
     public async Task<GenreDto?> GetByIdAsync(int id)
@@ -102,8 +106,8 @@ public class GenreService : IGenreService
         if (genre == null) return false;
 
         genre.Name = genreDto.Name;
-        await _context.SaveChangesAsync();
 
+        await _context.SaveChangesAsync();
         return true;
     }
 
@@ -116,5 +120,26 @@ public class GenreService : IGenreService
         await _context.SaveChangesAsync();
 
         return true;
+    }
+
+    private static IQueryable<Genre> ApplySorting(IQueryable<Genre> query, string? sortBy, bool isDescending)
+    {
+        if (string.IsNullOrWhiteSpace(sortBy))
+        {
+            return query.OrderBy(g => g.Id);
+        }
+
+        return sortBy.ToLower() switch
+        {
+            "name" => isDescending
+                ? query.OrderByDescending(g => g.Name)
+                : query.OrderBy(g => g.Name),
+
+            "id" => isDescending
+                ? query.OrderByDescending(g => g.Id)
+                : query.OrderBy(g => g.Id),
+
+            _ => query.OrderBy(g => g.Id)
+        };
     }
 }
