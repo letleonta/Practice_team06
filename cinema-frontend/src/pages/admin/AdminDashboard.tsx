@@ -80,15 +80,19 @@ const AdminDashboard = () => {
                             </Link>
                             <Link to="/admin/genres" className={navItemClass('/admin/genres')}>
                                 <div className="flex items-center gap-3"><Tag size={18} /> <span>Жанри</span></div>
+                                <ChevronRight size={14} className={isActive('/admin/genres') ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'} />
                             </Link>
                             <Link to="/admin/languages" className={navItemClass('/admin/languages')}>
                                 <div className="flex items-center gap-3"><Globe size={18} /> <span>Мови</span></div>
+                                <ChevronRight size={14} className={isActive('/admin/languages') ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'} />
                             </Link>
                             <Link to="/admin/directors" className={navItemClass('/admin/directors')}>
                                 <div className="flex items-center gap-3"><UserCheck size={18} /> <span>Режисери</span></div>
+                                <ChevronRight size={14} className={isActive('/admin/directors') ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'} />
                             </Link>
                             <Link to="/admin/actors" className={navItemClass('/admin/actors')}>
                                 <div className="flex items-center gap-3"><Users size={18} /> <span>Актори</span></div>
+                                <ChevronRight size={14} className={isActive('/admin/actors') ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'} />
                             </Link>
                         </div>
                     </div>
@@ -99,12 +103,15 @@ const AdminDashboard = () => {
                         <div className="space-y-1">
                             <Link to="/admin/sessions" className={navItemClass('/admin/sessions')}>
                                 <div className="flex items-center gap-3"><Calendar size={18} /> <span>Сеанси</span></div>
+                                <ChevronRight size={14} className={isActive('/admin/sessions') ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'} />
                             </Link>
                             <Link to="/admin/halls" className={navItemClass('/admin/halls')}>
                                 <div className="flex items-center gap-3"><LayoutGrid size={18} /> <span>Зали</span></div>
+                                <ChevronRight size={14} className={isActive('/admin/halls') ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'} />
                             </Link>
                             <Link to="/admin/bookings" className={navItemClass('/admin/bookings')}>
                                 <div className="flex items-center gap-3"><Ticket size={18} /> <span>Бронювання</span></div>
+                                <ChevronRight size={14} className={isActive('/admin/bookings') ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'} />
                             </Link>
                         </div>
                     </div>
@@ -116,6 +123,7 @@ const AdminDashboard = () => {
                             <div className="space-y-1">
                                 <Link to="/admin/users" className={navItemClass('/admin/users')}>
                                     <div className="flex items-center gap-3"><Users size={18} /> <span>Користувачі</span></div>
+                                    <ChevronRight size={14} className={isActive('/admin/users') ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'} />
                                 </Link>
                             </div>
                         </div>
