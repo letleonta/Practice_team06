@@ -18,9 +18,9 @@ public class SessionsController : ControllerBase
 
     // Для ЮЗЕРІВ: Сеанси для конкретного фільму
     [HttpGet("by-movie/{movieId}")]
-    public async Task<ActionResult<List<SessionDto>>> GetByMovie(int movieId)
+    public async Task<ActionResult<List<SessionDto>>> GetByMovie(int movieId, [FromQuery] DateOnly? date)
     {
-        return Ok(await _sessionService.GetSessionsByMovieIdAsync(movieId));
+        return Ok(await _sessionService.GetSessionsByMovieIdAsync(movieId, date));
     }
     
     // Для ЮЗЕРІВ: Отримати деталі конкретного сеансу

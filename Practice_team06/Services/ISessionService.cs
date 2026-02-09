@@ -4,7 +4,7 @@ namespace Practice_team06.Services;
 
 public interface ISessionService
 {
-    Task<List<SessionDto>> GetSessionsByMovieIdAsync(int movieId);
+    Task<List<SessionDto>> GetSessionsByMovieIdAsync(int movieId, DateOnly? date = null);
     Task<SessionDto?> GetSessionByIdAsync(int id);
     Task<SessionDto> CreateSessionAsync(CreateSessionDto dto);
     Task<SessionDto> UpdateSessionAsync(int id, CreateSessionDto dto);

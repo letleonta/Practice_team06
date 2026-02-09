@@ -13,15 +13,28 @@ public class SessionService : ISessionService
         _context = context;
     }
 
-    public async Task<List<SessionDto>> GetSessionsByMovieIdAsync(int movieId)
+    public async Task<List<SessionDto>> GetSessionsByMovieIdAsync(int movieId, DateOnly? date = null)
     {
-        var sessions = await _context.Sessions
+        var query = _context.Sessions
             .Include(s => s.Hall)
             .Include(s => s.Language)
             .Include(s => s.Movie)
-            .Where(s => s.MovieId == movieId && s.StartTime > DateTime.Now) // Тільки майбутні сеанси
-            .OrderBy(s => s.StartTime)
-            .ToListAsync();
+            .Where(s => s.MovieId == movieId);
+
+        if (date.HasValue)
+        {
+            // Фільтруємо сеанси конкретного дня
+            var start = date.Value.ToDateTime(TimeOnly.MinValue);
+            var end = date.Value.ToDateTime(TimeOnly.MaxValue);
+            query = query.Where(s => s.StartTime >= start && s.StartTime <= end);
+        }
+        else
+        {
+            // Якщо дата не вказана - показуємо всі майбутні
+            query = query.Where(s => s.StartTime > DateTime.Now);
+        }
+
+        var sessions = await query.OrderBy(s => s.StartTime).ToListAsync();
 
         return sessions.Select(s => new SessionDto
         {
@@ -31,7 +44,6 @@ public class SessionService : ISessionService
             HallName = s.Hall.Name,
             LanguageName = s.Language.Name,
             StartTime = s.StartTime,
-            // Кінець сеансу = Початок + Тривалість фільму
             EndTime = s.StartTime.AddMinutes(s.Movie.DurationMin ?? 0),
             AgeRestriction = s.Movie.AgeRestriction
         }).ToList();
