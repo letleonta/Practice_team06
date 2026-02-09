@@ -9,4 +9,7 @@ public interface ISeatService
     Task<SeatDto?> UpdateSeatAsync(int id, UpdateSeatDto dto);
     Task<bool> DeleteAsync(int id);
     Task<IEnumerable<SessionSeatDto>> GetSeatsForSessionAsync(int sessionId);
+    Task<SeatDto> AddSeatToRowAsync(int hallId, int rowNumber);
+    Task<bool> DeleteRowAsync(int hallId, int rowNumber);
+    Task ShiftRowAsync(int id, int rowNumber, int delta);
 }

@@ -1,8 +1,10 @@
-﻿using System.Security.Claims;
+﻿using AutoMapper;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Practice_team06.DTOs.Auth;
+using Practice_team06.DTOs.User;
 using Practice_team06.Services;
+using System.Security.Claims;
 
 namespace Practice_team06.Controllers;
 
@@ -11,78 +13,48 @@ namespace Practice_team06.Controllers;
 public class AuthController : ControllerBase
 {
     private readonly IAuthService _authService;
+    private readonly IMapper _mapper;
 
-    public AuthController(IAuthService authService)
+    public AuthController(IAuthService authService, IMapper mapper)
     {
         _authService = authService;
+        _mapper = mapper;
     }
 
-    /// <summary>
-    /// Реєстрація нового користувача.
-    /// Доступ: ПУБЛІЧНИЙ.
-    /// Автоматично призначає роль "Customer".
-    /// </summary>
     [HttpPost("register")]
-    public async Task<IActionResult> Register([FromBody] RegisterDto model)
+    public async Task<ActionResult<AuthResultDto>> Register([FromBody] RegisterDto model)
     {
         var result = await _authService.RegisterAsync(model);
-
-        if (result.Succeeded)
-        {
-            // Повертаємо токен відразу після реєстрації
-            return Ok(result);
-        }
-
+        if (result.Succeeded) return Ok(result);
+        
         return BadRequest(new { errors = result.Errors });
     }
 
-    /// <summary>
-    /// Вхід у систему.
-    /// Доступ: ПУБЛІЧНИЙ.
-    /// Повертає JWT-токен для авторизації в інших методах.
-    /// </summary>
     [HttpPost("login")]
-    public async Task<IActionResult> Login([FromBody] LoginDto model)
+    public async Task<ActionResult<LoginResponseDto>> Login([FromBody] LoginDto model)
     {
         var response = await _authService.LoginAsync(model);
-
-        if (response == null)
-        {
-            return Unauthorized(new { message = "Невірний email або пароль" });
-        }
+        if (response == null) return Unauthorized(new { message = "Невірний email або пароль" });
 
         return Ok(response);
     }
 
-    /// <summary>
-    /// Зміна пароля (для залогованих користувачів).
-    /// Доступ: АВТОРИЗОВАНИЙ (Будь-яка роль).
-    /// Потребує знання старого пароля.
-    /// </summary>
     [Authorize]
     [HttpPost("change-password")]
-    public async Task<IActionResult> ChangePassword([FromBody] ChangePasswordDto model)
+    public async Task<ActionResult> ChangePassword([FromBody] ChangePasswordDto model)
     {
-        // Дістаємо ID користувача з JWT токена
         var userIdClaim = User.FindFirstValue(ClaimTypes.NameIdentifier);
         if (userIdClaim == null) return Unauthorized();
 
         var result = await _authService.ChangePasswordAsync(int.Parse(userIdClaim), model);
-
-        if (result.Succeeded)
-        {
-            return Ok(new { message = "Пароль змінено успішно" });
-        }
+        if (result.Succeeded) return Ok(new { message = "Пароль змінено успішно" });
 
         return BadRequest(result.Errors);
     }
-    /// <summary>
-    /// Зміна електронної пошти користувача.
-    /// Повертає новий JWT токен.
-    /// </summary>
+
     [Authorize]
     [HttpPost("change-email")]
-    public async Task<IActionResult> ChangeEmail([FromBody] ChangeEmailDto dto)
+    public async Task<ActionResult<LoginResponseDto>> ChangeEmail([FromBody] ChangeEmailDto dto)
     {
         var userIdClaim = User.FindFirstValue(ClaimTypes.NameIdentifier);
         if (userIdClaim == null) return Unauthorized();
@@ -98,74 +70,38 @@ public class AuthController : ControllerBase
         }
     }
 
-    /// <summary>
-    /// Запит на відновлення пароля (якщо забули).
-    /// Доступ: ПУБЛІЧНИЙ.
-    /// Повертає токен скидання (у реальному проєкті він шлеться на email).
-    /// </summary>
     [HttpPost("forgot-password")]
-    public async Task<IActionResult> ForgotPassword([FromBody] ForgotPasswordDto model)
+    public async Task<ActionResult> ForgotPassword([FromBody] ForgotPasswordDto model)
     {
         var token = await _authService.GeneratePasswordResetTokenAsync(model.Email);
-        
-        if (token == null)
-        {
-            // Для безпеки повертаємо OK, навіть якщо email не знайдено
-            return Ok(new { message = "Якщо пошта зареєстрована, інструкції надіслано." });
-        }
-
-        return Ok(new { 
-            message = "Токен згенеровано. Використовуйте його у методі reset-password.",
-            resetToken = token 
-        });
+        return Ok(new { message = "Якщо пошта зареєстрована, інструкції надіслано.", resetToken = token });
     }
 
-    /// <summary>
-    /// Скидання пароля за допомогою токена.
-    /// Доступ: ПУБЛІЧНИЙ.
-    /// </summary>
     [HttpPost("reset-password")]
-    public async Task<IActionResult> ResetPassword([FromBody] ResetPasswordDto model)
+    public async Task<ActionResult> ResetPassword([FromBody] ResetPasswordDto model)
     {
         var result = await _authService.ResetPasswordAsync(model);
-
-        if (result.Succeeded)
-        {
-            return Ok(new { message = "Пароль успішно скинуто. Тепер ви можете увійти з новим паролем." });
-        }
+        if (result.Succeeded) return Ok(new { message = "Пароль успішно скинуто" });
 
         return BadRequest(result.Errors);
     }
 
-    // --- АДМІНІСТРАТИВНА ЧАСТИНА ---
-
-    /// <summary>
-    /// Призначення ролі користувачу.
-    /// Доступ: ТІЛЬКИ АДМІНІСТРАТОР.
-    /// </summary>
     [HttpPost("assign-role")]
     [Authorize(Roles = "Admin, Manager")] 
-    public async Task<IActionResult> AssignRole([FromQuery] string email, [FromQuery] string roleName)
+    public async Task<ActionResult> AssignRole([FromQuery] string email, [FromQuery] string roleName)
     {
         var result = await _authService.AssignRoleAsync(email, roleName);
-        
-        if (result.Succeeded)
-        {
-            return Ok(new { message = $"Користувачу {email} успішно призначено роль {roleName}" });
-        }
+        if (result.Succeeded) return Ok(new { message = $"Користувачу {email} успішно призначено роль {roleName}" });
 
         return BadRequest(result.Errors);
     }
 
-    /// <summary>
-    /// Список усіх користувачів та їхніх ролей.
-    /// Доступ: ТІЛЬКИ АДМІНІСТРАТОР.
-    /// </summary>
     [HttpGet("users")]
     [Authorize(Roles = "Admin, Manager")] 
-    public async Task<IActionResult> GetUsers()
+    public async Task<ActionResult<IEnumerable<UserDto>>> GetUsers()
     {
-        var users = await _authService.GetAllUsersWithRolesAsync();
-        return Ok(users);
+        var usersData = await _authService.GetAllUsersWithRolesAsync();
+        var userDtos = _mapper.Map<IEnumerable<UserDto>>(usersData);
+        return Ok(userDtos);
     }
 }

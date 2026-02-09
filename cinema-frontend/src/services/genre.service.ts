@@ -1,10 +1,12 @@
 import { axiosInstance } from "../api/axiosInstance";
 import type { GenreDto, CreateGenreDto, GenreFilterDto } from "../types/genre";
 
+import type { PagedResult } from "../types/pagedResult";
+
 export const GenreService = {
-    // Отримати всі жанри (з пошуком та сортуванням)
+
     async getAll(filter?: GenreFilterDto) {
-        const response = await axiosInstance.get<GenreDto[]>("/genres", {
+        const response = await axiosInstance.get<PagedResult<GenreDto>>("/genres", {
             params: filter
         });
         return response.data;

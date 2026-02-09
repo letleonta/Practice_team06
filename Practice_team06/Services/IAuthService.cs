@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Identity;
 using Practice_team06.DTOs.Auth;
+using Practice_team06.DTOs.User;
 
 namespace Practice_team06.Services;
 
@@ -12,5 +13,5 @@ public interface IAuthService
     Task<string?> GeneratePasswordResetTokenAsync(string email);
     Task<IdentityResult> ResetPasswordAsync(ResetPasswordDto dto);
     Task<IdentityResult> AssignRoleAsync(string email, string roleName);
-    Task<IEnumerable<object>> GetAllUsersWithRolesAsync();
+    Task<IEnumerable<UserDto>> GetAllUsersWithRolesAsync();
 }
