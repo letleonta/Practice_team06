@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback } from 'react';
 import { SessionService } from '../../services/session.service';
-import type { CreateSessionDto, SessionDto, SessionFilterDto } from '../../types/session'; // Додай SessionFilterDto
+import type { CreateSessionDto, SessionDto, SessionFilterDto } from '../../types/session';
 import type { MovieDto } from '../../types/movie';
 import type { HallDto } from "../../types/hall";
 import type { LanguageDto } from "../../types/language";

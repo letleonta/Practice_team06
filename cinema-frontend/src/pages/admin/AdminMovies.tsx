@@ -152,7 +152,6 @@ const AdminMovies = () => {
         {
             key: 'poster',
             header: 'Постер',
-            width: '80px',
             render: (movie) => (
                 <img
                     src={movie.posterUri}
@@ -160,7 +159,8 @@ const AdminMovies = () => {
                     className="w-10 h-14 rounded-lg object-cover border border-gray-700 shadow-sm"
                     onError={(e) => e.currentTarget.src = 'https://via.placeholder.com/40x60'}
                 />
-            )
+            ),
+            width: '80px'
         },
         {
             key: 'title',
@@ -184,7 +184,7 @@ const AdminMovies = () => {
             width: '100px',
             align: 'center',
             render: (movie) => (
-                <div className="flex items-center justify-center gap-1 text-yellow-500 font-bold text-xs bg-yellow-500/10 px-2 py-1 rounded-lg border border-yellow-500/20">
+                <div className="mx-auto w-fit flex items-center justify-center gap-0.5 text-yellow-500 font-bold text-xs bg-yellow-500/10 px-1.5 py-0.5 rounded-md border border-yellow-500/20">
                     <Star size={10} fill="currentColor" /> {movie.rating?.toFixed(1)}
                 </div>
             )
