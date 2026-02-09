@@ -1,4 +1,5 @@
-﻿using Practice_team06.DTOs.Session;
+﻿using Practice_team06.DTOs.Common;
+using Practice_team06.DTOs.Session;
 
 namespace Practice_team06.Services;
 
@@ -9,4 +10,5 @@ public interface ISessionService
     Task<SessionDto> CreateSessionAsync(CreateSessionDto dto);
     Task<SessionDto> UpdateSessionAsync(int id, CreateSessionDto dto);
     Task DeleteSessionAsync(int id);
+    Task<PagedResult<SessionDto>> GetAllSessionsAsync(SessionFilterDto filter);
 }
