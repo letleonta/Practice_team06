@@ -2,9 +2,10 @@ import { axiosInstance } from "../api/axiosInstance";
 import type { SessionDto, CreateSessionDto } from "../types/session";
 
 export const SessionService = {
-    // Отримати майбутні сеанси для конкретного фільму
-    async getByMovieId(movieId: number) {
-        const response = await axiosInstance.get<SessionDto[]>(`/sessions/by-movie/${movieId}`);
+    async getByMovieId(movieId: number, date?: string) {
+        const response = await axiosInstance.get<SessionDto[]>(`/sessions/by-movie/${movieId}`, {
+            params: { date } // Відправляє ?date=YYYY-MM-DD
+        });
         return response.data;
     },
 
