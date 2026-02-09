@@ -1,7 +1,7 @@
 ﻿import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import {
-    UserPlus, Trash2, Search, Loader2, User as UserIcon,
+    UserPlus, Trash2, Loader2, User as UserIcon,
     X, Pencil, Film, Calendar, Clapperboard, Check, Upload
 } from 'lucide-react';
 
@@ -16,6 +16,7 @@ import { notify } from "../../utils/toast";
 import { ConfirmModal } from "../../components/ui/ConfirmModal.tsx";
 import { CreateCard } from "../../components/CreateCard.tsx";
 import { API_CONFIG } from "../../../config.ts";
+import {SearchInput} from "../../components/ui/SearchInput.tsx";
 
 const directorFields = [
     {
@@ -178,10 +179,11 @@ const AdminDirectors = () => {
             <CreateCard title="Новий режисер" buttonText="Зберегти" icon={UserPlus} fields={directorFields} loading={isSaving} onSubmit={handleAddDirector} />
 
             <div className="w-full lg:w-2/3 flex flex-col gap-6">
-                <div className="relative">
-                    <Search size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500" />
-                    <input type="text" placeholder="Пошук..." value={searchTerm} onChange={e => setSearchTerm(e.target.value)} className="w-full pl-12 pr-10 py-3.5 rounded-2xl bg-[#1a1d26] border border-gray-800 text-sm focus:border-red-600 outline-none transition-all shadow-xl text-white" />
-                </div>
+                <SearchInput
+                    value={searchTerm}
+                    onChange={setSearchTerm}
+                    placeholder="Пошук режисерів..."
+                />
 
                 <DataTable data={directors} columns={columns} loading={loading} error={error} onRowClick={handleOpenDetails} sortConfig={{ sortBy, isDesc }} onSort={(key) => sortBy === key ? setIsDesc(!isDesc) : (setSortBy(key as any), setIsDesc(false))} />
 

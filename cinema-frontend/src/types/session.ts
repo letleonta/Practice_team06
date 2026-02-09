@@ -1,3 +1,5 @@
+import type { BaseFilterDto } from "./common";
+
 export interface SessionDto {
     id: number;
     movieTitle: string;
@@ -14,4 +16,12 @@ export interface CreateSessionDto {
     hallId: number;
     languageId: number;
     startTime: string;
+}
+
+export interface SessionFilterDto extends BaseFilterDto {
+    movieId?: number;
+    hallId?: number;
+    dateFrom?: string; // ISO date string
+    dateTo?: string; // ISO date string
+    isActive?: boolean;
 }

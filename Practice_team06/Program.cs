@@ -72,6 +72,8 @@ builder.Services.AddCors(options =>
     });
 });
 
+builder.Services.AddAutoMapper(_ => {}, typeof(AuthProfile).Assembly);
+builder.Services.AddAutoMapper(_ => {}, typeof(UserProfile).Assembly);
 builder.Services.AddAutoMapper(_ => {}, typeof(ActorProfile).Assembly);
 builder.Services.AddAutoMapper(_ => {}, typeof(DirectorProfile).Assembly);
 builder.Services.AddAutoMapper(_ => {}, typeof(SeatProfile).Assembly);
@@ -80,6 +82,8 @@ builder.Services.AddAutoMapper(_ => {}, typeof(BookingProfile).Assembly);
 builder.Services.AddAutoMapper(_ => {}, typeof(TicketProfile).Assembly);
 builder.Services.AddAutoMapper(_ => {}, typeof(GenreProfile).Assembly);
 builder.Services.AddAutoMapper(_ => {}, typeof(LanguageProfile).Assembly);
+builder.Services.AddAutoMapper(_ => {}, typeof(SessionProfile).Assembly);
+builder.Services.AddAutoMapper(_ => {}, typeof(MovieProfile).Assembly);
 
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IActorService, ActorService>();

@@ -76,25 +76,26 @@ public class DirectorService : IDirectorService
         return _mapper.Map<IEnumerable<DirectorDto>>(directors);
     }
 
-    public async Task<bool> UpdateAsync(int id, CreateDirectorDto directorDto)
+    public async Task<DirectorDto> UpdateAsync(int id, CreateDirectorDto directorDto)
     {
         var director = await _context.Directors.FindAsync(id);
-        if (director == null) return false;
-        
-        _mapper.Map(directorDto, director);
-
-        await _context.SaveChangesAsync();
-        return true;
-    }
+        if (director == null) 
+            throw new KeyNotFoundException($"Режисера з ID {id} не знайдено");
     
-    public async Task<bool> DeleteAsync(int id)
+        _mapper.Map(directorDto, director);
+        await _context.SaveChangesAsync();
+
+        return _mapper.Map<DirectorDto>(director);
+    }
+
+    public async Task DeleteAsync(int id)
     {
         var director = await _context.Directors.FindAsync(id);
-        if (director == null) return false;
+        if (director == null) 
+            throw new KeyNotFoundException($"Режисера з ID {id} не знайдено");
 
         _context.Directors.Remove(director);
         await _context.SaveChangesAsync();
-        return true;
     }
     
     public async Task<PagedResult<DirectorMovieDto>> GetDirectorMoviesAsync(int directorId, BaseFilterDto filter)

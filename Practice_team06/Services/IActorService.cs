@@ -9,7 +9,7 @@ public interface IActorService
     Task<ActorDto?> GetByIdAsync(int id);
     Task<ActorDto> CreateAsync(CreateActorDto actorDto);
     Task<IEnumerable<ActorDto>> CreateRangeAsync(IEnumerable<CreateActorDto> actorsDto);
-    Task<bool> UpdateAsync(int id, CreateActorDto actorDto);
-    Task<bool> DeleteAsync(int id);
+    Task<ActorDto> UpdateAsync(int id, CreateActorDto actorDto);
+    Task DeleteAsync(int id);
     Task<PagedResult<ActorMovieDto>> GetActorMoviesAsync(int actorId, BaseFilterDto filter);
 }
