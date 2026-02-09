@@ -38,10 +38,10 @@ export const MovieCard = ({ movie }: Props) => {
                 <div className="flex flex-wrap gap-2 text-[10px] text-gray-500 font-bold uppercase relative z-30">
                     {(isExpanded ? movie.genres : movie.genres.slice(0, 2)).map(genre => (
                         <span
-                            key={genre}
+                            key={genre.id}
                             className="bg-gray-800/50 px-2 py-0.5 rounded border border-gray-700/50 whitespace-nowrap"
                         >
-                            {genre}
+                            {genre.name}
                         </span>
                     ))}
 

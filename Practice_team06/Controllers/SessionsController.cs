@@ -28,9 +28,9 @@ public class SessionsController : ControllerBase
 
     // [GET] КЛІЄНТ: Сеанси для конкретного фільму (список без пагінації)
     [HttpGet("by-movie/{movieId}")]
-    public async Task<ActionResult<List<SessionDto>>> GetByMovie(int movieId)
+    public async Task<ActionResult<List<SessionDto>>> GetByMovie(int movieId, [FromQuery] SessionFilterDto filter)
     {
-        var result = await _sessionService.GetSessionsByMovieIdAsync(movieId);
+        var result = await _sessionService.GetSessionsByMovieIdAsync(movieId, filter);
         return Ok(result);
     }
     
