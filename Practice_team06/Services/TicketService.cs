@@ -56,7 +56,7 @@ public class TicketService : ITicketService
     {
         var result = await _context.Tickets
             .AsNoTracking()
-            .Where(t => t.Id == ticketId && t.Booking.UserId == userId)
+            .Where(t => t.Id == ticketId && t.Booking.UserId == userId && t.IsActive)
             .ProjectTo<TicketDto>(_mapper.ConfigurationProvider)
             .FirstOrDefaultAsync();
 

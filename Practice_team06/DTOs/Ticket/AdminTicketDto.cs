@@ -16,24 +16,8 @@ public class AdminTicketDto
     public decimal ActualPrice { get; set; }
     [Required]
     public bool IsActive { get; set; }
-    public string? HallName { get; set; } = null!;
+    public string? HallName { get; set; }
     public short? RowNumber { get; set; }
     public short? SeatNumber { get; set; }
-    
-    public static AdminTicketDto TicketToAdminTicketDto(Models.Ticket ticket, int userId)
-    {
-        return new AdminTicketDto
-        {
-            Id = ticket.Id,
-            BookingId = ticket.BookingId,
-            UserId = userId,
-            ActualPrice = ticket.ActualPrice,
-            IsActive = ticket.IsActive,
-            SessionId = ticket.SessionId,
-            HallName = ticket.Seat.Hall.Name,
-            RowNumber = ticket.Seat.RowNumber,
-            SeatNumber = ticket.Seat.SeatNumber
-        };
-    }
 }
 
