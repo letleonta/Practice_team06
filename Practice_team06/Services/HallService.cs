@@ -103,11 +103,9 @@ public class HallService : IHallService
     
         if (hasTickets)
         {
-            // Викидаємо чітке повідомлення
             throw new InvalidOperationException("Неможливо змінити схему залу: на існуючі місця вже продано квитки.");
         }
-
-        // 2. Якщо квитків немає — видаляємо старі місця
+        
         var oldSeats = _context.Seats.Where(s => s.HallId == dto.HallId);
         _context.Seats.RemoveRange(oldSeats);
 
@@ -146,7 +144,7 @@ public class HallService : IHallService
 
         var items = await query
             .OrderBy(h => h.Id)
-            .ApplyPagination(page, pageSize) // Твоє розширення
+            .ApplyPagination(page, pageSize) 
             .Select(h => new HallDto 
             {
                 Id = h.Id,
