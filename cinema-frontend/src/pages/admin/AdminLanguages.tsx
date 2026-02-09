@@ -1,187 +1,209 @@
-﻿import { useEffect, useMemo, useState } from 'react';
-import { Globe, Trash2, Search, Plus } from 'lucide-react';
+﻿import { useState } from 'react';
+import { Plus, Trash2, Globe } from 'lucide-react';
+
 import { LanguageService } from '../../services/language.service';
 import type { LanguageDto, CreateLanguageDto, LanguageFilterDto } from '../../types/language';
-import { notify } from '../../utils/toast';
-import { CreateCard } from '../../components/CreateCard';
-import { ConfirmModal } from '../../components/ui/ConfirmModal';
 
-const PAGE_SIZE = 6;
+import { UsePagination } from "../../hooks/UsePagination";
+import { Pagination } from "../../components/Pagination";
+import { PaginationInfo } from "../../components/PaginationInfo";
+import { DataTable, type Column } from "../../components/DataTable";
+import { notify } from "../../utils/toast";
+import { ConfirmModal } from "../../components/ui/ConfirmModal";
+import { CreateCard } from "../../components/CreateCard";
+import { SearchInput } from "../../components/ui/SearchInput";
+
+const languageFields = [
+    {
+        name: 'name',
+        label: "Назва мови",
+        placeholder: "Напр. Українська",
+        icon: Globe
+    }
+];
 
 const AdminLanguages = () => {
-    const [languages, setLanguages] = useState<LanguageDto[]>([]);
-    const [totalCount, setTotalCount] = useState(0);
-    const [page, setPage] = useState(1);
 
     const [searchTerm, setSearchTerm] = useState('');
-    const [loading, setLoading] = useState(false);
+    const [sortBy, setSortBy] = useState<'id' | 'name'>('id');
+    const [isDesc, setIsDesc] = useState(true);
+    const [isSaving, setIsSaving] = useState(false);
 
-    const [deleteModal, setDeleteModal] = useState({
+    const [deleteModal, setDeleteModal] = useState<{
+        isOpen: boolean;
+        id: number | null;
+        name: string;
+    }>({
         isOpen: false,
-        id: null as number | null,
+        id: null,
         name: ''
     });
 
-    const [isDeleting, setIsDeleting] = useState(false);
+    const {
+        items: languages,
+        totalCount,
+        currentPage,
+        totalPages,
+        pageSize,
+        loading,
+        error,
+        goToPage,
+        refresh,
+    } = UsePagination(async (p, ps) => {
+        const filter: LanguageFilterDto = {
+            search: searchTerm || undefined,
+            sortBy,
+            isDescending: isDesc,
+            Page: p,
+            PageSize: ps
+        };
 
-    const totalPages = Math.ceil(totalCount / PAGE_SIZE);
+        return await LanguageService.getAll(filter);
+    }, [searchTerm, sortBy, isDesc], { pageSize: 6 });
 
-    const loadData = async () => {
-        try {
-            const filter: LanguageFilterDto = {
-                page,
-                pageSize: PAGE_SIZE,
-                search: searchTerm || undefined
-            };
 
-            const result = await LanguageService.getAll(filter);
-            setLanguages(result.items);
-            setTotalCount(result.totalCount);
-        } catch (err) {
-            console.error('Помилка завантаження мов', err);
-        }
-    };
-
-    useEffect(() => {
-        loadData();
-    }, [page, searchTerm]);
-
-    const handleCreateLanguage = async (data: CreateLanguageDto) => {
-        setLoading(true);
+    const handleAddLanguage = async (data: CreateLanguageDto) => {
+        setIsSaving(true);
         try {
             await LanguageService.create(data);
-            notify.success('Мову успішно додано!');
-            setPage(1);
-            await loadData();
-        } catch (err: any) {
-            notify.error('Помилка: ' + (err.response?.data?.message || 'Не вдалося додати'));
+            notify.success("Мову додано");
+            refresh();
+        } catch {
+            notify.error("Помилка додавання");
         } finally {
-            setLoading(false);
+            setIsSaving(false);
         }
     };
 
-    const handleDeleteClick = (id: number, name: string) => {
-        setDeleteModal({ isOpen: true, id, name });
-    };
 
     const handleConfirmDelete = async () => {
         if (!deleteModal.id) return;
-        setIsDeleting(true);
+
+        setIsSaving(true);
+
         try {
             await LanguageService.delete(deleteModal.id);
-            notify.success('Мову видалено');
-            await loadData();
-            setDeleteModal({ isOpen: false, id: null, name: '' });
+            notify.success("Мову видалено");
+            refresh();
         } catch {
-            notify.error('Помилка видалення');
+            notify.error("Не вдалося видалити");
         } finally {
-            setIsDeleting(false);
+            setIsSaving(false);
+            setDeleteModal({ isOpen: false, id: null, name: '' });
         }
     };
 
+
+    const columns: Column<LanguageDto>[] = [
+        {
+            key: 'id',
+            header: 'ID',
+            sortable: true,
+            sortKey: 'id',
+            width: 'w-24',
+            render: l => (
+                <span className="text-red-600 font-black text-lg tracking-tighter">
+                    #{l.id}
+                </span>
+            )
+        },
+        {
+            key: 'name',
+            header: 'Назва',
+            sortable: true,
+            sortKey: 'name',
+            render: l => (
+                <span className="font-bold text-gray-100 uppercase">
+                    {l.name}
+                </span>
+            )
+        },
+        {
+            key: 'actions',
+            header: 'Дії',
+            width: 'w-20',
+            align: 'right',
+            render: language => (
+                <div className="flex justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <button
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            setDeleteModal({
+                                isOpen: true,
+                                id: language.id,
+                                name: language.name
+                            });
+                        }}
+                        className="p-2 text-gray-500 hover:text-red-500 hover:bg-red-500/10 rounded-xl transition-all"
+                    >
+                        <Trash2 size={16} />
+                    </button>
+                </div>
+            )
+        }
+    ];
+
+
     return (
-        <div className="flex flex-col lg:flex-row gap-8 items-start text-white animate-fade-in">
+        <div className="flex flex-col lg:flex-row gap-8 items-start text-white pb-10 font-sans relative">
 
             <ConfirmModal
                 isOpen={deleteModal.isOpen}
                 title="Видалити мову?"
                 description={
-                    <>Ви впевнені, що хочете видалити мову <span className="font-bold">"{deleteModal.name}"</span>?</>
+                    <>Ви впевнені, що хочете видалити мову <span className="text-white font-bold">"{deleteModal.name}"</span>?</>
                 }
-                isLoading={isDeleting}
                 onConfirm={handleConfirmDelete}
                 onClose={() => setDeleteModal({ ...deleteModal, isOpen: false })}
+                isLoading={isSaving}
             />
 
             <CreateCard
                 title="Нова мова"
-                buttonText="Додати мову"
+                buttonText="Зберегти"
                 icon={Plus}
-                loading={loading}
-                onSubmit={handleCreateLanguage}
-                fields={[
-                    {
-                        name: 'name',
-                        label: 'Назва',
-                        placeholder: 'Напр. Українська',
-                        icon: Plus
-                    }
-                ]}
+                fields={languageFields}
+                loading={isSaving}
+                onSubmit={handleAddLanguage}
             />
 
-            <div className="w-full lg:w-2/3 bg-[#1a1d26] rounded-4xl border border-gray-800 shadow-2xl overflow-hidden flex flex-col min-h-125">
+            <div className="w-full lg:w-2/3 flex flex-col gap-6">
 
-                {/* Header */}
-                <div className="p-8 border-b border-gray-800 bg-gray-900/30 flex justify-between items-center gap-4">
-                    <h2 className="font-black flex items-center gap-3 text-xl uppercase tracking-tighter italic">
-                        <Globe className="text-red-600" size={24} /> Мови
-                    </h2>
+                <SearchInput
+                    value={searchTerm}
+                    onChange={setSearchTerm}
+                    placeholder="Пошук мов..."
+                />
 
-                    <div className="relative w-64">
-                        <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500" size={18} />
-                        <input
-                            type="text"
-                            placeholder="Пошук..."
-                            value={searchTerm}
-                            onChange={(e) => {
-                                setSearchTerm(e.target.value);
-                                setPage(1);
-                            }}
-                            className="w-full bg-gray-900 border border-gray-700 rounded-xl py-2.5 pl-11 outline-none focus:border-red-500 text-sm transition-all"
+                <DataTable
+                    data={languages}
+                    columns={columns}
+                    loading={loading}
+                    error={error}
+                    sortConfig={{ sortBy, isDesc }}
+                    onSort={(key) =>
+                        sortBy === key
+                            ? setIsDesc(!isDesc)
+                            : (setSortBy(key as any), setIsDesc(false))
+                    }
+                />
+
+                {!loading && totalPages > 0 && (
+                    <div className="bg-[#161820] p-4 rounded-3xl border border-gray-800 flex flex-col sm:flex-row items-center justify-between gap-4 font-sans">
+                        <PaginationInfo
+                            currentPage={currentPage}
+                            pageSize={pageSize}
+                            totalCount={totalCount}
+                            itemName="мов"
+                        />
+
+                        <Pagination
+                            currentPage={currentPage}
+                            totalPages={totalPages}
+                            onPageChange={goToPage}
                         />
                     </div>
-                </div>
-
-                {/* List */}
-                <div className="p-6 space-y-3 overflow-y-auto flex-1">
-                    {languages.length > 0 ? (
-                        languages.map(l => (
-                            <div
-                                key={l.id}
-                                className="flex justify-between items-center bg-gray-900/50 p-4 rounded-2xl border border-gray-800 group hover:bg-gray-900 transition-all"
-                            >
-                                <span className="font-bold uppercase tracking-wider text-sm">{l.name}</span>
-                                <button
-                                    onClick={() => handleDeleteClick(l.id, l.name)}
-                                    className="p-2 text-gray-600 hover:text-red-500 transition-all opacity-0 group-hover:opacity-100"
-                                >
-                                    <Trash2 size={18} />
-                                </button>
-                            </div>
-                        ))
-                    ) : (
-                        <div className="h-full flex flex-col items-center justify-center text-gray-600 py-20">
-                            <Globe size={40} className="mb-3 opacity-10" />
-                            <p className="text-xs font-black uppercase tracking-widest">Мов не знайдено</p>
-                        </div>
-                    )}
-                </div>
-
-                {/* Pagination — ТАКИЙ САМИЙ СТИЛЬ, ЯК У ЖАНРІВ */}
-                {totalPages > 1 && (
-                    <div className="flex justify-center gap-2 p-6 border-t border-gray-800 bg-gray-900/30">
-                        {Array.from({ length: totalPages }, (_, i) => {
-                            const current = i + 1;
-                            const isActive = page === current;
-
-                            return (
-                                <button
-                                    key={current}
-                                    onClick={() => setPage(current)}
-                                    className={`
-                                        min-w-9 px-3 py-1.5 text-sm font-black rounded-xl border transition-all
-                                        ${isActive
-                                        ? 'bg-red-600 border-red-600 text-white shadow-lg'
-                                        : 'bg-gray-900 border-gray-700 text-gray-400 hover:border-red-500 hover:text-white'}
-                                    `}
-                                >
-                                    {current}
-                                </button>
-                            );
-                        })}
-                    </div>
                 )}
-
             </div>
         </div>
     );

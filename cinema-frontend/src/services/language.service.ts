@@ -1,9 +1,10 @@
 import { axiosInstance } from "../api/axiosInstance";
 import type { LanguageDto, CreateLanguageDto, LanguageFilterDto } from "../types/language";
+import type {PagedResult} from "../types/common.ts";
 
 export const LanguageService = {
-    async getAll(filter?: LanguageFilterDto) {
-        const response = await axiosInstance.get<LanguageDto[]>("/languages", {
+    async getAll(filter: LanguageFilterDto) {
+        const response = await axiosInstance.get<PagedResult<LanguageDto>>("/languages", {
             params: filter
         });
         return response.data;
