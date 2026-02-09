@@ -44,7 +44,7 @@ export const Profile = () => {
             setLoading(true);
             const data = await UserService.getProfile();
             setUser(data);
-            updateUser({ firstName: data.firstName, avatarUri: data.avatarUrl });
+            updateUser({ firstName: data.firstName, avatarUri: data.avatarUri });
             reset({
                 firstName: data.firstName,
                 lastName: data.lastName,
@@ -73,7 +73,7 @@ export const Profile = () => {
         try {
             setIsActionLoading(true);
             await UserService.deleteAvatar();
-            setUser(prev => prev ? { ...prev, avatarUrl: undefined } : null);
+            setUser(prev => prev ? { ...prev, avatarUri: undefined } : null);
             updateUser({ avatarUri: undefined });
             notify.success("Фото видалено");
 
@@ -94,8 +94,8 @@ export const Profile = () => {
             setIsUpdatingAvatar(true);
             setIsActionLoading(true);
             const result = await UserService.uploadAvatar(file);
-            setUser(prev => prev ? { ...prev, avatarUrl: result.avatarUrl } : null);
-            updateUser({ avatarUri: result.avatarUrl });
+            setUser(prev => prev ? { ...prev, avatarUri: result.avatarUri } : null);
+            updateUser({ avatarUri: result.avatarUri });
             notify.success("Аватар оновлено");
             setIsAvatarModalOpen(false);
         } catch (err) {
@@ -157,13 +157,13 @@ export const Profile = () => {
                         <div className="absolute top-0 left-0 w-full h-2 bg-red-600"></div>
 
                         <div className="relative w-40 h-40 mt-4 mb-8 group cursor-pointer" onClick={() => setIsAvatarModalOpen(true)}>
-                            <div className={`absolute inset-0 rounded-full border-4 border-gray-900 bg-[#0f1117] flex flex-col items-center justify-center transition-all duration-300 ${!user?.avatarUrl ? 'opacity-100' : 'opacity-0'}`}>
+                            <div className={`absolute inset-0 rounded-full border-4 border-gray-900 bg-[#0f1117] flex flex-col items-center justify-center transition-all duration-300 ${!user?.avatarUri ? 'opacity-100' : 'opacity-0'}`}>
                                 <UserIcon size={50} className="text-gray-700 group-hover:text-red-600 transition-colors" />
                                 <span className="text-[10px] font-black uppercase mt-2 text-gray-600 tracking-widest">Змінити фото</span>
                             </div>
 
-                            {user?.avatarUrl && (
-                                <img src={`${BASE_URL}${user.avatarUrl}`} className="w-full h-full rounded-full object-cover border-4 border-gray-900 shadow-2xl group-hover:brightness-50 transition-all" alt="Avatar" />
+                            {user?.avatarUri && (
+                                <img src={`${BASE_URL}${user.avatarUri}`} className="w-full h-full rounded-full object-cover border-4 border-gray-900 shadow-2xl group-hover:brightness-50 transition-all" alt="Avatar" />
                             )}
 
                             <div className={`absolute inset-0 flex items-center justify-center transition-opacity ${isUpdatingAvatar ? 'opacity-100 bg-black/60 rounded-full' : 'opacity-0 group-hover:opacity-100'}`}>
@@ -280,7 +280,7 @@ export const Profile = () => {
                             <button onClick={() => fileInputRef.current?.click()} className="w-full flex items-center justify-center gap-3 py-4 bg-red-600 hover:bg-red-700 text-white rounded-2xl font-black text-[10px] uppercase tracking-widest transition-all shadow-lg shadow-red-600/20">
                                 <Upload size={18} /> Завантажити
                             </button>
-                            {user?.avatarUrl && (
+                            {user?.avatarUri && (
                                 <button onClick={() => setIsDeleteConfirmOpen(true)} className="w-full flex items-center justify-center gap-3 py-4 bg-gray-800 hover:bg-red-600/20 hover:text-red-500 text-gray-400 rounded-2xl font-black text-[10px] uppercase tracking-widest transition-all border border-gray-700">
                                     <Trash2 size={18} /> Видалити
                                 </button>
