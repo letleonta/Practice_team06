@@ -33,19 +33,35 @@ export const SessionCreateForm = ({ movie, halls, languages, initialData, onSubm
     const [endDate, setEndDate] = useState('');
     const [isLoading, setIsLoading] = useState(false);
 
-    // Додано formState: { errors } для відображення помилок валідації
     const { register, handleSubmit, reset, setValue, formState: { errors } } = useForm<SessionFormValues>();
 
-    // Отримання поточної дати у форматі YYYY-MM-DDTHH:mm для атрибуту min
-    const getCurrentDateTimeLocal = () => {
-        const now = new Date();
-        // Враховуємо зміщення часового поясу, щоб отримати правильний локальний ISO рядок
-        now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
-        return now.toISOString().slice(0, 16);
+    // --- ОБЧИСЛЕННЯ ДАТ ДЛЯ ОБМЕЖЕНЬ ---
+
+    const now = new Date();
+    // Вираховуємо зміщення часового поясу (у хвилинах), щоб отримати локальний час в ISO
+    const tzOffset = now.getTimezoneOffset() * 60000;
+
+    // Перевіряємо, чи є дати прокату. Якщо немає — ставимо дефолтні значення.
+    const movieStart = movie.startDate ? new Date(movie.startDate) : new Date(0);
+    const movieEnd = movie.endDate ? new Date(movie.endDate) : new Date(now.getFullYear() + 10, 0, 1);
+    movieEnd.setHours(23, 59, 59, 999);
+
+    const effectiveMinDate = now > movieStart ? now : movieStart;
+
+    const toLocalISOString = (date: Date) => {
+        return new Date(date.getTime() - tzOffset).toISOString().slice(0, 16);
     };
+
+    const minDateTimeString = toLocalISOString(effectiveMinDate);
+    const maxDateTimeString = toLocalISOString(movieEnd);
+
+    const minDateString = effectiveMinDate.toISOString().split('T')[0];
+    const maxDateString = movieEnd.toISOString().split('T')[0];
+
 
     useEffect(() => {
         if (initialData) {
+            // РЕДАГУВАННЯ
             setValue('hallId', String(initialData.hallId));
 
             const lang = languages.find(l => l.name === initialData.languageName);
@@ -54,15 +70,42 @@ export const SessionCreateForm = ({ movie, halls, languages, initialData, onSubm
             }
 
             const dateObj = new Date(initialData.startTime);
-            const localIso = new Date(dateObj.getTime() - (dateObj.getTimezoneOffset() * 60000)).toISOString().slice(0, 16);
-            setValue('date', localIso);
+            setValue('date', toLocalISOString(dateObj));
 
             setIsRecurring(false);
         } else {
             reset();
             setIsRecurring(false);
+
+            let defaultStartDate = new Date();
+
+            if (now < movieStart) {
+                defaultStartDate = new Date(movieStart);
+                defaultStartDate.setHours(9, 0, 0, 0);
+            } else {
+                defaultStartDate = new Date();
+                defaultStartDate.setMinutes(0, 0, 0);
+                defaultStartDate.setHours(defaultStartDate.getHours() + 1);
+            }
+
+            if (defaultStartDate > movieEnd) {
+                defaultStartDate = new Date(movieEnd);
+                defaultStartDate.setHours(23, 0, 0, 0);
+            }
+            if (defaultStartDate < effectiveMinDate) {
+                defaultStartDate = new Date(effectiveMinDate);
+                defaultStartDate.setMinutes(defaultStartDate.getMinutes() + 5);
+            }
+
+
+            setValue('date', toLocalISOString(defaultStartDate));
+
+
+            if (movie.endDate) {
+                setEndDate(movie.endDate.split('T')[0]);
+            }
         }
-    }, [initialData, setValue, reset, languages]);
+    }, [initialData, setValue, reset, languages, movie]); // Додали movie в залежності
 
     const createDateAsUTC = (dateString: string): Date => {
         const date = new Date(dateString);
@@ -90,11 +133,15 @@ export const SessionCreateForm = ({ movie, halls, languages, initialData, onSubm
         }
 
         const end = new Date(endDate);
+        end.setHours(23, 59, 59, 999);
+
         if (isNaN(end.getTime()) || end < start) return [baseDto];
 
         const current = new Date(start);
 
         while (current <= end) {
+            if (current > movieEnd) break;
+
             if (selectedDays.includes(current.getDay())) {
                 const dateStr = current.toISOString().split('T')[0];
                 const fullDateTimeString = `${dateStr}T${timePart}`;
@@ -116,16 +163,21 @@ export const SessionCreateForm = ({ movie, halls, languages, initialData, onSubm
         try {
             const sessionsPayload = generateSessions(data);
 
+            if (sessionsPayload.length === 0) {
+                alert("Не вдалося створити сеанси. Перевірте дати.");
+                setIsLoading(false);
+                return;
+            }
+
             if (initialData && onUpdate) {
                 await onUpdate(initialData.id, sessionsPayload[0]);
             } else {
                 if (isRecurring && (selectedDays.length === 0 || !endDate)) {
                     alert("Оберіть дні тижня та дату завершення");
+                    setIsLoading(false);
                     return;
                 }
                 await onSubmit(sessionsPayload);
-                reset();
-                setEndDate('');
                 setSelectedDays([]);
                 setIsRecurring(false);
             }
@@ -174,6 +226,16 @@ export const SessionCreateForm = ({ movie, halls, languages, initialData, onSubm
                 )}
             </div>
 
+            <div className="mb-4 text-xs text-gray-500 font-mono bg-black/20 p-2 rounded-lg border border-gray-800">
+                <p>
+                    Період прокату: <span className="text-white">
+                        {movie.startDate ? new Date(movie.startDate).toLocaleDateString() : 'Не вказано'}
+                    </span> — <span className="text-white">
+                        {movie.endDate ? new Date(movie.endDate).toLocaleDateString() : 'Не вказано'}
+                    </span>
+                </p>
+            </div>
+
             <form onSubmit={handleSubmit(handleFormSubmit)} className="space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <div>
@@ -204,23 +266,21 @@ export const SessionCreateForm = ({ movie, halls, languages, initialData, onSubm
                         </label>
                         <input
                             type="datetime-local"
-                            // Встановлюємо мінімальну дату як "зараз"
-                            min={getCurrentDateTimeLocal()}
+                            min={minDateTimeString}
+                            max={maxDateTimeString}
                             {...register('date', {
                                 required: true,
                                 validate: (value) => {
-                                    // Додаткова перевірка на рівні JS
                                     const selected = new Date(value);
-                                    const now = new Date();
-                                    // Дозволяємо невелику похибку (наприклад, поки користувач вибирав, пройшла 1 хвилина),
-                                    // але загалом дата має бути в майбутньому.
-                                    return selected > now || "Дата не може бути в минулому";
+                                    // Дозволяємо похибку в 1 хвилину для "зараз"
+                                    if (selected < effectiveMinDate && (effectiveMinDate.getTime() - selected.getTime()) > 60000) return "Дата не може бути в минулому або до початку прокату";
+                                    if (selected > movieEnd) return "Дата виходить за межі періоду прокату";
+                                    return true;
                                 }
                             })}
                             className={`w-full p-3 bg-gray-900 border rounded-xl outline-none focus:border-red-500 text-sm text-white [color-scheme:dark]
                                 ${errors.date ? 'border-red-500' : 'border-gray-700'}`}
                         />
-                        {/* Відображення помилки валідації */}
                         {errors.date && (
                             <p className="text-red-500 text-xs mt-1 font-bold flex items-center gap-1">
                                 <AlertCircle size={12} /> {typeof errors.date.message === 'string' ? errors.date.message : "Некоректна дата"}
@@ -254,12 +314,15 @@ export const SessionCreateForm = ({ movie, halls, languages, initialData, onSubm
                             <label className="block text-indigo-300 text-[10px] font-bold uppercase mb-1">Дата завершення повторів</label>
                             <input
                                 type="date"
-                                // Дата завершення також не може бути в минулому
-                                min={new Date().toISOString().split('T')[0]}
+                                min={minDateString}
+                                max={maxDateString}
                                 value={endDate}
                                 onChange={(e) => setEndDate(e.target.value)}
                                 className="w-full bg-gray-900 border border-gray-700 rounded-xl p-3 text-white text-sm outline-none focus:border-indigo-500 [color-scheme:dark]"
                             />
+                            <p className="text-[10px] text-indigo-300/50 mt-1">
+                                Не пізніше: {movie.endDate ? new Date(movie.endDate).toLocaleDateString() : 'Не вказано'}
+                            </p>
                         </div>
                     </div>
                 )}

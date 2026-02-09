@@ -48,6 +48,11 @@ export const MovieService = {
     },
 
     async delete(id: number) {
-        await axiosInstance.delete(`/movies/${id}`);
+        try {
+            await axiosInstance.delete(`/movies/${id}`);
+        } catch (error: any) {
+            // Прокидуємо повідомлення з бекенду, якщо воно є
+            throw new Error(error.response?.data?.message || "Помилка видалення");
+        }
     }
 };

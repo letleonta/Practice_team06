@@ -8,7 +8,7 @@ import { HallService } from "../../services/hall.service";
 import { LanguageService } from "../../services/language.service";
 import { ConfirmModal } from "../../components/ui/ConfirmModal";
 import { notify } from "../../utils/toast";
-import { Film } from 'lucide-react';
+import { Film, PlayCircle, Archive } from 'lucide-react';
 import { MovieListSidebar } from '../../components/SessionComponents/MovieListSidebar';
 import { SessionList } from '../../components/SessionComponents/SessionList';
 import { SessionCreateForm } from '../../components/SessionComponents/SessionCreateForm';
@@ -29,16 +29,19 @@ const AdminSessions = () => {
     // --- STATES ---
     const [allSessions, setAllSessions] = useState<SessionDto[]>([]);
     const [selectedIds, setSelectedIds] = useState<number[]>([]);
-
-    // Стан редагування
     const [sessionToEdit, setSessionToEdit] = useState<SessionDto | null>(null);
 
-    // Пагінація та фільтри
+    // Вкладки: 'active' | 'past'
+    const [activeTab, setActiveTab] = useState<'active' | 'past'>('active');
+
+    // Пагінація
     const [currentPage, setCurrentPage] = useState(1);
+    const PAGE_SIZE = 9;
+
+    // Фільтри дат
     const [filterDates, setFilterDates] = useState<{ from: string, to: string, weekdays: number[] }>({
         from: '', to: '', weekdays: []
     });
-    const PAGE_SIZE = 9;
 
     useEffect(() => {
         const loadDicts = async () => {
@@ -60,6 +63,7 @@ const AdminSessions = () => {
         setLoadingSessions(true);
         try {
             const data = await SessionService.getByMovieId(movieId);
+            // Сортуємо: нові зверху
             const sorted = data.sort((a, b) => new Date(a.startTime).getTime() - new Date(b.startTime).getTime());
             setAllSessions(sorted);
             setCurrentPage(1);
@@ -75,15 +79,23 @@ const AdminSessions = () => {
     useEffect(() => {
         if (selectedMovie) {
             void fetchSessions(selectedMovie.id);
-            setSessionToEdit(null); // Скидаємо редагування при зміні фільму
+            setSessionToEdit(null);
         } else {
             setAllSessions([]);
         }
     }, [selectedMovie]);
 
-    // --- ФІЛЬТРАЦІЯ ---
+    // --- ФІЛЬТРАЦІЯ (ВКЛАДКИ + ДАТИ) ---
     const filteredSessions = useMemo(() => {
         let result = allSessions;
+        const now = new Date();
+
+        if (activeTab === 'active') {
+            result = result.filter(s => new Date(s.endTime) > now);
+        } else {
+            result = result.filter(s => new Date(s.endTime) <= now);
+        }
+
         if (filterDates.from) {
             const from = new Date(filterDates.from); from.setHours(0, 0, 0, 0);
             result = result.filter(s => new Date(s.startTime) >= from);
@@ -99,7 +111,7 @@ const AdminSessions = () => {
             });
         }
         return result;
-    }, [allSessions, filterDates]);
+    }, [allSessions, filterDates, activeTab]);
 
     const paginatedSessions = useMemo(() => {
         const startIndex = (currentPage - 1) * PAGE_SIZE;
@@ -108,7 +120,7 @@ const AdminSessions = () => {
 
     const totalPages = Math.ceil(filteredSessions.length / PAGE_SIZE);
 
-    // --- SELECTION ---
+    // --- HANDLERS ---
     const handleToggleSelect = (id: number) => {
         setSelectedIds(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]);
     };
@@ -125,7 +137,6 @@ const AdminSessions = () => {
         }
     };
 
-    // --- HANDLERS ---
     const handleCreateSessions = async (dataList: CreateSessionDto[]) => {
         if (!selectedMovie) return;
         try {
@@ -136,15 +147,14 @@ const AdminSessions = () => {
                 languageId: Number(item.languageId)
             }));
             await Promise.all(promises);
-            notify.success(`Успішно створено сеансів: ${dataList.length}`);
+            notify.success(`Створено сеансів: ${dataList.length}`);
             void fetchSessions(selectedMovie.id);
-        } catch (err: unknown) {
+        } catch (err) {
             console.error(err);
             notify.error('Помилка при створенні');
         }
     };
 
-    // Оновлення сеансу
     const handleUpdateSession = async (id: number, data: CreateSessionDto) => {
         if (!selectedMovie) return;
         try {
@@ -154,9 +164,9 @@ const AdminSessions = () => {
                 hallId: Number(data.hallId),
                 languageId: Number(data.languageId)
             });
-            notify.success("Сеанс успішно оновлено");
+            notify.success("Сеанс оновлено");
             void fetchSessions(selectedMovie.id);
-            setSessionToEdit(null); // Виходимо з режиму редагування
+            setSessionToEdit(null);
         } catch (err) {
             console.error(err);
             notify.error("Не вдалося оновити сеанс");
@@ -170,7 +180,6 @@ const AdminSessions = () => {
             notify.success(`Видалено сеансів: ${selectedIds.length}`);
             setSelectedIds([]);
             if (selectedMovie) await fetchSessions(selectedMovie.id);
-            setSessionToEdit(null);
         } catch (e) {
             console.error(e);
             notify.error("Помилка при видаленні.");
@@ -193,29 +202,49 @@ const AdminSessions = () => {
                             movie={selectedMovie}
                             halls={halls}
                             languages={languages}
-                            initialData={sessionToEdit} // Дані для редагування
+                            initialData={sessionToEdit}
                             onSubmit={handleCreateSessions}
-                            onUpdate={handleUpdateSession} // Функція оновлення
-                            onCancelEdit={() => setSessionToEdit(null)} // Скасування
+                            onUpdate={handleUpdateSession}
+                            onCancelEdit={() => setSessionToEdit(null)}
                         />
+
+                        {/* ВКЛАДКИ (TABS) */}
+                        <div className="flex bg-[#1a1d26] p-1 rounded-2xl w-fit border border-gray-800">
+                            <button
+                                onClick={() => { setActiveTab('active'); setCurrentPage(1); }}
+                                className={`flex items-center gap-2 px-6 py-2.5 rounded-xl text-sm font-bold transition-all ${
+                                    activeTab === 'active'
+                                        ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-900/20'
+                                        : 'text-gray-400 hover:text-white hover:bg-gray-800'
+                                }`}
+                            >
+                                <PlayCircle size={16} /> Активні
+                            </button>
+                            <button
+                                onClick={() => { setActiveTab('past'); setCurrentPage(1); }}
+                                className={`flex items-center gap-2 px-6 py-2.5 rounded-xl text-sm font-bold transition-all ${
+                                    activeTab === 'past'
+                                        ? 'bg-gray-700 text-white shadow-lg'
+                                        : 'text-gray-400 hover:text-white hover:bg-gray-800'
+                                }`}
+                            >
+                                <Archive size={16} /> Минулі
+                            </button>
+                        </div>
 
                         <SessionList
                             sessions={paginatedSessions}
                             loading={loadingSessions}
 
-                            // Edit
-                            onEdit={(session) => {
-                                setSessionToEdit(session);
-                                window.scrollTo({ top: 0, behavior: 'smooth' }); // Скрол до форми
-                            }}
-
-                            // Selection
                             selectedIds={selectedIds}
                             onToggleSelect={handleToggleSelect}
                             onToggleSelectAll={handleToggleSelectAll}
                             onDeleteClick={() => setDeleteModal({ isOpen: true })}
+                            onEdit={(session) => {
+                                setSessionToEdit(session);
+                                window.scrollTo({ top: 0, behavior: 'smooth' });
+                            }}
 
-                            // Pagination & Filter
                             totalCount={filteredSessions.length}
                             currentPage={currentPage}
                             totalPages={totalPages}

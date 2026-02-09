@@ -11,11 +11,9 @@ import { notify } from "../../utils/toast";
 import { UsePagination } from "../../hooks/UsePagination";
 import { Pagination } from "../../components/Pagination";
 import { PaginationInfo } from "../../components/PaginationInfo";
-import { DataTable, type Column } from "../../components/DataTable"; // Ваш компонент таблиці
-
-// Імпортуємо винесені компоненти
+import { DataTable, type Column } from "../../components/DataTable";
 import { MovieForm } from '../../components/AMoviesComponents/MovieForm';
-import { QuickCreateModal } from '../../components/AMoviesComponents/QuickCreateModal';
+import { QuickCreateModal } from '../../components/AMoviesComponents/QuickCreateModal.tsx';
 
 const ageMap: Record<string, number> = { "ZeroPlus": 0, "TwelvePlus": 1, "SixteenPlus": 2, "EighteenPlus": 3 };
 
@@ -35,7 +33,6 @@ const AdminMovies = () => {
         isOpen: false, movieId: null, movieTitle: ''
     });
 
-    // React Hook Form (ініціалізуємо тут, щоб передати у MovieForm)
     const formMethods = useForm<CreateMovieDto>({
         defaultValues: { genreIds: [], actorIds: [] }
     });
@@ -45,7 +42,7 @@ const AdminMovies = () => {
         try {
             const [g, d, a] = await Promise.all([
                 GenreService.getAll(),
-                DirectorService.getAll({ Page: 1, PageSize: 100 }), // Більше ліміт для селектів
+                DirectorService.getAll({ Page: 1, PageSize: 100 }),
                 ActorService.getAll({ Page: 1, PageSize: 100 })
             ]);
             setGenres(g);
@@ -71,7 +68,7 @@ const AdminMovies = () => {
             return await MovieService.getAll(filter);
         },
         [debouncedSearch],
-        { pageSize: 10 } // Для таблиці зручніше 10+ записів
+        { pageSize: 8 }
     );
 
     // --- HANDLERS ---
@@ -79,7 +76,6 @@ const AdminMovies = () => {
         setEditingId(movie.id);
         formMethods.reset();
 
-        // Заповнення форми
         formMethods.setValue('title', movie.title);
         formMethods.setValue('description', movie.description || '');
         formMethods.setValue('durationMin', movie.durationMin || 0);
@@ -97,8 +93,6 @@ const AdminMovies = () => {
         const foundDir = directors.find(d => movie.directorName.includes(d.lastName));
         if (foundDir) formMethods.setValue('directorId', foundDir.id);
 
-        // Мапимо жанри та акторів по іменах (якщо ID не приходять в MovieDto)
-        // Примітка: В ідеалі MovieDto має містити масиви genreIds та actorIds
         const gIds = genres.filter(g => movie.genres.includes(g.name)).map(g => g.id.toString());
         formMethods.setValue('genreIds', gIds as any);
 
@@ -119,7 +113,7 @@ const AdminMovies = () => {
                 genreIds: data.genreIds ? data.genreIds.map(Number) : [],
                 actorIds: data.actorIds ? data.actorIds.map(Number) : [],
                 directorId: data.directorId ? Number(data.directorId) : undefined,
-                languageIds: [] // Якщо потрібно
+                languageIds: []
             };
 
             if (editingId) await MovieService.update(editingId, formatted);
@@ -141,10 +135,14 @@ const AdminMovies = () => {
             await refresh();
             setDeleteConfirm({ isOpen: false, movieId: null, movieTitle: '' });
             notify.success("Фільм видалено");
-        } catch (e) { notify.error('Помилка при видаленні'); }
+        } catch (e: any) {
+            // ВАЖЛИВО: Отримуємо повідомлення з бекенду (BadRequest)
+            const errorMsg = e.response?.data?.message || e.message || 'Помилка при видаленні';
+            notify.error(errorMsg);
+        }
     };
 
-    // --- COLUMNS CONFIGURATION FOR DATATABLE ---
+    // --- COLUMNS ---
     const columns: Column<MovieDto>[] = useMemo(() => [
         {
             key: 'poster',
@@ -155,24 +153,22 @@ const AdminMovies = () => {
                     src={movie.posterUri}
                     alt={movie.title}
                     className="w-10 h-14 rounded-lg object-cover border border-gray-700 shadow-sm"
+                    onError={(e) => e.currentTarget.src = 'https://via.placeholder.com/40x60'}
                 />
             )
         },
         {
             key: 'title',
             header: 'Назва / Жанри',
-            sortable: true,
-            sortKey: 'title',
             render: (movie) => (
                 <div className="flex flex-col gap-1">
                     <span className="font-bold text-white text-sm leading-tight">{movie.title}</span>
                     <div className="flex flex-wrap gap-1">
                         {movie.genres.slice(0, 3).map(g => (
-                            <span key={g} className="text-[9px] bg-gray-800 text-gray-400 px-1.5 py-0.5 rounded border border-gray-700">
+                            <span key={g} className="text-[10px] bg-gray-800 text-gray-400 px-1.5 py-0.5 rounded border border-gray-700">
                                 {g}
                             </span>
                         ))}
-                        {movie.genres.length > 3 && <span className="text-[9px] text-gray-500">+{movie.genres.length - 3}</span>}
                     </div>
                 </div>
             )
@@ -199,7 +195,7 @@ const AdminMovies = () => {
             )
         },
         {
-            key: 'price',
+            key: 'basePrice',
             header: 'Ціна',
             align: 'right',
             width: '100px',
@@ -211,20 +207,20 @@ const AdminMovies = () => {
         },
         {
             key: 'actions',
-            header: 'Дії',
+            header: '',
             align: 'right',
             width: '120px',
             render: (movie) => (
                 <div className="flex justify-end gap-2">
                     <button
-                        onClick={() => handleEditMovie(movie)}
+                        onClick={(e) => { e.stopPropagation(); handleEditMovie(movie); }}
                         className="p-2 bg-blue-500/10 text-blue-500 hover:bg-blue-500 hover:text-white rounded-xl transition-all"
                         title="Редагувати"
                     >
                         <Edit size={16} />
                     </button>
                     <button
-                        onClick={() => setDeleteConfirm({ isOpen: true, movieId: movie.id, movieTitle: movie.title })}
+                        onClick={(e) => { e.stopPropagation(); setDeleteConfirm({ isOpen: true, movieId: movie.id, movieTitle: movie.title }); }}
                         className="p-2 bg-red-500/10 text-red-500 hover:bg-red-500 hover:text-white rounded-xl transition-all"
                         title="Видалити"
                     >
@@ -268,7 +264,7 @@ const AdminMovies = () => {
                                     type="text"
                                     placeholder="Пошук..."
                                     value={movieSearch}
-                                    onChange={e => { setMovieSearch(e.target.value); goToPage(1); }}
+                                    onChange={e => { setMovieSearch(e.target.value); /* goToPage(1) робить хук */ }}
                                     className="w-full bg-gray-900 border border-gray-800 rounded-xl py-3 pl-12 pr-4 outline-none focus:border-red-600 transition-colors text-sm font-bold text-white"
                                 />
                             </div>
@@ -283,18 +279,18 @@ const AdminMovies = () => {
 
                     {/* Table Container */}
                     <div className="bg-[#1a1d26] rounded-3xl border border-gray-800 shadow-2xl overflow-hidden">
-                        {/* Сама таблиця */}
                         <DataTable
                             data={movies}
                             columns={columns}
                             loading={loading}
                             emptyMessage={`Нічого не знайдено за запитом "${debouncedSearch}"`}
                             className="border-none bg-transparent shadow-none rounded-none"
-                            onRowClick={handleEditMovie} // Клік по рядку відкриває редагування
+                            onRowClick={handleEditMovie}
                         />
 
                         {/* Футер з пагінацією */}
-                        {!loading && totalPages > 1 && (
+                        {/* Футер з пагінацією */}
+                        {!loading && totalCount > 0 && (
                             <div className="p-4 border-t border-gray-800 bg-gray-900/30 flex flex-col sm:flex-row items-center justify-between gap-4">
                                 <PaginationInfo
                                     currentPage={currentPage}
@@ -302,6 +298,7 @@ const AdminMovies = () => {
                                     totalCount={totalCount}
                                     itemName="фільм"
                                 />
+                                {/* ВИПРАВЛЕНО ТУТ: прибрано зайві пропси */}
                                 <Pagination
                                     currentPage={currentPage}
                                     totalPages={totalPages}
