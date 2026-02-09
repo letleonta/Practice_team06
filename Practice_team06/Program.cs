@@ -82,6 +82,8 @@ builder.Services.AddAutoMapper(_ => {}, typeof(BookingProfile).Assembly);
 builder.Services.AddAutoMapper(_ => {}, typeof(TicketProfile).Assembly);
 builder.Services.AddAutoMapper(_ => {}, typeof(GenreProfile).Assembly);
 builder.Services.AddAutoMapper(_ => {}, typeof(LanguageProfile).Assembly);
+builder.Services.AddAutoMapper(_ => {}, typeof(SessionProfile).Assembly);
+builder.Services.AddAutoMapper(_ => {}, typeof(MovieProfile).Assembly);
 
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IActorService, ActorService>();
