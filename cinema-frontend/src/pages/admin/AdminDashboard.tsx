@@ -16,14 +16,13 @@ import {
     Home,
     Tag,
     UserCheck,
-    LayoutDashboard,
-    Clapperboard,
     LayoutGrid,
     Globe,
     Ticket,
     ChevronRight,
-    Shield
+    Shield, UserIcon
 } from 'lucide-react';
+import {API_CONFIG} from "../../../config.ts";
 
 const AdminDashboard = () => {
     const location = useLocation();
@@ -43,13 +42,31 @@ const AdminDashboard = () => {
 
     return (
         <div className="flex min-h-screen bg-[#0f1117] text-white font-sans">
-            {/* --- SIDEBAR --- */}
+            {/* --- MAIN CONTENT AREA --- */}
             <aside className="w-72 bg-[#1a1d26] border-r border-gray-800 p-6 flex flex-col shadow-2xl z-20 sticky top-0 h-screen">
-                <div className="flex items-center gap-3 mb-10 px-2">
-                    <div className="bg-red-600 p-2 rounded-lg shadow-lg shadow-red-600/20">
-                        <Clapperboard size={24} className="text-white" />
+                <div className="mb-10">
+                    <div className="flex items-center gap-4 bg-[#0f1117]/50 hover:bg-[#0f1117] p-1.5 pr-6 rounded-full border border-gray-800 transition-all group shadow-2xl shadow-black/20">
+                        <div className="w-11 h-11 rounded-full overflow-hidden bg-gray-900 flex items-center justify-center border-2 border-red-600 shadow-lg shadow-red-600/10 shrink-0">
+                            {user?.avatarUri ? (
+                                <img
+                                    src={`${API_CONFIG.BASE_URL}${user.avatarUri}`}
+                                    alt="Ava"
+                                    className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+                                />
+                            ) : (
+                                <UserIcon size={20} className="text-gray-500" />
+                            )}
+                        </div>
+
+                        <div className="flex flex-col text-left min-w-0">
+                            <span className="text-white text-[13px] font-black uppercase tracking-wider leading-none mb-1.5 truncate">
+                                {user?.firstName || "Адмін"}
+                            </span>
+                            <span className="text-red-500 text-[9px] font-black uppercase tracking-[0.15em] leading-none">
+                                {userRole}
+                            </span>
+                        </div>
                     </div>
-                    <h2 className="text-xl font-black uppercase tracking-tighter">Cinema Admin</h2>
                 </div>
 
                 <nav className="flex-1 space-y-8 overflow-y-auto custom-scrollbar pr-2">
@@ -111,32 +128,7 @@ const AdminDashboard = () => {
                     </Link>
                 </div>
             </aside>
-
-            {/* --- MAIN CONTENT AREA --- */}
             <main className="flex-1 flex flex-col h-screen overflow-hidden">
-                {/* Header */}
-                <header className="h-20 border-b border-gray-800 flex items-center justify-between px-10 bg-[#0f1117]/80 backdrop-blur-md z-10">
-                    <div className="flex items-center gap-3 text-gray-400">
-                        <LayoutDashboard size={20} className="text-red-600" />
-                        <span className="text-sm font-bold uppercase tracking-widest text-gray-500">
-                            {location.pathname === '/admin' ? 'DASHBOARD' : location.pathname.split('/').pop()?.toUpperCase()}
-                        </span>
-                    </div>
-
-                    <div className="flex items-center gap-4">
-                        <div className="flex flex-col items-end mr-2">
-                            <span className={`text-[10px] font-black uppercase px-2 py-0.5 rounded border ${userRole === 'Admin' ? 'text-red-500 border-red-500/30 bg-red-500/10' : 'text-amber-500 border-amber-500/30 bg-amber-500/10'}`}>
-                                {userRole}
-                            </span>
-                            <span className="text-[10px] text-gray-500 font-bold mt-1 uppercase tracking-tighter">System Access</span>
-                        </div>
-                        {/* Безпечний рендер першої літери */}
-                        <div className={`h-12 w-12 rounded-2xl flex items-center justify-center font-black text-xl shadow-lg border ${userRole === 'Admin' ? 'bg-linear-to-br from-red-600 to-red-900 border-red-500/20' : 'bg-linear-to-br from-amber-500 to-amber-700 border-amber-500/20'}`}>
-                            {(userRole || 'G').charAt(0)}
-                        </div>
-                    </div>
-                </header>
-
                 {/* Scrollable Content */}
                 <div className="flex-1 overflow-y-auto p-10 bg-[#0b0d12] custom-scrollbar">
                     <Routes>

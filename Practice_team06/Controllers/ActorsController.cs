@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Practice_team06.DTOs.Actor;
+using Practice_team06.DTOs.Common;
 using Practice_team06.Services;
 
 namespace Practice_team06.Controllers;
@@ -17,7 +18,7 @@ public class ActorsController : ControllerBase
     }
 
     [HttpGet]
-    public async Task<ActionResult<IEnumerable<ActorDto>>> GetActors([FromQuery] ActorFilterDto filter)
+    public async Task<ActionResult<PagedResult<ActorDto>>> GetActors([FromQuery] ActorFilterDto filter)
     {
         var actors = await _actorService.GetAllAsync(filter);
 
@@ -55,27 +56,39 @@ public class ActorsController : ControllerBase
     }
     
     [HttpGet("{id}/movies")]
-    public async Task<ActionResult<IEnumerable<ActorMovieDto>>> GetActorMovies(int id)
+    public async Task<ActionResult<PagedResult<ActorMovieDto>>> GetActorMovies(int id, [FromQuery] BaseFilterDto filter)
     {
-        var movies = await _actorService.GetActorMoviesAsync(id);
-        return Ok(movies);
+        var result = await _actorService.GetActorMoviesAsync(id, filter);
+        return Ok(result);
     }
-
+    
     [HttpPut("{id}")] 
     [Authorize(Roles = "Admin, Manager")]
-    public async Task<IActionResult> UpdateActor(int id, CreateActorDto actorDto)
+    public async Task<ActionResult<ActorDto>> UpdateActor(int id, CreateActorDto actorDto)
     {
-        var result = await _actorService.UpdateAsync(id, actorDto);
-        if (!result) return NotFound();
-        return NoContent();
+        try
+        {
+            var updatedActor = await _actorService.UpdateAsync(id, actorDto);
+            return Ok(updatedActor); 
+        }
+        catch (KeyNotFoundException ex)
+        {
+            return NotFound(ex.Message);
+        }
     }
 
     [HttpDelete("{id}")] 
     [Authorize(Roles = "Admin, Manager")]
-    public async Task<IActionResult> DeleteActor(int id)
+    public async Task<ActionResult> DeleteActor(int id) 
     {
-        var result = await _actorService.DeleteAsync(id);
-        if (!result) return NotFound();
-        return NoContent();
+        try
+        {
+            await _actorService.DeleteAsync(id);
+            return NoContent(); 
+        }
+        catch (KeyNotFoundException ex)
+        {
+            return NotFound(ex.Message);
+        }
     }
 }

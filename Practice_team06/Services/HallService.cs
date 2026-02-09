@@ -1,31 +1,39 @@
-﻿using Microsoft.EntityFrameworkCore;
+using AutoMapper;
+using AutoMapper.QueryableExtensions;
+using Microsoft.EntityFrameworkCore;
+using Practice_team06.DTOs.Common;
 using Practice_team06.Models;
 using Practice_team06.DTOs.Hall;
+using Practice_team06.Extensions;
 
 namespace Practice_team06.Services;
 
 public class HallService : IHallService
 {
     private readonly PostgresContext _context;
+    private readonly IMapper _mapper;
 
-    public HallService(PostgresContext context) => _context = context;
+    public HallService(PostgresContext context, IMapper mapper)
+    {
+        _context = context;
+        _mapper = mapper;
+    }
 
     public async Task<IEnumerable<HallDto>> GetAllAsync()
     {
         return await _context.Halls
-            .Select(h => new HallDto {
-                Id = h.Id,
-                Name = h.Name,
-                PriceModifier = h.PriceModifier,
-                Description = h.Description
-            }).ToListAsync();
+            .AsNoTracking()
+            .ProjectTo<HallDto>(_mapper.ConfigurationProvider)
+            .ToListAsync();
     }
     
     public async Task<HallDto?> GetByIdAsync(int id)
     {
-        var h = await _context.Halls.FindAsync(id);
-        if (h == null) return null;
-        return new HallDto { Id = h.Id, Name = h.Name, PriceModifier = h.PriceModifier, Description = h.Description };
+        return await _context.Halls
+            .AsNoTracking()
+            .Where(h => h.Id == id)
+            .ProjectTo<HallDto>(_mapper.ConfigurationProvider)
+            .FirstOrDefaultAsync();
     }
 
     public async Task<HallDto> CreateAsync(CreateHallDto dto)
@@ -35,10 +43,12 @@ public class HallService : IHallService
             throw new InvalidOperationException("Зал з такою назвою вже існує.");
         }
 
-        var hall = new Hall { Name = dto.Name, PriceModifier = dto.PriceModifier, Description = dto.Description };
+        var hall = _mapper.Map<Hall>(dto);
+        
         _context.Halls.Add(hall);
         await _context.SaveChangesAsync();
-        return new HallDto { Id = hall.Id, Name = hall.Name, PriceModifier = hall.PriceModifier, Description = hall.Description };
+        
+        return _mapper.Map<HallDto>(hall);
     }
 
     public async Task<bool> DeleteAsync(int id)
@@ -89,8 +99,12 @@ public class HallService : IHallService
 
     public async Task<int> GenerateFlexibleSeatsAsync(GenerateFlexibleSeatsDto dto)
     {
-        var hall = await _context.Halls.FindAsync(dto.HallId);
-        if (hall == null) return 0;
+        var hasTickets = await _context.Tickets.AnyAsync(t => t.Seat.HallId == dto.HallId);
+    
+        if (hasTickets)
+        {
+            throw new InvalidOperationException("Неможливо змінити схему залу: на існуючі місця вже продано квитки.");
+        }
         
         var oldSeats = _context.Seats.Where(s => s.HallId == dto.HallId);
         _context.Seats.RemoveRange(oldSeats);
@@ -115,5 +129,63 @@ public class HallService : IHallService
         await _context.Seats.AddRangeAsync(seatsToCreate);
         await _context.SaveChangesAsync();
         return seatsToCreate.Count;
+    }
+    public async Task<PagedResult<HallDto>> GetPagedAsync(int page, int pageSize, string searchTerm)
+    {
+        var query = _context.Halls.AsQueryable();
+
+        if (!string.IsNullOrWhiteSpace(searchTerm))
+        {
+            var lowerSearch = searchTerm.ToLower();
+            query = query.Where(h => h.Name.ToLower().Contains(lowerSearch));
+        }
+
+        var totalCount = await query.CountAsync();
+
+        var items = await query
+            .OrderBy(h => h.Id)
+            .ApplyPagination(page, pageSize) 
+            .Select(h => new HallDto 
+            {
+                Id = h.Id,
+                Name = h.Name,
+                PriceModifier = h.PriceModifier,
+                Description = h.Description
+            })
+            .ToListAsync();
+
+        return new PagedResult<HallDto> 
+        {
+            Items = items,
+            TotalCount = totalCount,
+            Page = page,
+            PageSize = pageSize
+        };
+    }
+    public async Task<object> AddRowToHallAsync(int hallId, RowConfigDto rowConfig)
+    {
+        var hall = await _context.Halls.FindAsync(hallId);
+        if (hall == null) return 0;
+        
+        var rowExists = await _context.Seats.AnyAsync(s => s.HallId == hallId && s.RowNumber == rowConfig.RowNumber);
+        if (rowExists) throw new InvalidOperationException($"Ряд №{rowConfig.RowNumber} вже існує у цьому залі.");
+
+        var seatsToAdd = new List<Seat>();
+
+        for (short s = 1; s <= rowConfig.SeatCount; s++)
+        {
+            seatsToAdd.Add(new Seat
+            {
+                HallId = hallId,
+                RowNumber = rowConfig.RowNumber,
+                SeatNumber = s,
+                PriceModifier = rowConfig.Type == SeatType.VIP ? 1.5m : 1.0m,
+                SeatType = rowConfig.Type,
+            });
+        }
+
+        await _context.Seats.AddRangeAsync(seatsToAdd);
+        await _context.SaveChangesAsync();
+        return seatsToAdd.Count;
     }
 }

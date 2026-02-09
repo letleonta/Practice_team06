@@ -3,6 +3,8 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Practice_team06.DTOs.Booking;
+using Practice_team06.DTOs.Booking.Stats;
+using Practice_team06.DTOs.Common;
 using Practice_team06.Models;
 using Practice_team06.Services;
 
@@ -23,7 +25,7 @@ namespace Practice_team06.Controllers
         // Get all bookings
         [HttpGet]
         [Authorize(Roles = "Admin, Manager")]
-        public async Task<IActionResult> GetAllBookings([FromQuery] BookingFilterDto filter)
+        public async Task<ActionResult<PagedResult<AdminBookingDetailsDto>>> GetAllBookings([FromQuery] BookingFilterDto filter)
         {
             var bookings = await _bookingService.GetAllBookingsAsync(filter);
             return Ok(bookings);
@@ -33,7 +35,7 @@ namespace Practice_team06.Controllers
         // Get all client bookings
         [HttpGet("my")]
         [Authorize(Roles = "Customer")]
-        public async Task<IActionResult> GetMyBookings([FromQuery] BookingFilterDto filter)
+        public async Task<ActionResult<PagedResult<BookingDto>>> GetMyBookings([FromQuery] BookingFilterDto filter)
         {
             var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier);
             if (userIdClaim == null)
@@ -52,17 +54,27 @@ namespace Practice_team06.Controllers
             }
         }
         
+        // GET: api/bookings/stats
+        // Get booking stats with filters
+        [HttpGet("stats")]
+        [Authorize(Roles = "Admin, Manager")]
+        public async Task<ActionResult<BookingsStatsDto>> GetStats([FromQuery] BookingFilterDto filter)
+        {
+            var stats = await _bookingService.GetBookingStatsAsync(filter);
+            return Ok(stats);
+        }
+        
         // GET: api/bookings/5
         // Get booking by id
         [HttpGet("{bookingId}")]
-        [Authorize(Roles = "Admin,Customer, Manager")]
-        public async Task<ActionResult<Booking>> GetBooking(int bookingId)
+        [Authorize]
+        public async Task<ActionResult<Booking>> GetBooking(int bookingId, [FromQuery] BaseFilterDto filter)
         {
             if (User.IsInRole("Admin") || User.IsInRole("Manager"))
             {
                 try
                 {
-                    var booking = await _bookingService.GetBookingByIdAsync(bookingId);
+                    var booking = await _bookingService.GetBookingByIdAsync<AdminBookingDetailsDto>(null, bookingId, filter);
                     return Ok(booking);
                 }
                 catch (KeyNotFoundException keyNotFoundException)
@@ -80,8 +92,8 @@ namespace Practice_team06.Controllers
 
                 try
                 {
-                    var booking = await _bookingService.GetBookingByIdAsync(userId, bookingId);
-                    return Ok(booking);
+                    var userBooking = await _bookingService.GetBookingByIdAsync<BookingDetailsDto>(userId, bookingId, filter);
+                    return Ok(userBooking);
                 }
                 catch (KeyNotFoundException keyNotFoundException)
                 {
@@ -121,32 +133,48 @@ namespace Practice_team06.Controllers
         // PUT: api/Bookings/5/cancel
         // Cancel booking
         [HttpPut("{bookingId}/cancel")]
-        [Authorize(Roles = "Customer")]
         public async Task<IActionResult> CancelBooking(int bookingId)
         {
-            var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier);
-            if (userIdClaim == null)
-                return Unauthorized("User is not authenticated");
+            if (User.IsInRole("Admin") || User.IsInRole("Manager"))
+            {
+                try
+                {
+                    await _bookingService.CancelBookingAsync(null, bookingId);
+                    return NoContent();
+                }
+                catch (KeyNotFoundException ex)
+                {
+                    return NotFound(ex.Message);
+                }
+                catch (InvalidOperationException ex)
+                {
+                    return BadRequest(ex.Message);
+                }
+            }
+            if (User.IsInRole("Customer"))
+            {
+                var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier);
+                if (userIdClaim == null)
+                    return Unauthorized("User is not authenticated");
 
-            var userId = int.Parse(userIdClaim.Value);
+                var userId = int.Parse(userIdClaim.Value);
 
-            try
-            {
-                await _bookingService.CancelBookingAsync(userId, bookingId);
-                return NoContent();
+                try
+                {
+                    await _bookingService.CancelBookingAsync(userId, bookingId);
+                    return NoContent();
+                }
+                catch (KeyNotFoundException ex)
+                {
+                    return NotFound(ex.Message);
+                }
+                catch (InvalidOperationException ex)
+                {
+                    return BadRequest(ex.Message);
+                }
             }
-            catch (KeyNotFoundException keyNotFoundException)
-            {
-                return NotFound(keyNotFoundException.Message);
-            }
-            catch (InvalidOperationException invalidOperationException)
-            {
-                return BadRequest(invalidOperationException.Message);
-            }
-            catch (DbUpdateException dbUpdateException)
-            {
-                return BadRequest(dbUpdateException.Message);
-            }
+
+            return Forbid();
         }
         
         // PUT: api/Bookings/5/confirm

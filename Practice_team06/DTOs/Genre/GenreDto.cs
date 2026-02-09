@@ -1,6 +1,4 @@
-﻿using System.ComponentModel.DataAnnotations;
-
-namespace Practice_team06.DTOs.Genre;
+﻿namespace Practice_team06.DTOs.Genre;
 
 public class GenreDto
 {

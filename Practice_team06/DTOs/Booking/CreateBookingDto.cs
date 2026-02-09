@@ -7,5 +7,5 @@ public class CreateBookingDto
     [Required]
     public int SessionId { get; set; }
     [Required]
-    public List<int> SeatIds { get; set; }
+    public List<int> SeatIds { get; set; } = null!;
 }

@@ -1,60 +1,58 @@
-import {useState, useMemo, useEffect, useCallback} from 'react';
+import {useState, useMemo, useEffect } from 'react';
 import {Check, Search} from 'lucide-react';
 import { MovieCard } from '../components/MovieCard';
-import type {MovieDto, MovieFilterDto} from '../types/movie';
+import type {MovieFilterDto} from '../types/movie';
 import {MovieService} from "../services/movie.service.ts";
 import {GenreService} from "../services/genre.service.ts";
 import type {GenreDto} from "../types/genre.ts";
-import {notify} from "../utils/toast.ts";
+import {UsePagination} from "../hooks/UsePagination.ts";
+import {Pagination} from "../components/Pagination.tsx";
+import {PaginationInfo} from "../components/PaginationInfo.tsx";
 
 interface Props {
     title: string;
 }
 
 const MoviesLayout = ({ title }: Props) => {
-    const [movies, setMovies] = useState<MovieDto[]>([]);
-    const [isLoading, setIsLoading] = useState(false);
     const [availableGenres, setAvailableGenres] = useState<string[]>([]);
-    const [filter, setFilter] = useState<MovieFilterDto>({
+    const [movieFilter, setMovieFilter] = useState<MovieFilterDto>({
         title: '',
         genres: [],
     });
 
-    const fetchMovies = useCallback(async () => {
-        setIsLoading(true);
-        try {
-            let result: MovieDto[];
+    const fetchMovies = async (page: number, pageSize: number) => {
+        const request: MovieFilterDto = {
+            ...movieFilter,
+            Page: page,
+            PageSize: pageSize
+        };
 
-            if (title === "Зараз у кіно") {
-                result = await MovieService.getNowPlaying(filter);
-            } else if (title === "Скоро в прокаті") {
-                result = await MovieService.getUpcoming(filter);
-            } else {
-                console.error("Назва сторінки не збігається з очікуваною");
-                setIsLoading(false);
-                return;
-            }
+        if (title === "Зараз у кіно") {
+            return await MovieService.getNowPlaying(request);
+        }
+        if (title === "Скоро в прокаті") {
+            return await MovieService.getUpcoming(request);
+        }
 
-            setMovies(result);
-        }
-        catch (error) {
-            notify.error("Не вдалося завантажити фільми. Спробуйте пізніше.");
-            console.error("Помилка при завантаженні фільмів:", error);
-        }
-        finally {
-            setIsLoading(false);
-        }
-    }, [title, filter]);
-
-    useEffect(() => {
-        fetchMovies();
-    }, [fetchMovies]);
+        return {
+            items: [],
+            totalCount: 0,
+            page: page,
+            pageSize: pageSize,
+            totalPages: 0,
+            hasPreviousPage: false,
+            hasNextPage: false
+        };
+    };
 
     useEffect(() => {
         const fetchGenres = async () => {
             try {
-                const data = await GenreService.getAll();
-                const names = data.map((g: GenreDto) => g.name);
+                // Запитуємо першу сторінку з великим розміром, щоб отримати всі жанри для фільтра
+                const data = await GenreService.getAll({ Page: 1, PageSize: 100 });
+
+                // Оскільки тепер це PagedResult, беремо items
+                const names = data.items.map((g: GenreDto) => g.name);
                 setAvailableGenres(names);
             } catch (error) {
                 console.error("Помилка завантаження жанрів:", error);
@@ -63,13 +61,23 @@ const MoviesLayout = ({ title }: Props) => {
         fetchGenres();
     }, []);
 
+    const {
+        items: movies,
+        totalCount,
+        currentPage,
+        totalPages,
+        pageSize,
+        loading,
+        goToPage
+    } = UsePagination(fetchMovies, [movieFilter, title], { pageSize: 2 });
+
     const uniqueGenres = useMemo(() => {
         return ['Всі', ...availableGenres];
     }, [availableGenres]);
 
     const toggleGenres = (genre: string) => {
         console.log(genre);
-        setFilter(prev => {
+        setMovieFilter(prev => {
             const currentGenres = prev.genres ?? [];
 
             let nextGenres: string[];
@@ -88,9 +96,9 @@ const MoviesLayout = ({ title }: Props) => {
 
     const isActive = (genre: string): boolean => {
         if (genre === 'Всі') {
-            return (filter.genres ?? []).length === 0;
+            return (movieFilter.genres ?? []).length === 0;
         }
-        return filter.genres?.includes(genre) ?? false;
+        return movieFilter.genres?.includes(genre) ?? false;
     };
 
     return (
@@ -105,8 +113,8 @@ const MoviesLayout = ({ title }: Props) => {
                         <input
                             type="text"
                             placeholder="Пошук фільму..."
-                            value={filter.title}
-                            onChange={(e) => setFilter(prev => ({ ...prev, title: e.target.value }))}
+                            value={movieFilter.title}
+                            onChange={(e) => setMovieFilter(prev => ({ ...prev, title: e.target.value }))}
                             className="w-full bg-[#1a1d26] border border-gray-800 text-white rounded-2xl pl-12 pr-4 py-3 focus:border-red-600 outline-none transition-all"
                         />
                     </div>
@@ -131,19 +139,38 @@ const MoviesLayout = ({ title }: Props) => {
                 </div>
             </header>
 
-            {isLoading ? (
+            {loading ? (
                 <div className="flex justify-center items-center py-40">
                     <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-red-600"></div>
                 </div>
             ) : (
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 gap-8">
-                    {movies.map(movie => (
-                        <MovieCard key={movie.id} movie={movie} />
-                    ))}
-                </div>
+                <>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 gap-8">
+                        {movies.map(movie => (
+                            <MovieCard key={movie.id} movie={movie} />
+                        ))}
+                    </div>
+
+                    {!loading && totalPages > 1 && (
+                        <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mt-12 pb-12 px-6">
+                            <PaginationInfo
+                                currentPage={currentPage}
+                                pageSize={pageSize}
+                                totalCount={totalCount}
+                                itemName="фільм"
+                                className="text-xs"
+                            />
+                            <Pagination
+                                currentPage={currentPage}
+                                totalPages={totalPages}
+                                onPageChange={goToPage}
+                            />
+                        </div>
+                    )}
+                </>
             )}
 
-            {!isLoading && movies.length === 0 && (
+            {!loading && movies.length === 0 && (
                 <div className="text-center py-20 text-gray-500 font-medium text-xl animate-fade-in">
                     Нічого не знайдено за вашим запитом
                 </div>

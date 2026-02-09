@@ -9,6 +9,7 @@ import {
     ChevronRight,
     X,
     Loader2,
+    ShieldAlert,
 } from 'lucide-react';
 import type { SessionDto } from "../types/session.ts";
 import { formatDateWithYear, formatTime } from "../utils/formatTime.ts";
@@ -58,6 +59,8 @@ const SessionPage = () => {
     useEffect(() => { fetchData(); }, [fetchData]);
 
     const toggleSeat = (seat: SessionSeatDto) => {
+        // Забороняємо вибір місць для адміна
+        if (user?.role === 'Admin') return;
         if (!seat.isAvailable) return;
         setSelectedSeats((prev) =>
             prev.find((s) => s.seatId === seat.seatId)
@@ -92,6 +95,7 @@ const SessionPage = () => {
                 seatIds: selectedSeats.map((s) => s.seatId),
             });
 
+            await BookingService.confirmBooking(created.id);
             navigate(`/bookings/${created.id}`);
         } catch (err: any) {
             setPurchaseError(
@@ -135,7 +139,7 @@ const SessionPage = () => {
             <div className="min-h-screen bg-[#0f1117] flex items-center justify-center">
                 <div className="text-center">
                     <p className="text-red-500 text-xl mb-4">{error || 'Сеанс не знайдений'}</p>
-                    <Link to="/movies" className="text-red-600 hover:underline flex items-center justify-center gap-2">
+                    <Link to="/" className="text-red-600 hover:underline flex items-center justify-center gap-2">
                         <ArrowLeft size={20} /> Назад до фільмів
                     </Link>
                 </div>
@@ -147,7 +151,7 @@ const SessionPage = () => {
         <div className="min-h-screen bg-[#0f1117] text-white font-sans">
             <div className="max-w-7xl mx-auto px-4 py-8">
                 {/* ── Back ──────────────────────────────────── */}
-                <Link to="/movies" className="inline-flex items-center gap-2 text-gray-400 hover:text-red-600 mb-6 transition-colors group">
+                <Link to="/" className="inline-flex items-center gap-2 text-gray-400 hover:text-red-600 mb-6 transition-colors group">
                     <ArrowLeft size={20} className="group-hover:-translate-x-1 transition-transform" />
                     Назад до фільмів
                 </Link>
@@ -179,13 +183,11 @@ const SessionPage = () => {
                 <div className="flex flex-col xl:flex-row gap-8">
                     {/* ── Hall Scheme ────────────────────────── */}
                     <div className="flex-1 bg-[#1a1d26] rounded-2xl border border-gray-800 p-6 overflow-x-auto">
-                        {/* Screen */}
                         <div className="mb-8 flex flex-col items-center">
-                            <div className="w-3/4 max-w-md h-1.5 bg-linear-to-r from-transparent via-white/50 to-transparent rounded-full shadow-lg shadow-white/20" />
+                            <div className="w-3/4 max-w-md h-1.5 bg-gradient-to-r from-transparent via-white/50 to-transparent rounded-full shadow-lg shadow-white/20" />
                             <span className="text-gray-600 text-xs mt-2 tracking-widest uppercase">Екран</span>
                         </div>
 
-                        {/* Legend */}
                         <div className="flex justify-center flex-wrap gap-4 mb-6">
                             {seatTypes.map((type) => (
                                 <div key={type} className="flex items-center gap-2">
@@ -203,7 +205,6 @@ const SessionPage = () => {
                             </div>
                         </div>
 
-                        {/* Rows */}
                         <div className="flex flex-col items-center gap-1.5">
                             {rows.map(({ row, seats: rowSeats }) => (
                                 <div key={row} className="flex items-center gap-2">
@@ -213,15 +214,11 @@ const SessionPage = () => {
                                             <button
                                                 key={seat.seatId}
                                                 onClick={() => toggleSeat(seat)}
-                                                disabled={!seat.isAvailable}
-                                                title={
-                                                    !seat.isAvailable
-                                                        ? 'Занято'
-                                                        : `Ряд ${seat.rowNumber}, Місце ${seat.seatNumber} (${seat.type}) — ${seat.price}₴`
-                                                }
+                                                disabled={!seat.isAvailable || user?.role === 'Admin'}
                                                 className={[
                                                     'w-8 h-8 rounded-md text-xs font-bold transition-all duration-150 border',
                                                     getSeatTypeColor(seat.type, seat.isAvailable, isSelected(seat)),
+                                                    user?.role === 'Admin' ? 'cursor-default' : ''
                                                 ].join(' ')}
                                             >
                                                 {seat.seatNumber}
@@ -231,111 +228,90 @@ const SessionPage = () => {
                                 </div>
                             ))}
                         </div>
-
-                        {seats.length === 0 && (
-                            <p className="text-center text-gray-500 mt-8">Немає доступних місць</p>
-                        )}
                     </div>
 
                     {/* ── Checkout Panel ─────────────────────── */}
                     <div className="xl:w-96 flex-shrink-0">
-                        <div className="bg-[#1a1d26] rounded-2xl border border-gray-800 p-6 sticky top-24">
-                            <h2 className="text-xl font-bold mb-4">Обрані місця</h2>
-
-                            {selectedSeats.length === 0 ? (
-                                <div className="text-center py-10">
-                                    <div className="w-12 h-12 rounded-full bg-gray-800 flex items-center justify-center mx-auto mb-3">
-                                        <MapPin size={22} className="text-gray-600" />
-                                    </div>
-                                    <p className="text-gray-500 text-sm">Виберіть місця на схемі залу</p>
+                        {user?.role === 'Admin' ? (
+                            <div className="bg-amber-500/5 border border-amber-500/20 rounded-2xl p-8 text-center sticky top-24">
+                                <div className="w-16 h-16 bg-amber-500/10 rounded-full flex items-center justify-center mx-auto mb-4">
+                                    <ShieldAlert className="text-amber-500" size={32} />
                                 </div>
-                            ) : (
-                                <>
-                                    {/* Seat list */}
-                                    <div className="space-y-2 mb-5 max-h-60 overflow-y-auto pr-1">
-                                        {selectedSeats.map((seat) => (
-                                            <div
-                                                key={seat.seatId}
-                                                className="flex items-center justify-between bg-gray-800/60 rounded-lg px-4 py-2.5 border border-gray-700"
-                                            >
-                                                <div className="flex items-center gap-3">
-                                                    <div className="w-7 h-7 rounded bg-red-600 flex items-center justify-center text-xs font-bold">
-                                                        {seat.seatNumber}
+                                <h2 className="text-amber-500 font-bold text-lg mb-2">Режим перегляду</h2>
+                                <p className="text-gray-400 text-sm leading-relaxed">
+                                    Як адміністратор, ви бачите схему залу, але не можете здійснювати бронювання.
+                                </p>
+                            </div>
+                        ) : (
+                            <div className="bg-[#1a1d26] rounded-2xl border border-gray-800 p-6 sticky top-24">
+                                <h2 className="text-xl font-bold mb-4">Обрані місця</h2>
+
+                                {selectedSeats.length === 0 ? (
+                                    <div className="text-center py-10">
+                                        <div className="w-12 h-12 rounded-full bg-gray-800 flex items-center justify-center mx-auto mb-3">
+                                            <MapPin size={22} className="text-gray-600" />
+                                        </div>
+                                        <p className="text-gray-500 text-sm">Виберіть місця на схемі залу</p>
+                                    </div>
+                                ) : (
+                                    <>
+                                        <div className="space-y-2 mb-5 max-h-60 overflow-y-auto pr-1">
+                                            {selectedSeats.map((seat) => (
+                                                <div key={seat.seatId} className="flex items-center justify-between bg-gray-800/60 rounded-lg px-4 py-2.5 border border-gray-700">
+                                                    <div className="flex items-center gap-3">
+                                                        <div className="w-7 h-7 rounded bg-red-600 flex items-center justify-center text-xs font-bold">{seat.seatNumber}</div>
+                                                        <div>
+                                                            <span className="text-gray-300 text-sm">Ряд <span className="text-white font-semibold">{seat.rowNumber}</span>, Місце <span className="text-white font-semibold">{seat.seatNumber}</span></span>
+                                                            <span className={`block text-xs capitalize mt-0.5 ${seat.type.toString().toLowerCase() === 'vip' ? 'text-yellow-500' : 'text-gray-500'}`}>{seat.type}</span>
+                                                        </div>
                                                     </div>
-                                                    <div>
-                                                        <span className="text-gray-300 text-sm">
-                                                            Ряд <span className="text-white font-semibold">{seat.rowNumber}</span>,{' '}
-                                                            Місце <span className="text-white font-semibold">{seat.seatNumber}</span>
-                                                        </span>
-                                                        <span className={`block text-xs capitalize mt-0.5 ${
-                                                            seat.type.toString().toLowerCase() === 'vip' ? 'text-yellow-500' :
-                                                                    'text-gray-500'
-                                                        }`}>
-                                                            {seat.type}
-                                                        </span>
+                                                    <div className="flex items-center gap-3">
+                                                        <span className="text-red-500 font-bold">{seat.price}₴</span>
+                                                        <button onClick={() => toggleSeat(seat)} className="text-gray-600 hover:text-red-500 transition-colors"><X size={16} /></button>
                                                     </div>
                                                 </div>
-                                                <div className="flex items-center gap-3">
-                                                    <span className="text-red-500 font-bold">{seat.price}₴</span>
-                                                    <button
-                                                        onClick={() => toggleSeat(seat)}
-                                                        className="text-gray-600 hover:text-red-500 transition-colors"
-                                                    >
-                                                        <X size={16} />
-                                                    </button>
-                                                </div>
+                                            ))}
+                                        </div>
+
+                                        <div className="border-t border-gray-700 pt-4 mb-5">
+                                            <div className="flex items-center justify-between">
+                                                <span className="text-gray-400">Всього ({selectedSeats.length})</span>
+                                                <span className="text-3xl font-black text-red-600">{totalPrice}₴</span>
                                             </div>
-                                        ))}
-                                    </div>
-
-                                    {/* Total */}
-                                    <div className="border-t border-gray-700 pt-4 mb-5">
-                                        <div className="flex items-center justify-between">
-                                            <span className="text-gray-400">
-                                                Всього ({selectedSeats.length} {selectedSeats.length === 1 ? 'квиток' : 'квитки'})
-                                            </span>
-                                            <span className="text-3xl font-black text-red-600">{totalPrice}₴</span>
                                         </div>
-                                    </div>
 
-                                    {/* Purchase error */}
-                                    {purchaseError && (
-                                        <div className="bg-red-500/10 border border-red-500/30 rounded-lg px-4 py-3 mb-4">
-                                            <p className="text-red-400 text-sm">{purchaseError}</p>
-                                        </div>
-                                    )}
-
-                                    {/* Buy button */}
-                                    <button
-                                        onClick={startPurchaseProcess}
-                                        disabled={purchasing || !user}
-                                        className={[
-                                            'w-full py-3.5 rounded-xl font-bold text-lg flex items-center justify-center gap-2 transition-all',
-                                            purchasing || !user
-                                                ? 'bg-gray-700 text-gray-500 cursor-not-allowed'
-                                                : 'bg-red-600 hover:bg-red-500 text-white shadow-lg shadow-red-600/30 hover:shadow-red-600/50',
-                                        ].join(' ')}
-                                    >
-                                        {purchasing ? (
-                                            <>
-                                                <Loader2 size={20} className="animate-spin" />
-                                                Оформлення...
-                                            </>
-                                        ) : !user ? (
-                                            'Авторизуйтесь для покупки'
-                                        ) : (
-                                            <>
-                                                Купити квитки
-                                                <ChevronRight size={20} />
-                                            </>
+                                        {purchaseError && (
+                                            <div className="bg-red-500/10 border border-red-500/30 rounded-lg px-4 py-3 mb-4">
+                                                <p className="text-red-400 text-sm">{purchaseError}</p>
+                                            </div>
                                         )}
-                                    </button>
-                                </>
-                            )}
-                        </div>
+
+                                        <button
+                                            onClick={startPurchaseProcess}
+                                            disabled={purchasing || !user}
+                                            className={[
+                                                'w-full py-3.5 rounded-xl font-bold text-lg flex items-center justify-center gap-2 transition-all',
+                                                purchasing || !user
+                                                    ? 'bg-gray-700 text-gray-500 cursor-not-allowed'
+                                                    : 'bg-red-600 hover:bg-red-500 text-white shadow-lg shadow-red-600/30 hover:shadow-red-600/50',
+                                            ].join(' ')}
+                                        >
+                                            {purchasing ? (
+                                                <><Loader2 size={20} className="animate-spin" /> Оформлення...</>
+                                            ) : !user ? (
+                                                'Авторизуйтесь для покупки'
+                                            ) : (
+                                                <>Купити квитки <ChevronRight size={20} /></>
+                                            )}
+                                        </button>
+                                    </>
+                                )}
+                            </div>
+                        )}
                     </div>
                 </div>
             </div>
+
             <ConfirmModal
                 isOpen={isConfirmOpen}
                 title="Вікове обмеження"
@@ -344,13 +320,10 @@ const SessionPage = () => {
                 cancelText="Назад"
                 description={
                     <div className="space-y-3">
-                        <p>
-                            Цей фільм має вікове обмеження:
-                        </p>
-                            <AgeRestrictionBadge
-                                restriction={session.ageRestriction}
-                                className="px-3 py-1"
-                                />
+                        <p>Цей фільм має вікове обмеження:</p>
+                        {session && (
+                            <AgeRestrictionBadge restriction={session.ageRestriction} className="px-3 py-1" />
+                        )}
                         <p className="text-xs text-gray-500">
                             Купуючи квиток, ви підтверджуєте, що відповідаєте віковим вимогам.
                         </p>

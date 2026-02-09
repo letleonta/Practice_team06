@@ -1,6 +1,8 @@
-﻿namespace Practice_team06.DTOs.Actor; 
+﻿using Practice_team06.DTOs.Common;
 
-public class ActorFilterDto
+namespace Practice_team06.DTOs.Actor; 
+
+public class ActorFilterDto : BaseFilterDto
 {
     public string? Search { get; set; }
     

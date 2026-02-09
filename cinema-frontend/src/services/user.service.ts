@@ -16,7 +16,7 @@ export const UserService = {
         const formData = new FormData();
         formData.append("file", file); // Назва 'file' має збігатися з параметром у C#
 
-        const response = await api.post<{ avatarUrl: string }>("/users/avatar", formData, {
+        const response = await api.post<{ avatarUri: string }>("/users/avatar", formData, {
             headers: {
                 "Content-Type": "multipart/form-data",
             },

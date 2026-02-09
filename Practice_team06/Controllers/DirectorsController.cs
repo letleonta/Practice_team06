@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Practice_team06.DTOs.Common;
 using Practice_team06.DTOs.Director;
 using Practice_team06.Services;
 
@@ -17,7 +18,7 @@ public class DirectorsController : ControllerBase
     }
     
     [HttpGet] 
-    public async Task<ActionResult<IEnumerable<DirectorDto>>> GetDirectors([FromQuery] DirectorFilterDto filter)
+    public async Task<ActionResult<PagedResult<DirectorDto>>> GetDirectors([FromQuery] DirectorFilterDto filter)
     {
         var directors = await _directorService.GetAllAsync(filter);
 
@@ -59,29 +60,41 @@ public class DirectorsController : ControllerBase
         var createdDirectors = await _directorService.CreateRangeAsync(directorsList);
         return Ok(createdDirectors);
     }
-
+    
     [HttpGet("{id}/movies")]
-    public async Task<ActionResult<IEnumerable<DirectorMovieDto>>> GetDirectorMovies(int id)
+    public async Task<ActionResult<PagedResult<DirectorMovieDto>>> GetDirectorMovies(int id, [FromQuery] BaseFilterDto filter)
     {
-        var movies = await _directorService.GetDirectorMoviesAsync(id);
-        return Ok(movies);
+        var result = await _directorService.GetDirectorMoviesAsync(id, filter);
+        return Ok(result);
     }
     
     [HttpPut("{id}")] 
     [Authorize(Roles = "Admin, Manager")]
-    public async Task<IActionResult> UpdateDirector(int id, CreateDirectorDto directorDto)
+    public async Task<ActionResult<DirectorDto>> UpdateDirector(int id, CreateDirectorDto directorDto)
     {
-        var result = await _directorService.UpdateAsync(id, directorDto);
-        if (!result) return NotFound();
-        return NoContent();
+        try
+        {
+            var result = await _directorService.UpdateAsync(id, directorDto);
+            return Ok(result); 
+        }
+        catch (KeyNotFoundException ex)
+        {
+            return NotFound(ex.Message);
+        }
     }
 
     [HttpDelete("{id}")]
     [Authorize(Roles = "Admin, Manager")]
-    public async Task<IActionResult> DeleteDirector(int id)
+    public async Task<ActionResult> DeleteDirector(int id)
     {
-        var result = await _directorService.DeleteAsync(id);
-        if (!result) return NotFound();
-        return NoContent();
+        try
+        {
+            await _directorService.DeleteAsync(id);
+            return NoContent();
+        }
+        catch (KeyNotFoundException ex)
+        {
+            return NotFound(ex.Message);
+        }
     }
 }

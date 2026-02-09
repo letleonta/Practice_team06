@@ -1,6 +1,6 @@
-import type {TicketBookingDto} from "./ticket.ts";
-import type {PagedResult} from "./pagedResult.ts";
 import type {HallDto} from "./hall.ts";
+import type {BaseFilterDto} from "./common.ts";
+import type {TicketDto} from "./ticket.ts";
 
 export const BookingStatus = {
     Inprogress: "Inprogress",
@@ -20,8 +20,25 @@ export interface BookingDto {
     startTime: string;
     ageRestriction: string;
     posterUri: string;
-    tickets: TicketBookingDto[];
+    ticketsCount: number;
     totalPrice: number;
+}
+
+export interface AdminBookingDto extends BookingDto {
+    userEmail: string;
+}
+
+export interface BookingDetailsDto extends BookingDto {
+    pagedTickets: {
+        items: TicketDto[];
+        totalCount: number;
+        page: number;
+        pageSize: number;
+    };
+}
+
+export interface AdminBookingDetailsDto extends BookingDetailsDto {
+    userEmail: string;
 }
 
 export interface CreateBookingDto {
@@ -29,11 +46,7 @@ export interface CreateBookingDto {
     seatIds: number[];
 }
 
-export interface AdminBookingDto extends BookingDto {
-    userEmail: string;
-}
-
-export interface BookingFilterDto {
+export interface BookingFilterDto extends BaseFilterDto {
     Status?: BookingStatus;
     UserEmail?: string | null;
     SessionId?: string | number | null;
@@ -44,8 +57,6 @@ export interface BookingFilterDto {
     SearchQuery?: string | null;
     SortBy?: SortBy;
     IsDescending?: boolean;
-    Page?: number;
-    PageSize?: number;
 }
 
 export interface RevenuePointDto {
@@ -69,11 +80,8 @@ export interface BookingsStatsDto {
     paidCount: number;
     cancelledCount: number;
     totalRevenue: number;
+    totalTicketsCount: number;
     revenuePoints: RevenuePointDto[];
     hallPoints: HallPointDto[];
     genrePoints: GenrePointDto[];
-}
-export interface AdminBookingsWithStatsDto {
-    bookingsPage: PagedResult<AdminBookingDto>;
-    stats : BookingsStatsDto;
 }

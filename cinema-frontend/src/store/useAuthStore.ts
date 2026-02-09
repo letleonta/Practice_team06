@@ -8,7 +8,7 @@ interface UserInfo {
     role: string | string[];
     id: string;
     firstName?: string;  // Додано
-    avatarUrl?: string;  // Додано
+    avatarUri?: string;  // Додано
 }
 
 interface AuthState {
@@ -52,9 +52,8 @@ const getInitialState = () => {
                 name: name,
                 role: role,
                 id: decoded[ID_CLAIM],
-                // Навіть якщо в токені їх немає, TypeScript тепер знає про ці поля
                 firstName: name,
-                avatarUrl: undefined
+                avatarUri: undefined
             }
         };
     } catch (error) {

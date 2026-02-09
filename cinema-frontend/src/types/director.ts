@@ -1,3 +1,5 @@
+import type {BaseFilterDto} from "./common.ts";
+
 export interface DirectorDto {
     id: number;
     firstName: string;
@@ -5,9 +7,9 @@ export interface DirectorDto {
     photoUri?: string;
 }
 
-export interface DirectorFilterDto {
+export interface DirectorFilterDto extends BaseFilterDto {
     search?: string;
-    sortBy?: 'firstname' | 'lastname' | 'id';
+    sortBy?: 'id' | 'firstname' | 'lastname';
     isDescending?: boolean;
 }
 

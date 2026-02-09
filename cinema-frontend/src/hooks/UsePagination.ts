@@ -1,5 +1,6 @@
-import { useState, useEffect, useCallback } from 'react';
-import type { PagedResult } from '../types/pagedResult';
+import { useState, useEffect, useCallback, useRef } from 'react';
+import { useSearchParams } from 'react-router-dom';
+import type {PagedResult} from "../types/common.ts";
 
 interface UsePaginationOptions {
     pageSize?: number;
@@ -11,56 +12,69 @@ export function UsePagination<T>(
     dependencies: any[] = [],
     options: UsePaginationOptions = {}
 ) {
-    const {
-        pageSize = 10,
-        resetOnFilterChange = true
-    } = options;
+    const { pageSize: defaultSize = 10, resetOnFilterChange = true } = options;
+    const [searchParams, setSearchParams] = useSearchParams();
+
+    // Отримуємо поточну сторінку та розмір із URL
+    const currentPage = Number(searchParams.get('Page')) || 1;
+    const pageSize = Number(searchParams.get('PageSize')) || defaultSize;
 
     const [pagedResult, setPagedResult] = useState<PagedResult<T>>({
-        items: [],
-        totalCount: 0,
-        page: 1,
-        pageSize,
-        totalPages: 0,
-        hasPreviousPage: false,
-        hasNextPage: false
+        items: [], totalCount: 0, page: currentPage, pageSize,
+        totalPages: 0, hasPreviousPage: false, hasNextPage: false
     });
-    const [currentPage, setCurrentPage] = useState(1);
+
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
 
+    const prevDepsRef = useRef(dependencies);
+    const isFirstRender = useRef(true);
+
     useEffect(() => {
-        if (resetOnFilterChange) {
-            setCurrentPage(1);
+        if (isFirstRender.current) {
+            isFirstRender.current = false;
+            return;
         }
-    }, dependencies);
 
-    // Fetch data
+        const depsChanged = dependencies.some((dep, i) => dep !== prevDepsRef.current[i]);
+
+        if (resetOnFilterChange && depsChanged) {
+            const newParams = new URLSearchParams(searchParams);
+            newParams.set('Page', '1');
+
+            setSearchParams(newParams, { replace: true });
+        }
+
+        prevDepsRef.current = dependencies;
+    }, [dependencies, resetOnFilterChange, searchParams, setSearchParams]);
+
+    const fetchData = useCallback(async () => {
+        setLoading(true);
+        try {
+
+            const result = await fetchFunction(currentPage, pageSize, ...dependencies);
+            setPagedResult(result);
+        } catch (err) {
+            setError(err instanceof Error ? err.message : 'Fetch error');
+        } finally {
+            setLoading(false);
+        }
+    }, [currentPage, pageSize, ...dependencies]);
+
     useEffect(() => {
-        const fetchData = async () => {
-            setLoading(true);
-            setError(null);
-
-            try {
-                const result = await fetchFunction(currentPage, pageSize, ...dependencies);
-                setPagedResult(result);
-            } catch (err) {
-                console.error('Pagination fetch error:', err);
-                setError(err instanceof Error ? err.message : 'Failed to fetch data');
-            } finally {
-                setLoading(false);
-            }
-        };
-
         fetchData();
-    }, [currentPage, ...dependencies]);
+    }, [fetchData]);
 
     const goToPage = useCallback((page: number) => {
-        if (page >= 1 && page <= pagedResult.totalPages) {
-            setCurrentPage(page);
+        if (page >= 1 && (pagedResult.totalPages === 0 || page <= pagedResult.totalPages)) {
+            const newParams = new URLSearchParams(searchParams);
+            newParams.set('Page', page.toString());
+            newParams.set('PageSize', pageSize.toString());
+
+            setSearchParams(newParams);
             window.scrollTo({ top: 0, behavior: 'smooth' });
         }
-    }, [pagedResult.totalPages]);
+    }, [searchParams, setSearchParams, pageSize, pagedResult.totalPages]);
 
     const goToNextPage = useCallback(() => {
         if (pagedResult.hasNextPage) {
@@ -100,6 +114,8 @@ export function UsePagination<T>(
         goToPreviousPage,
         goToFirstPage,
         goToLastPage,
+
+        refresh: fetchData,
 
         pagedResult
     };

@@ -11,7 +11,7 @@ import { Pagination } from "../components/Pagination";
 import { UsePagination } from "../hooks/UsePagination";
 
 const MyBookingsPage = () => {
-    const [activeFilter, setActiveFilter] = useState<FilterStatus>('ALL');
+    const [activeFilter, setactiveFilter] = useState<FilterStatus>('ALL');
 
     const fetchBookings = async (Page: number, PageSize: number) => {
         const filter: BookingFilterDto = {
@@ -60,7 +60,7 @@ const MyBookingsPage = () => {
 
                 <BookingFilterBar
                     activeFilter={activeFilter}
-                    onFilterChange={setActiveFilter}
+                    onFilterChange={setactiveFilter}
                 />
 
                 {loading ? (
@@ -153,7 +153,7 @@ const MyBookingsPage = () => {
                                             <div className="flex items-center gap-2 text-sm">
                                                 <Ticket size={16} className="text-red-600 shrink-0" />
                                                 <span className="text-gray-400">
-                                                    {booking.tickets.length} квит.
+                                                    {booking.ticketsCount} квит.
                                                 </span>
                                             </div>
                                         </div>
