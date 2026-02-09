@@ -1,4 +1,6 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using AutoMapper;
+using AutoMapper.QueryableExtensions;
+using Microsoft.EntityFrameworkCore;
 using Practice_team06.DTOs.Language;
 using Practice_team06.Models;
 
@@ -7,10 +9,12 @@ namespace Practice_team06.Services;
 public class LanguageService : ILanguageService
 {
     private readonly PostgresContext _context;
+    private readonly IMapper _mapper;
 
-    public LanguageService(PostgresContext context)
+    public LanguageService(PostgresContext context, IMapper mapper)
     {
         _context = context;
+        _mapper = mapper;
     }
 
     public async Task<IEnumerable<LanguageDto>> GetAllAsync(
@@ -18,89 +22,52 @@ public class LanguageService : ILanguageService
         string? sortBy = null,
         bool isDescending = false)
     {
-        var query = _context.Languages.AsQueryable();
+        var query = _context.Languages.AsNoTracking();
 
-        // Filtering
+        // Пошук
         if (!string.IsNullOrWhiteSpace(search))
         {
             var s = search.Trim().ToLower();
             query = query.Where(l => l.Name.ToLower().Contains(s));
         }
 
-        // Sorting
-        if (!string.IsNullOrWhiteSpace(sortBy))
-        {
-            query = sortBy.ToLower() switch
-            {
-                "name" => isDescending
-                    ? query.OrderByDescending(l => l.Name)
-                    : query.OrderBy(l => l.Name),
-
-                "id" => isDescending
-                    ? query.OrderByDescending(l => l.Id)
-                    : query.OrderBy(l => l.Id),
-
-                _ => query.OrderBy(l => l.Id)
-            };
-        }
-        else
-        {
-            query = query.OrderBy(l => l.Id);
-        }
+        // Сортування
+        query = !string.IsNullOrWhiteSpace(sortBy) && sortBy.ToLower() == "name"
+            ? (isDescending ? query.OrderByDescending(l => l.Name) : query.OrderBy(l => l.Name))
+            : (isDescending ? query.OrderByDescending(l => l.Id) : query.OrderBy(l => l.Id));
 
         return await query
-            .Select(l => new LanguageDto
-            {
-                Id = l.Id,
-                Name = l.Name
-            })
+            .ProjectTo<LanguageDto>(_mapper.ConfigurationProvider)
             .ToListAsync();
     }
 
     public async Task<LanguageDto?> GetByIdAsync(int id)
     {
-        var language = await _context.Languages.FindAsync(id);
-        if (language == null) return null;
-
-        return new LanguageDto
-        {
-            Id = language.Id,
-            Name = language.Name
-        };
+        return await _context.Languages
+            .AsNoTracking()
+            .Where(l => l.Id == id)
+            .ProjectTo<LanguageDto>(_mapper.ConfigurationProvider)
+            .FirstOrDefaultAsync();
     }
 
     public async Task<LanguageDto> CreateAsync(CreateLanguageDto dto)
     {
-        var language = new Language
-        {
-            Name = dto.Name
-        };
+        var language = _mapper.Map<Language>(dto);
 
         _context.Languages.Add(language);
         await _context.SaveChangesAsync();
 
-        return new LanguageDto
-        {
-            Id = language.Id,
-            Name = language.Name
-        };
+        return _mapper.Map<LanguageDto>(language);
     }
 
     public async Task<IEnumerable<LanguageDto>> CreateRangeAsync(IEnumerable<CreateLanguageDto> dto)
     {
-        var languages = dto.Select(d => new Language
-        {
-            Name = d.Name
-        }).ToList();
+        var languages = _mapper.Map<List<Language>>(dto);
 
         await _context.Languages.AddRangeAsync(languages);
         await _context.SaveChangesAsync();
 
-        return languages.Select(l => new LanguageDto
-        {
-            Id = l.Id,
-            Name = l.Name
-        });
+        return _mapper.Map<IEnumerable<LanguageDto>>(languages);
     }
 
     public async Task<bool> UpdateAsync(int id, CreateLanguageDto dto)
@@ -108,9 +75,9 @@ public class LanguageService : ILanguageService
         var language = await _context.Languages.FindAsync(id);
         if (language == null) return false;
 
-        language.Name = dto.Name;
+        _mapper.Map(dto, language);
+        
         await _context.SaveChangesAsync();
-
         return true;
     }
 

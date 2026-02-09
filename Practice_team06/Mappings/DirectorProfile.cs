@@ -12,8 +12,10 @@ public class DirectorProfile : Profile
         
         CreateMap<CreateDirectorDto, Director>()
             .ForMember(dest => dest.Id, opt => opt.Ignore());
-        
+
         CreateMap<Movie, DirectorMovieDto>()
-            .ForMember(dest => dest.MovieId, opt => opt.MapFrom(src => src.Id));
+            .ForMember(dest => dest.MovieId, opt => opt.MapFrom(src => src.Id))
+            .ForMember(dest => dest.Title, opt => opt.MapFrom(src => src.Title))
+            .ForMember(dest => dest.ReleaseDate, opt => opt.MapFrom(src => src.ReleaseDate));
     }
 }

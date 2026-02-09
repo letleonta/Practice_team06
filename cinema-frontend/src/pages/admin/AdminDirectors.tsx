@@ -1,32 +1,46 @@
 ﻿import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import {
-    UserPlus,
-    Trash2,
-    Search,
-    Loader2,
-    User as UserIcon,
-    X,
-    Pencil,
-    Film,
-    Calendar,
-    Clapperboard,
-    Check,
-    Upload
+    UserPlus, Trash2, Loader2, User as UserIcon,
+    X, Pencil, Film, Calendar, Clapperboard, Check, Upload
 } from 'lucide-react';
 
 import { DirectorService } from '../../services/director.service.ts';
 import type { CreateDirectorDto, DirectorDto, DirectorFilterDto, DirectorMovieDto } from '../../types/director';
 import { UsePagination } from "../../hooks/UsePagination.ts";
+import { useLocalPagination } from "../../hooks/UseLocalPagination.ts";
 import { Pagination } from "../../components/Pagination";
 import { PaginationInfo } from "../../components/PaginationInfo";
 import { DataTable, type Column } from "../../components/DataTable.tsx";
 import { notify } from "../../utils/toast";
+import { ConfirmModal } from "../../components/ui/ConfirmModal.tsx";
+import { CreateCard } from "../../components/CreateCard.tsx";
 import { API_CONFIG } from "../../../config.ts";
-import { ConfirmModal } from "../../components/ui/ConfirmModal.tsx"; // Перевірте шлях до компонента
+import {SearchInput} from "../../components/ui/SearchInput.tsx";
+
+const directorFields = [
+    {
+        name: 'firstName',
+        label: "Ім'я",
+        placeholder: "Напр. Крістофер",
+        icon: UserIcon
+    },
+    {
+        name: 'lastName',
+        label: "Прізвище",
+        placeholder: "Напр. Нолан",
+        icon: UserIcon
+    },
+    {
+        name: 'photoUri',
+        label: "Посилання на фото",
+        placeholder: "https://...",
+        required: false,
+        icon: Upload
+    },
+];
 
 const AdminDirectors = () => {
-    const addForm = useForm<CreateDirectorDto>();
     const editForm = useForm<CreateDirectorDto>();
 
     const [searchTerm, setSearchTerm] = useState('');
@@ -35,91 +49,62 @@ const AdminDirectors = () => {
     const [isSaving, setIsSaving] = useState(false);
 
     const [selectedDirector, setSelectedDirector] = useState<DirectorDto | null>(null);
-    const [directorMovies, setDirectorMovies] = useState<DirectorMovieDto[]>([]);
-    const [loadingMovies, setLoadingMovies] = useState(false);
     const [isEditMode, setIsEditMode] = useState(false);
 
     const [deleteModal, setDeleteModal] = useState<{ isOpen: boolean; id: number | null; name: string }>({
-        isOpen: false,
-        id: null,
-        name: ''
+        isOpen: false, id: null, name: ''
     });
 
-    const fetchDirectors = async (page: number, pageSize: number) => {
+    // 1. ГОЛОВНА ПАГІНАЦІЯ (Режисери - впливає на URL)
+    const {
+        items: directors, totalCount, currentPage, totalPages, pageSize, loading, error, goToPage, refresh,
+    } = UsePagination(async (p, ps) => {
         const filter: DirectorFilterDto = {
             search: searchTerm || undefined,
-            sortBy: sortBy,
+            sortBy,
             isDescending: isDesc,
-            Page: page,
-            PageSize: pageSize,
+            Page: p,
+            PageSize: ps
         };
         return await DirectorService.getAll(filter);
-    };
+    }, [searchTerm, sortBy, isDesc], { pageSize: 6 });
 
+    // 2. ЛОКАЛЬНА ПАГІНАЦІЯ (Фільми режисера - НЕ впливає на URL)
     const {
-        items: directors,
-        totalCount,
-        currentPage,
-        totalPages,
-        pageSize,
-        loading,
-        error,
-        goToPage,
-        refresh,
-    } = UsePagination(fetchDirectors, [searchTerm, sortBy, isDesc], { pageSize: 6 });
+        items: directorMovies,
+        loading: loadingMovies,
+        currentPage: moviePage,
+        totalPages: totalMoviePages,
+        goToPage: goToMoviePage
+    } = useLocalPagination<DirectorMovieDto>(
+        async (page, size) => {
+            if (!selectedDirector) return { items: [], totalCount: 0, page, pageSize: size, totalPages: 0, hasPreviousPage: false, hasNextPage: false };
+            return await DirectorService.getDirectorMovies(selectedDirector.id, { Page: page, PageSize: size });
+        },
+        [selectedDirector?.id],
+        { pageSize: 4}
+    );
 
-    const openDeleteModal = (director: DirectorDto) => {
-        setDeleteModal({
-            isOpen: true,
-            id: director.id,
-            name: `${director.firstName} ${director.lastName}`
+    // --- ОБРОБНИКИ ПОДІЙ ---
+
+    const handleOpenDetails = (director: DirectorDto) => {
+        setSelectedDirector(director);
+        setIsEditMode(false);
+        editForm.reset({
+            firstName: director.firstName,
+            lastName: director.lastName,
+            photoUri: director.photoUri || ''
         });
     };
 
-    const handleConfirmDelete = async () => {
-        if (!deleteModal.id) return;
-        setIsSaving(true);
-        try {
-            await DirectorService.delete(deleteModal.id);
-            notify.success("Режисера видалено");
-            if (selectedDirector?.id === deleteModal.id) setSelectedDirector(null);
-            refresh();
-        } catch (err) {
-            notify.error("Не вдалося видалити");
-        } finally {
-            setIsSaving(false);
-            setDeleteModal({ isOpen: false, id: null, name: '' });
-        }
-    };
-
-
-    const handleOpenDetails = async (director: DirectorDto) => {
-        setSelectedDirector(director);
-        setLoadingMovies(true);
-        setIsEditMode(false);
-        editForm.reset();
-        try {
-            const movies = await DirectorService.getDirectorMovies(director.id);
-            setDirectorMovies(movies);
-        } catch (err) {
-            setDirectorMovies([]);
-        } finally {
-            setLoadingMovies(false);
-        }
-    };
-
-    const onAddSubmit = async (data: CreateDirectorDto) => {
+    const handleAddDirector = async (data: CreateDirectorDto) => {
         setIsSaving(true);
         try {
             await DirectorService.create({ ...data, photoUri: data.photoUri?.trim() || undefined });
             notify.success("Режисера додано");
-            addForm.reset();
             refresh();
-        } catch (err) {
-            notify.error("Помилка при додаванні");
-        } finally {
-            setIsSaving(false);
-        }
+        } catch (err) { notify.error("Помилка додавання"); }
+        finally { setIsSaving(false); }
     };
 
     const onEditSubmit = async (data: CreateDirectorDto) => {
@@ -132,11 +117,20 @@ const AdminDirectors = () => {
             notify.success("Дані оновлено");
             setIsEditMode(false);
             refresh();
-        } catch (err) {
-            notify.error("Помилка при оновленні");
-        } finally {
-            setIsSaving(false);
-        }
+        } catch (err) { notify.error("Помилка оновлення"); }
+        finally { setIsSaving(false); }
+    };
+
+    const handleConfirmDelete = async () => {
+        if (!deleteModal.id) return;
+        setIsSaving(true);
+        try {
+            await DirectorService.delete(deleteModal.id);
+            notify.success("Режисера видалено");
+            if (selectedDirector?.id === deleteModal.id) setSelectedDirector(null);
+            refresh();
+        } catch (err) { notify.error("Не вдалося видалити"); }
+        finally { setIsSaving(false); setDeleteModal({ isOpen: false, id: null, name: '' }); }
     };
 
     const columns: Column<DirectorDto>[] = [
@@ -147,11 +141,7 @@ const AdminDirectors = () => {
             render: (director) => (
                 <div className="w-12 h-12 rounded-2xl bg-gray-800 border border-gray-700 overflow-hidden flex items-center justify-center">
                     {director.photoUri ? (
-                        <img
-                            src={director.photoUri.startsWith('http') ? director.photoUri : `${API_CONFIG.BASE_URL}${director.photoUri}`}
-                            alt=""
-                            className="w-full h-full object-cover"
-                        />
+                        <img src={director.photoUri.startsWith('http') ? director.photoUri : `${API_CONFIG.BASE_URL}${director.photoUri}`} className="w-full h-full object-cover" />
                     ) : (
                         <UserIcon size={20} className="text-gray-600" />
                     )}
@@ -169,7 +159,7 @@ const AdminDirectors = () => {
             render: (director) => (
                 <div className="flex justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
                     <button onClick={(e) => { e.stopPropagation(); handleOpenDetails(director); }} className="p-2 text-gray-500 hover:text-white hover:bg-gray-800 rounded-xl transition-all"><Pencil size={16} /></button>
-                    <button onClick={(e) => { e.stopPropagation(); openDeleteModal(director); }} className="p-2 text-gray-500 hover:text-red-500 hover:bg-red-500/10 rounded-xl transition-all"><Trash2 size={16} /></button>
+                    <button onClick={(e) => { e.stopPropagation(); setDeleteModal({ isOpen: true, id: director.id, name: `${director.firstName} ${director.lastName}` }); }} className="p-2 text-gray-500 hover:text-red-500 hover:bg-red-500/10 rounded-xl transition-all"><Trash2 size={16} /></button>
                 </div>
             )
         }
@@ -177,8 +167,6 @@ const AdminDirectors = () => {
 
     return (
         <div className="flex flex-col lg:flex-row gap-8 items-start text-white pb-10 font-sans relative">
-
-            {/* ВАШ КАСТОМНИЙ CONFIRM MODAL */}
             <ConfirmModal
                 isOpen={deleteModal.isOpen}
                 title="Видалити режисера?"
@@ -188,67 +176,45 @@ const AdminDirectors = () => {
                 isLoading={isSaving}
             />
 
-            {/* ЛІВА ЧАСТИНА: ФОРМА ДОДАВАННЯ */}
-            <div className="w-full lg:w-1/3 lg:sticky lg:top-24 bg-[#1a1d26] p-8 rounded-[32px] border border-gray-800 shadow-2xl">
-                <div className="flex items-center gap-3 mb-8">
-                    <div className="bg-red-600/20 p-2 rounded-lg text-red-600"><UserPlus size={24} /></div>
-                    <h2 className="text-xl font-black uppercase tracking-tighter">Новий режисер</h2>
-                </div>
+            <CreateCard title="Новий режисер" buttonText="Зберегти" icon={UserPlus} fields={directorFields} loading={isSaving} onSubmit={handleAddDirector} />
 
-                <form onSubmit={addForm.handleSubmit(onAddSubmit)} className="space-y-5 text-left text-white">
-                    <input {...addForm.register('firstName', { required: true })} placeholder="Ім'я" className="w-full p-4 bg-gray-900 border border-gray-700 rounded-2xl outline-none focus:border-red-600 transition-all font-bold text-white" />
-                    <input {...addForm.register('lastName', { required: true })} placeholder="Прізвище" className="w-full p-4 bg-gray-900 border border-gray-700 rounded-2xl outline-none focus:border-red-600 transition-all font-bold text-white" />
-                    <input {...addForm.register('photoUri')} placeholder="URL фото" className="w-full p-4 bg-gray-900 border border-gray-700 rounded-2xl outline-none focus:border-red-600 transition-all text-sm text-white" />
-
-                    <button type="submit" disabled={isSaving} className="w-full bg-red-600 hover:bg-red-700 py-4 rounded-2xl font-black uppercase text-[10px] tracking-widest transition-all shadow-lg shadow-red-600/20 mt-2">
-                        {isSaving ? <Loader2 className="animate-spin mx-auto" size={18}/> : 'Зберегти'}
-                    </button>
-                </form>
-            </div>
-
-            {/* ПРАВА ЧАСТИНА: ТАБЛИЦЯ */}
             <div className="w-full lg:w-2/3 flex flex-col gap-6">
-                <div className="relative">
-                    <Search size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500" />
-                    <input type="text" placeholder="Пошук..." value={searchTerm} onChange={e => setSearchTerm(e.target.value)} className="w-full pl-12 pr-10 py-3.5 rounded-2xl bg-[#1a1d26] border border-gray-800 text-sm focus:border-red-600 outline-none transition-all shadow-xl text-white" />
-                </div>
-
-                <DataTable
-                    data={directors}
-                    columns={columns}
-                    loading={loading}
-                    error={error}
-                    onRowClick={handleOpenDetails}
-                    sortConfig={{ sortBy, isDesc }}
-                    onSort={(key) => sortBy === key ? setIsDesc(!isDesc) : (setSortBy(key as any), setIsDesc(false))}
+                <SearchInput
+                    value={searchTerm}
+                    onChange={setSearchTerm}
+                    placeholder="Пошук режисерів..."
                 />
 
+                <DataTable data={directors} columns={columns} loading={loading} error={error} onRowClick={handleOpenDetails} sortConfig={{ sortBy, isDesc }} onSort={(key) => sortBy === key ? setIsDesc(!isDesc) : (setSortBy(key as any), setIsDesc(false))} />
+
                 {!loading && totalPages > 0 && (
-                    <div className="bg-[#161820] p-4 rounded-3xl border border-gray-800 flex flex-col sm:flex-row items-center justify-between gap-4">
+                    <div className="bg-[#161820] p-4 rounded-3xl border border-gray-800 flex flex-col sm:flex-row items-center justify-between gap-4 font-sans">
                         <PaginationInfo currentPage={currentPage} pageSize={pageSize} totalCount={totalCount} itemName="режисерів" />
                         <Pagination currentPage={currentPage} totalPages={totalPages} onPageChange={goToPage} />
                     </div>
                 )}
             </div>
 
-            {/* ПОПАП ДЕТАЛЕЙ ТА РЕДАГУВАННЯ */}
+            {/* МОДАЛКА ДЕТАЛЕЙ */}
             {selectedDirector && (
                 <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-300 font-sans">
                     <div className="bg-[#1a1d26] w-full max-w-2xl max-h-[90vh] overflow-hidden rounded-[2.5rem] border border-gray-800 shadow-2xl flex flex-col relative animate-in zoom-in-95 duration-300">
 
                         {/* Header Section */}
                         <div className="p-8 border-b border-gray-800 flex items-center gap-6 bg-linear-to-r from-red-600/10 to-transparent">
-                            <div className="w-24 h-24 rounded-2xl border-2 border-red-600 p-1 shadow-lg shadow-red-600/10 overflow-hidden bg-gray-900 shrink-0">
+                            <div className="w-24 h-24 rounded-2xl border-2 border-red-600 p-1 overflow-hidden bg-gray-900 shrink-0">
                                 {selectedDirector.photoUri ? (
                                     <img src={selectedDirector.photoUri.startsWith('http') ? selectedDirector.photoUri : `${API_CONFIG.BASE_URL}${selectedDirector.photoUri}`} className="w-full h-full object-cover rounded-xl" />
                                 ) : (
                                     <div className="w-full h-full flex items-center justify-center text-gray-700"><UserIcon size={40} /></div>
                                 )}
                             </div>
-
                             <div className="flex-1 text-left">
                                 {!isEditMode ? (
-                                    <><h4 className="text-3xl font-black uppercase tracking-tighter text-white leading-none mb-1">{selectedDirector.firstName}</h4><h4 className="text-3xl font-black uppercase tracking-tighter text-white leading-none">{selectedDirector.lastName}</h4></>
+                                    <>
+                                        <h4 className="text-3xl font-black uppercase tracking-tighter text-white leading-none mb-1">{selectedDirector.firstName}</h4>
+                                        <h4 className="text-3xl font-black uppercase tracking-tighter text-white leading-none">{selectedDirector.lastName}</h4>
+                                    </>
                                 ) : (
                                     <div className="space-y-2 pr-4 text-left">
                                         <input {...editForm.register('firstName', { required: true })} className="w-full bg-[#0f1117] border border-red-600/30 rounded-xl p-2 text-xl font-bold outline-none focus:border-red-600 text-white" />
@@ -256,15 +222,14 @@ const AdminDirectors = () => {
                                     </div>
                                 )}
                             </div>
-
-                            <button onClick={() => setSelectedDirector(null)} className="p-2 self-start hover:bg-gray-800 rounded-full text-gray-500 hover:text-white transition-all"><X size={24} /></button>
+                            <button onClick={() => { setSelectedDirector(null); setIsEditMode(false); }} className="p-2 self-start hover:bg-gray-800 rounded-full text-gray-500 hover:text-white transition-all"><X size={24} /></button>
                         </div>
 
                         {/* Content Area */}
                         <div className="p-8 overflow-y-auto flex-1 custom-scrollbar text-white text-left font-sans">
                             {isEditMode && (
                                 <div className="mb-8 animate-in slide-in-from-top-2 duration-300">
-                                    <label className="text-[10px] font-black text-red-600 uppercase tracking-[0.2em] mb-2 block font-sans">Посилання на фото (URI)</label>
+                                    <label className="text-[10px] font-black text-red-600 uppercase tracking-[0.2em] mb-2 block font-sans">Посилання на фото</label>
                                     <div className="relative">
                                         <Upload size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" />
                                         <input {...editForm.register('photoUri')} className="w-full bg-gray-900 border border-gray-800 rounded-xl py-3 pl-10 pr-4 text-sm outline-none focus:border-red-600 text-white font-sans" />
@@ -280,18 +245,34 @@ const AdminDirectors = () => {
                             {loadingMovies ? (
                                 <div className="py-10 flex justify-center"><Loader2 className="animate-spin text-red-600" size={32} /></div>
                             ) : directorMovies.length > 0 ? (
-                                <div className="grid grid-cols-1 gap-3 font-sans">
-                                    {directorMovies.map(movie => (
-                                        <div key={movie.movieId} className="bg-gray-900/50 border border-gray-800 p-4 rounded-2xl flex items-center justify-between group">
-                                            <div className="flex items-center gap-4 text-left">
-                                                <div className="p-3 bg-red-600/10 rounded-xl text-red-600"><Film size={20} /></div>
-                                                <div className="text-left font-sans">
-                                                    <p className="font-bold text-base uppercase text-white font-sans">{movie.title}</p>
-                                                    <p className="text-[10px] text-gray-500 uppercase mt-1 flex items-center gap-1.5 font-sans"><Calendar size={10} className="text-red-600" /> {movie.releaseDate || 'Дата TBA'}</p>
+                                <div className="space-y-4">
+                                    <div className="grid grid-cols-1 gap-3 font-sans">
+                                        {directorMovies.map(movie => (
+                                            <div key={movie.movieId} className="bg-gray-900/50 border border-gray-800 p-4 rounded-2xl flex items-center justify-between group">
+                                                <div className="flex items-center gap-4 text-left">
+                                                    <div className="p-3 bg-red-600/10 rounded-xl text-red-600"><Film size={20} /></div>
+                                                    <div className="text-left font-sans">
+                                                        <p className="font-bold text-base uppercase text-white font-sans leading-tight">{movie.title}</p>
+                                                        <p className="text-[10px] text-gray-500 uppercase mt-1 flex items-center gap-1.5 font-sans">
+                                                            <Calendar size={10} className="text-red-600" /> {movie.releaseDate || 'Дата TBA'}
+                                                        </p>
+                                                    </div>
                                                 </div>
                                             </div>
+                                        ))}
+                                    </div>
+
+                                    {/* ПАГІНАЦІЯ ФІЛЬМІВ */}
+                                    {totalMoviePages > 1 && (
+                                        <div className="pt-6 border-t border-gray-800/50">
+                                            <Pagination
+                                                currentPage={moviePage}
+                                                totalPages={totalMoviePages}
+                                                onPageChange={goToMoviePage}
+                                                className="scale-90"
+                                            />
                                         </div>
-                                    ))}
+                                    )}
                                 </div>
                             ) : (
                                 <div className="py-10 text-center text-gray-600 uppercase text-[10px] font-black tracking-widest font-sans">Проєкти не знайдено</div>
@@ -302,30 +283,13 @@ const AdminDirectors = () => {
                         <div className="p-6 bg-gray-900/50 border-t border-gray-800 flex gap-4 font-sans">
                             {!isEditMode ? (
                                 <>
-                                    <button
-                                        onClick={() => {
-                                            setIsEditMode(true);
-                                            editForm.setValue('firstName', selectedDirector.firstName);
-                                            editForm.setValue('lastName', selectedDirector.lastName);
-                                            editForm.setValue('photoUri', selectedDirector.photoUri || '');
-                                        }}
-                                        className="flex-1 flex items-center justify-center gap-2 py-4 bg-gray-800 hover:bg-gray-700 text-white rounded-2xl font-black text-[10px] uppercase tracking-widest transition-all font-sans"
-                                    >
-                                        <Pencil size={16} className="text-red-600" /> Редагувати
-                                    </button>
-                                    <button
-                                        onClick={() => openDeleteModal(selectedDirector)}
-                                        className="flex-1 flex items-center justify-center gap-2 py-4 bg-red-600/10 hover:bg-red-600 text-red-600 hover:text-white rounded-2xl font-black text-[10px] uppercase tracking-widest transition-all border border-red-600/20 font-sans"
-                                    >
-                                        <Trash2 size={16} /> Видалити
-                                    </button>
+                                    <button onClick={() => { setIsEditMode(true); editForm.setValue('firstName', selectedDirector.firstName); editForm.setValue('lastName', selectedDirector.lastName); editForm.setValue('photoUri', selectedDirector.photoUri || ''); }} className="flex-1 flex items-center justify-center gap-2 py-4 bg-gray-800 hover:bg-gray-700 text-white rounded-2xl font-black text-[10px] uppercase tracking-widest transition-all font-sans"><Pencil size={16} className="text-red-600" /> Редагувати</button>
+                                    <button onClick={() => setDeleteModal({ isOpen: true, id: selectedDirector.id, name: `${selectedDirector.firstName} ${selectedDirector.lastName}` })} className="flex-1 flex items-center justify-center gap-2 py-4 bg-red-600/10 hover:bg-red-600 text-red-600 hover:text-white rounded-2xl font-black text-[10px] uppercase tracking-widest transition-all border border-red-600/20 font-sans"><Trash2 size={16} /> Видалити</button>
                                 </>
                             ) : (
                                 <>
-                                    <button onClick={editForm.handleSubmit(onEditSubmit)} disabled={isSaving} className="flex-1 flex items-center justify-center gap-2 py-4 bg-red-600 hover:bg-red-700 text-white rounded-2xl font-black uppercase text-[10px] tracking-widest transition-all shadow-lg shadow-red-600/30">
-                                        {isSaving ? <Loader2 className="animate-spin" size={16} /> : <><Check size={16} /> Зберегти зміни</>}
-                                    </button>
-                                    <button onClick={() => setIsEditMode(false)} className="px-8 py-4 bg-gray-800 hover:bg-gray-700 text-white rounded-2xl font-black uppercase text-[10px] tracking-widest transition-all">Скасувати</button>
+                                    <button onClick={editForm.handleSubmit(onEditSubmit)} disabled={isSaving} className="flex-1 flex items-center justify-center gap-2 py-4 bg-red-600 hover:bg-red-700 text-white rounded-2xl font-black uppercase text-[10px] tracking-widest transition-all shadow-lg shadow-red-600/30 font-sans">{isSaving ? <Loader2 className="animate-spin" size={16} /> : <><Check size={16} /> Зберегти зміни</>}</button>
+                                    <button onClick={() => setIsEditMode(false)} className="px-8 py-4 bg-gray-800 hover:bg-gray-700 text-white rounded-2xl font-black uppercase text-[10px] tracking-widest transition-all font-sans">Скасувати</button>
                                 </>
                             )}
                         </div>

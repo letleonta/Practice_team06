@@ -97,12 +97,29 @@ public class DirectorService : IDirectorService
         return true;
     }
     
-    public async Task<IEnumerable<DirectorMovieDto>> GetDirectorMoviesAsync(int directorId)
+    public async Task<PagedResult<DirectorMovieDto>> GetDirectorMoviesAsync(int directorId, BaseFilterDto filter)
     {
-        return await _context.Movies
+        var query = _context.Movies
             .Where(m => m.DirectorId == directorId)
+            .AsQueryable();
+
+        var totalCount = await query.CountAsync();
+        
+        query = query.OrderByDescending(m => m.ReleaseDate);
+        
+        query = query.ApplyPagination(filter);
+        
+        var items = await query
             .ProjectTo<DirectorMovieDto>(_mapper.ConfigurationProvider)
             .ToListAsync();
+
+        return new PagedResult<DirectorMovieDto>
+        {
+            Items = items,
+            TotalCount = totalCount,
+            Page = filter.Page ?? 1,
+            PageSize = filter.PageSize ?? 4
+        };
     }
     
     private static IQueryable<Director> ApplySorting(IQueryable<Director> query, string? sortBy, bool isDescending)

@@ -35,10 +35,10 @@ const AdminGenres = () => {
         try {
             await api.post('/genres', data);
             notify.success('Жанр додано!');
-            await loadGenres(); // Оновлюємо список
+            await loadGenres();
         } catch (err: any) {
             notify.error('Помилка: ' + (err.response?.data?.message || 'Не вдалося додати жанр'));
-            throw err; // Викидаємо помилку, щоб CreateCard не очистив форму при помилці
+            throw err;
         } finally {
             setLoading(false);
         }
