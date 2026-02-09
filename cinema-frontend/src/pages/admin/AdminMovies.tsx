@@ -41,11 +41,11 @@ const AdminMovies = () => {
     const fetchData = async () => {
         try {
             const [g, d, a] = await Promise.all([
-                GenreService.getAll(),
+                GenreService.getAll({ Page: 1, PageSize: 100 }),
                 DirectorService.getAll({ Page: 1, PageSize: 100 }),
                 ActorService.getAll({ Page: 1, PageSize: 100 })
             ]);
-            setGenres(g);
+            setGenres(g.items);
             setDirectors(d.items);
             setActors(a.items);
         } catch (e) { console.error(e); }
@@ -90,13 +90,18 @@ const AdminMovies = () => {
         formMethods.setValue('startDate', formatDate(movie.startDate));
         formMethods.setValue('endDate', formatDate(movie.endDate));
 
-        const foundDir = directors.find(d => movie.directorName.includes(d.lastName));
-        if (foundDir) formMethods.setValue('directorId', foundDir.id);
+        if (movie.director) {
+            formMethods.setValue('directorId', movie.director.id);
+        }
 
-        const gIds = genres.filter(g => movie.genres.includes(g.name)).map(g => g.id.toString());
+        const gIds = genres
+            .filter(g => movie.genres.some(mg => mg.id === g.id))
+            .map(g => g.id.toString());
         formMethods.setValue('genreIds', gIds as any);
 
-        const aIds = actors.filter(a => movie.actors.some(an => an.includes(a.lastName))).map(a => a.id.toString());
+        const aIds = actors
+            .filter(a => movie.actors.some(ma => ma.id === a.id))
+            .map(a => a.id.toString());
         formMethods.setValue('actorIds', aIds as any);
 
         setIsFormOpen(true);
@@ -165,8 +170,8 @@ const AdminMovies = () => {
                     <span className="font-bold text-white text-sm leading-tight">{movie.title}</span>
                     <div className="flex flex-wrap gap-1">
                         {movie.genres.slice(0, 3).map(g => (
-                            <span key={g} className="text-[10px] bg-gray-800 text-gray-400 px-1.5 py-0.5 rounded border border-gray-700">
-                                {g}
+                            <span key={g.id} className="text-[10px] bg-gray-800 text-gray-400 px-1.5 py-0.5 rounded border border-gray-700">
+                                {g.name}
                             </span>
                         ))}
                     </div>
