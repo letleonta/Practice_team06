@@ -4,7 +4,7 @@
     firstName: string;
     lastName: string;
     birthDate: string; // ISO date string
-    avatarUrl?: string;
+    avatarUri?: string;
     roles: string[]; // Масив ролей, бо Identity повертає список
 }
 

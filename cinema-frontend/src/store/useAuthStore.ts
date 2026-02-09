@@ -52,9 +52,8 @@ const getInitialState = () => {
                 name: name,
                 role: role,
                 id: decoded[ID_CLAIM],
-                // Навіть якщо в токені їх немає, TypeScript тепер знає про ці поля
                 firstName: name,
-                avatarUrl: undefined
+                avatarUri: undefined
             }
         };
     } catch (error) {

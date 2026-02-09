@@ -14,6 +14,7 @@ import { useAuthStore } from './store/useAuthStore';
 import { Toaster } from 'react-hot-toast';
 import {useEffect} from "react";
 import {UserService} from "./services/user.service.ts";
+import TicketDetailsPage from "./pages/TicketDetailsPage.tsx";
 
 function App() {
     const { user, token, updateUser } = useAuthStore();
@@ -26,7 +27,7 @@ function App() {
                 .then(data => {
                     updateUser({
                         firstName: data.firstName,
-                        avatarUri: data.avatarUrl
+                        avatarUri: data.avatarUri
                     });
                 })
                 .catch(err => console.error("Помилка синхронізації:", err));
@@ -65,6 +66,10 @@ function App() {
                     <Route
                         path="/bookings/:bookingId"
                         element={<BookingDetailsPage />}
+                    />
+                    <Route
+                        path="/tickets/:ticketId"
+                        element={<TicketDetailsPage />}
                     />
                     <Route
                         path="/sessions/:sessionId"

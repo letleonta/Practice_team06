@@ -133,32 +133,48 @@ namespace Practice_team06.Controllers
         // PUT: api/Bookings/5/cancel
         // Cancel booking
         [HttpPut("{bookingId}/cancel")]
-        [Authorize(Roles = "Customer")]
         public async Task<IActionResult> CancelBooking(int bookingId)
         {
-            var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier);
-            if (userIdClaim == null)
-                return Unauthorized("User is not authenticated");
+            if (User.IsInRole("Admin") || User.IsInRole("Manager"))
+            {
+                try
+                {
+                    await _bookingService.CancelBookingAsync(null, bookingId);
+                    return NoContent();
+                }
+                catch (KeyNotFoundException ex)
+                {
+                    return NotFound(ex.Message);
+                }
+                catch (InvalidOperationException ex)
+                {
+                    return BadRequest(ex.Message);
+                }
+            }
+            if (User.IsInRole("Customer"))
+            {
+                var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier);
+                if (userIdClaim == null)
+                    return Unauthorized("User is not authenticated");
 
-            var userId = int.Parse(userIdClaim.Value);
+                var userId = int.Parse(userIdClaim.Value);
 
-            try
-            {
-                await _bookingService.CancelBookingAsync(userId, bookingId);
-                return NoContent();
+                try
+                {
+                    await _bookingService.CancelBookingAsync(userId, bookingId);
+                    return NoContent();
+                }
+                catch (KeyNotFoundException ex)
+                {
+                    return NotFound(ex.Message);
+                }
+                catch (InvalidOperationException ex)
+                {
+                    return BadRequest(ex.Message);
+                }
             }
-            catch (KeyNotFoundException keyNotFoundException)
-            {
-                return NotFound(keyNotFoundException.Message);
-            }
-            catch (InvalidOperationException invalidOperationException)
-            {
-                return BadRequest(invalidOperationException.Message);
-            }
-            catch (DbUpdateException dbUpdateException)
-            {
-                return BadRequest(dbUpdateException.Message);
-            }
+
+            return Forbid();
         }
         
         // PUT: api/Bookings/5/confirm

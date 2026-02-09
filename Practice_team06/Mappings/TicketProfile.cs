@@ -19,8 +19,12 @@ public class TicketProfile : Profile
             .ForMember(d => d.SeatNumber, o => o.MapFrom(s => s.Seat.SeatNumber));
         
         CreateMap<Ticket, TicketDto>()
-            .ForMember(d => d.HallName, o => o.MapFrom(s => s.Seat.Hall.Name))
-            .ForMember(d => d.RowNumber, o => o.MapFrom(s => s.Seat.RowNumber))
-            .ForMember(d => d.SeatNumber, o => o.MapFrom(s => s.Seat.SeatNumber));
+            .ForMember(dest => dest.MovieTitle, opt => opt.MapFrom(src => src.Session.Movie.Title))
+            .ForMember(dest => dest.MoviePoster, opt => opt.MapFrom(src => src.Session.Movie.PosterUri))
+            .ForMember(dest => dest.StartTime, opt => opt.MapFrom(src => src.Session.StartTime))
+            .ForMember(dest => dest.AgeRestriction, opt => opt.MapFrom(src => src.Session.Movie.AgeRestriction))
+            .ForMember(dest => dest.HallName, opt => opt.MapFrom(src => src.Session.Hall.Name))
+            .ForMember(dest => dest.RowNumber, opt => opt.MapFrom(src => src.Seat.RowNumber))
+            .ForMember(dest => dest.SeatNumber, opt => opt.MapFrom(src => src.Seat.SeatNumber));
     }
 }
