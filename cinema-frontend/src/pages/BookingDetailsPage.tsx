@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
-import { useParams, Link } from 'react-router-dom';
-import { ArrowLeft, Calendar, Clock, Film, Ticket as TicketIcon } from 'lucide-react';
+import {useParams, Link, useNavigate} from 'react-router-dom';
+import {ArrowLeft, Calendar, Clock, Film, Ticket as TicketIcon} from 'lucide-react';
 import type {BookingDetailsDto} from "../types/booking.ts";
 import {getStatusColor, getStatusText} from "../utils/formatBookingStatus.ts";
 import {BookingService} from "../services/booking.service.ts";
@@ -10,6 +10,7 @@ import {ConfirmModal} from "../components/ui/ConfirmModal.tsx";
 import {Pagination} from "../components/Pagination.tsx";
 
 const BookingDetailsPage = () => {
+    const navigate = useNavigate();
     const { bookingId } = useParams<{ bookingId: string }>();
     const [booking, setBooking] = useState<BookingDetailsDto | null>(null);
     const [loading, setLoading] = useState(true);
@@ -267,13 +268,22 @@ const BookingDetailsPage = () => {
                                             {booking.pagedTickets.items.map((ticket, index) => (
                                                 <div
                                                     key={ticket.id}
-                                                    className="relative bg-linear-to-br from-gray-800/50 to-gray-900/50 rounded-xl border border-gray-700 p-5 hover:border-red-600/50 transition-all hover:shadow-lg hover:shadow-red-600/10 group"
+                                                    onClick={() => navigate(`/tickets/${ticket.id}`)}
+                                                    className="relative bg-linear-to-br from-gray-800/50 to-gray-900/50 rounded-xl border border-gray-700 p-5
+                                                           hover:border-red-600/50 transition-all hover:shadow-lg hover:shadow-red-600/10
+                                                           group cursor-pointer active:scale-[0.98]"
                                                 >
                                                     <div className="absolute -top-2 -right-2 bg-red-600 text-white text-xs font-bold px-3 py-1 rounded-full shadow-lg">
                                                         #{(ticketPage - 1) * TICKET_PAGE_SIZE + index + 1}
                                                     </div>
 
-                                                    <div className="space-y-3 mt-2">
+                                                    <div className="absolute bottom-2 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-all translate-y-2 group-hover:translate-y-0">
+                                                        <span className="text-[10px] font-black uppercase tracking-[0.2em] text-red-500">
+                                                            Детальніше
+                                                        </span>
+                                                    </div>
+
+                                                    <div className="space-y-3 mt-3">
                                                         <div className="flex items-center justify-between">
                                                             <span className="text-gray-500 text-sm">Ряд</span>
                                                             <span className="text-white font-bold text-xl">
