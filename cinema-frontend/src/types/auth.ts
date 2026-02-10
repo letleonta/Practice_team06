@@ -29,6 +29,7 @@ export interface ChangePasswordDto {
 }
 
 export interface ChangeEmailDto {
+    currentEmail: string;
     newEmail: string;
     currentPassword: string;
 }
