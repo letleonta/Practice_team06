@@ -6,7 +6,9 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Practice_team06.DTOs.Auth;
+using Practice_team06.DTOs.Common;
 using Practice_team06.DTOs.User;
+using Practice_team06.Extensions;
 using Practice_team06.Models;
 
 namespace Practice_team06.Services;
@@ -167,20 +169,51 @@ public class AuthService : IAuthService
         return await _userManager.AddToRoleAsync(user, roleName);
     }
 
-    public async Task<IEnumerable<UserDto>> GetAllUsersWithRolesAsync()
+    public async Task<PagedResult<UserDto>> GetAllUsersPagedAsync(UserFilterDto filter)
+{
+    var query = _userManager.Users.AsQueryable();
+    
+    if (!string.IsNullOrWhiteSpace(filter.Search))
     {
-        var users = await _userManager.Users.ToListAsync();
-        var userDtos = new List<UserDto>();
-
-        foreach (var user in users)
-        {
-            var dto = _mapper.Map<UserDto>(user);
-            var roles = await _userManager.GetRolesAsync(user);
-            dto.Roles = roles.ToList();
-        
-            userDtos.Add(dto);
-        }
-
-        return userDtos;
+        var s = filter.Search.Trim().ToLower();
+        query = query.Where(u => u.Email.ToLower().Contains(s) 
+                                 || u.FirstName.ToLower().Contains(s)
+                                 || u.LastName.ToLower().Contains(s));
     }
+    
+    var totalCount = await query.CountAsync();
+    
+    query = ApplyUserSorting(query, filter.SortBy, filter.IsDescending);
+    query = query.ApplyPagination(filter);
+    
+    var users = await query.ToListAsync();
+    
+    var userDtos = new List<UserDto>();
+    foreach (var user in users)
+    {
+        var dto = _mapper.Map<UserDto>(user);
+        var roles = await _userManager.GetRolesAsync(user);
+        dto.Roles = roles.ToList();
+        userDtos.Add(dto);
+    }
+
+    return new PagedResult<UserDto>
+    {
+        Items = userDtos,
+        TotalCount = totalCount,
+        Page = filter.Page ?? 1,
+        PageSize = filter.PageSize ?? 10
+    };
+}
+    
+private IQueryable<User> ApplyUserSorting(IQueryable<User> query, string? sortBy, bool isDescending)
+{
+    return sortBy?.ToLower() switch
+    {
+        "email" => isDescending ? query.OrderByDescending(u => u.Email) : query.OrderBy(u => u.Email),
+        "firstname" => isDescending ? query.OrderByDescending(u => u.FirstName) : query.OrderBy(u => u.FirstName),
+        "lastname" => isDescending ? query.OrderByDescending(u => u.LastName) : query.OrderBy(u => u.LastName),
+        _ => isDescending ? query.OrderByDescending(u => u.Id) : query.OrderBy(u => u.Id)
+    };
+}
 }
