@@ -1,49 +1,93 @@
-﻿import type {UseFormReturn} from 'react-hook-form';
+﻿import { useEffect } from 'react';
+import type {UseFormReturn} from 'react-hook-form';
 import type { CreateMovieDto } from '../../types/movie';
 import { Info, Image, Users, Hash, PlayCircle, Save, ArrowLeft } from 'lucide-react';
 import { FormSection, FormInput, FormSelect, FormTextarea } from '../Form/FormSection';
-import { SingleSelectGrid } from '../Form/SingleSelectGrid';
-import { MultipleSelectGrid } from '../Form/MultipleSelectGrid';
+import { AsyncMultiSelectGrid, AsyncSingleSelectGrid } from './AsyncSelectGrids';
+import { ActorService } from '../../services/actor.service';
+import { DirectorService } from '../../services/director.service';
+import { GenreService } from '../../services/genre.service';
 
 interface Props {
     formMethods: UseFormReturn<CreateMovieDto>;
     isEditing: boolean;
-    directors: any[];
-    actors: any[];
-    genres: any[];
     onCancel: () => void;
     onSubmit: (data: CreateMovieDto) => Promise<void>;
     onAddDirector: () => void;
     onAddActor: () => void;
     onAddGenre: () => void;
+    refreshTrigger: number;
 }
 
 export const MovieForm = ({
-                              formMethods, isEditing, directors, actors, genres,
-                              onCancel, onSubmit, onAddDirector, onAddActor, onAddGenre
+                              formMethods, isEditing,
+                              onCancel, onSubmit, onAddDirector, onAddActor, onAddGenre, refreshTrigger
                           }: Props) => {
-    const { register, handleSubmit, watch, setValue } = formMethods;
+    const { register, handleSubmit, watch, setValue, getValues } = formMethods;
 
-    // Слідкуємо за значеннями для відображення вибору в грідах
+    useEffect(() => {
+        if (isEditing) {
+            const currentActors = getValues('movieActors') || [];
+            const currentGenres = getValues('genreIds') || [];
+
+            // Якщо є дані, примусово оновлюємо поля, щоб watch() спрацював
+            if (currentActors.length > 0) {
+                setValue('movieActors', currentActors, { shouldDirty: false, shouldTouch: false });
+            }
+            if (currentGenres.length > 0) {
+                setValue('genreIds', currentGenres.map(Number) as any, { shouldDirty: false, shouldTouch: false });
+            }
+        }
+    }, [isEditing, getValues, setValue]);
+
     const selectedDirectorId = watch('directorId');
-    const selectedGenreIds = watch('genreIds') || [];
-    const selectedActorIds = watch('actorIds') || [];
+    const watchedGenreIds = watch('genreIds') || [];
+    const watchedMovieActors = watch('movieActors') || [];
 
-    const toggleSelection = (id: string, field: 'genreIds' | 'actorIds') => {
-        const current: string[] = (watch(field) as any) || [];
-        const newValues = current.includes(id)
-            ? current.filter(v => v !== id)
-            : [...current, id];
-        setValue(field, newValues as any);
+    const toggleGenre = (id: number) => {
+        const current = (getValues('genreIds') || []).map(Number);
+        const numericId = Number(id);
+        const newValues = current.includes(numericId)
+            ? current.filter(v => v !== numericId)
+            : [...current, numericId];
+        setValue('genreIds', newValues as any, { shouldDirty: true, shouldValidate: true });
     };
+
+    const toggleActor = (id: number) => {
+        const current = getValues('movieActors') || [];
+        const numericId = Number(id);
+
+        const exists = current.some(a => a.actorId === numericId);
+        let newValues;
+
+        if (exists) {
+            newValues = current.filter(a => a.actorId !== numericId);
+        } else {
+            newValues = [...current, { actorId: numericId, roleName: '' }];
+        }
+        setValue('movieActors', newValues, { shouldDirty: true, shouldValidate: true });
+    };
+
+    const updateActorRole = (id: number, role: string) => {
+        const current = getValues('movieActors') || [];
+        const newValues = current.map(a =>
+            a.actorId === id ? { ...a, roleName: role } : a
+        );
+        setValue('movieActors', newValues, { shouldDirty: true });
+    };
+
+    const getRoleValue = (id: number) => {
+        const actor = watchedMovieActors.find(a => a.actorId === id);
+        return actor ? actor.roleName : '';
+    };
+
+    const actorIdsOnly = watchedMovieActors.map(a => a.actorId);
+    const genreIdsOnly = watchedGenreIds.map(Number);
 
     return (
         <div className="animate-fade-in pb-20">
             <div className="flex items-center gap-6 mb-10">
-                <button
-                    onClick={onCancel}
-                    className="bg-gray-800/50 p-4 rounded-2xl hover:bg-red-600 text-white transition-colors"
-                >
+                <button onClick={onCancel} className="bg-gray-800/50 p-4 rounded-2xl hover:bg-red-600 text-white transition-colors">
                     <ArrowLeft size={24}/>
                 </button>
                 <h2 className="text-3xl font-black text-white tracking-tighter uppercase leading-none">
@@ -70,11 +114,7 @@ export const MovieForm = ({
                             </button>
                         ))}
                     </nav>
-                    <button
-                        type="button"
-                        onClick={(e) => void handleSubmit(onSubmit)(e)}
-                        className="w-full bg-red-600 text-white py-6 rounded-4xl font-black uppercase text-xs shadow-xl hover:bg-red-700 active:scale-95 transition-all"
-                    >
+                    <button type="button" onClick={handleSubmit(onSubmit)} className="w-full bg-red-600 text-white py-6 rounded-4xl font-black uppercase text-xs shadow-xl hover:bg-red-700 active:scale-95 transition-all">
                         <Save size={20} className="inline mr-2"/> Зберегти
                     </button>
                 </aside>
@@ -116,39 +156,51 @@ export const MovieForm = ({
                         </FormSection>
 
                         <FormSection id="staff" title="Команда" icon={Users} iconColor="text-purple-500">
-                            <SingleSelectGrid
+                            <AsyncSingleSelectGrid
                                 title="Режисер"
-                                items={directors}
-                                selectedId={selectedDirectorId}
-                                onSelect={(id) => setValue('directorId', id)}
+                                icon={<Users size={20}/>}
+                                color="amber"
+                                searchPlaceholder="Прізвище режисера..."
+                                fetchData={(params) => DirectorService.getAll({ ...params, search: params.search })}
+                                selectedId={selectedDirectorId ? Number(selectedDirectorId) : undefined}
+                                onSelect={(id) => setValue('directorId', id, { shouldDirty: true })}
                                 onAdd={onAddDirector}
                                 renderLabel={(d: any) => `${d.firstName} ${d.lastName}`}
-                                accentColor="amber"
-                                searchPlaceholder="Знайти режисера..."
+                                itemsPerPage={6}
+                                refreshTrigger={refreshTrigger}
                             />
-                            <MultipleSelectGrid
+
+                            <AsyncMultiSelectGrid
                                 title="Актори"
                                 icon={<Users size={20}/>}
-                                items={actors}
-                                selectedIds={selectedActorIds.map(Number)}
-                                onToggle={(id) => toggleSelection(id.toString(), 'actorIds')}
+                                color="amber"
+                                searchPlaceholder="Прізвище актора..."
+                                fetchData={(params) => ActorService.getAll({ ...params, search: params.search })}
+                                selectedIds={actorIdsOnly}
+                                onToggle={toggleActor}
                                 onAdd={onAddActor}
                                 renderLabel={(a: any) => `${a.firstName} ${a.lastName}`}
-                                color="amber"
                                 itemsPerPage={6}
-                                searchPlaceholder="Знайти актора..."
+                                refreshTrigger={refreshTrigger}
+                                withRoleInput={true}
+                                getRoleValue={getRoleValue}
+                                onRoleChange={updateActorRole}
                             />
                         </FormSection>
 
                         <FormSection id="tax" title="Жанри" icon={Hash} iconColor="text-purple-500">
-                            <MultipleSelectGrid
-                                items={genres}
-                                selectedIds={selectedGenreIds.map(Number)}
-                                onToggle={(id) => toggleSelection(id.toString(), 'genreIds')}
+                            <AsyncMultiSelectGrid
+                                title="Жанри"
+                                icon={<Hash size={20}/>}
+                                color="purple"
+                                searchPlaceholder="Назва жанру..."
+                                fetchData={(params) => GenreService.getAll({ ...params, search: params.search })}
+                                selectedIds={genreIdsOnly}
+                                onToggle={toggleGenre}
                                 onAdd={onAddGenre}
                                 renderLabel={(g: any) => g.name || ''}
-                                color="purple"
                                 itemsPerPage={8}
+                                refreshTrigger={refreshTrigger}
                             />
                         </FormSection>
                     </form>

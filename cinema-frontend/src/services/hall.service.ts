@@ -9,15 +9,10 @@ import type {PagedResult} from "../types/common.ts";
 
 export const HallService = {
 
-    async getAllPaged(page: number, pageSize: number, searchTerm: string = "") {
-        const response = await axiosInstance.get<PagedResult<HallDto>>("/halls/paged", {
+    async getAll(page: number, pageSize: number, searchTerm: string = "") {
+        const response = await axiosInstance.get<PagedResult<HallDto>>("/halls", {
             params: { page, pageSize, searchTerm }
         });
-        return response.data;
-    },
-
-    async getAll() {
-        const response = await axiosInstance.get<HallDto[]>("/halls");
         return response.data;
     },
 
