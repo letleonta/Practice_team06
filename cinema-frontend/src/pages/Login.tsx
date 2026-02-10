@@ -5,7 +5,7 @@ import { AuthService } from '../services/auth.service';
 import type { LoginDto } from '../types/auth';
 import { useAuthStore } from '../store/useAuthStore';
 import axios from 'axios';
-import { Mail, Lock, LogIn, KeyRound, X, Loader2 } from 'lucide-react';
+import { Mail, Lock, LogIn, KeyRound, X, Loader2, Eye, EyeOff } from 'lucide-react';
 import { notify } from '../utils/toast';
 import { Button } from "../components/ui/Button";
 
@@ -16,6 +16,7 @@ const Login = () => {
     const [error, setError] = useState<string | null>(null);
     const [isForgotModalOpen, setIsForgotModalOpen] = useState(false);
     const [isForgotLoading, setIsForgotLoading] = useState(false);
+    const [showPassword, setShowPassword] = useState(false);
 
     const {
         register,
@@ -62,7 +63,7 @@ const Login = () => {
             console.log("Reset Token:", result.resetToken);
             setIsForgotModalOpen(false);
             resetForgot();
-        } catch (err: any) {
+        } catch {
             notify.error("Користувача з такою поштою не знайдено");
         } finally {
             setIsForgotLoading(false);
@@ -85,7 +86,7 @@ const Login = () => {
                 )}
 
                 <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-                    {/* Email */}
+
                     <div className="flex flex-col gap-1">
                         <div className="relative group">
                             <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 group-focus-within:text-red-500 transition-colors" size={20} />
@@ -102,16 +103,25 @@ const Login = () => {
                         {errors.email && <p className="text-red-500 text-[10px] font-black uppercase ml-2 tracking-widest">{errors.email.message}</p>}
                     </div>
 
-                    {/* Пароль */}
                     <div className="flex flex-col gap-1">
                         <div className="relative group">
                             <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 group-focus-within:text-red-500 transition-colors" size={20} />
+
                             <input
                                 {...register('password', { required: 'Введіть пароль' })}
-                                type="password"
+                                type={showPassword ? 'text' : 'password'}
                                 placeholder="Пароль"
-                                className={`w-full pl-12 pr-4 py-4 rounded-2xl bg-gray-900 border ${errors.password ? 'border-red-500' : 'border-gray-800'} focus:border-red-600 outline-none transition-all font-bold`}
+                                className={`w-full pl-12 pr-12 py-4 rounded-2xl bg-gray-900 border ${errors.password ? 'border-red-500' : 'border-gray-800'} focus:border-red-600 outline-none transition-all font-bold`}
                             />
+
+                            <button
+                                type="button"
+                                onClick={() => setShowPassword(prev => !prev)}
+                                className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-500 hover:text-red-500 transition-colors"
+                                aria-label={showPassword ? 'Сховати пароль' : 'Показати пароль'}
+                            >
+                                {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+                            </button>
                         </div>
                         {errors.password && <p className="text-red-500 text-[10px] font-black uppercase ml-2 tracking-widest">{errors.password.message}</p>}
                     </div>
@@ -151,12 +161,14 @@ const Login = () => {
                 </div>
             </div>
 
-            {/* ПОПАП ВІДНОВЛЕННЯ ПАРОЛЯ */}
             {isForgotModalOpen && (
                 <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
-                    <div className="absolute inset-0 bg-black/90 backdrop-blur-sm animate-in fade-in" onClick={() => setIsForgotModalOpen(false)}></div>
-                    <div className="bg-[#1a1d26] w-full max-w-md p-8 rounded-[2.5rem] border border-gray-800 shadow-2xl relative z-10 animate-in zoom-in-95">
-                        <button onClick={() => setIsForgotModalOpen(false)} className="absolute top-6 right-6 text-gray-500 hover:text-white"><X size={24} /></button>
+                    <div className="absolute inset-0 bg-black/90 backdrop-blur-sm" onClick={() => setIsForgotModalOpen(false)}></div>
+                    <div className="bg-[#1a1d26] w-full max-w-md p-8 rounded-[2.5rem] border border-gray-800 shadow-2xl relative z-10">
+
+                        <button onClick={() => setIsForgotModalOpen(false)} className="absolute top-6 right-6 text-gray-500 hover:text-white">
+                            <X size={24} />
+                        </button>
 
                         <div className="mb-8 text-center">
                             <div className="bg-red-600/20 w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-4">
@@ -173,6 +185,7 @@ const Login = () => {
                                 placeholder="Введіть ваш email"
                                 className="w-full p-4 bg-[#0f1117] border border-gray-800 rounded-2xl outline-none focus:border-red-600 text-white font-bold"
                             />
+
                             <Button
                                 type="submit"
                                 isLoading={isForgotLoading}
