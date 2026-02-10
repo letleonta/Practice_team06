@@ -33,7 +33,7 @@ const AdminHalls = () => {
     const {
         items: halls, totalCount, currentPage, totalPages, pageSize, loading, error, goToPage, refresh,
     } = UsePagination(
-        (page, size) => HallService.getAllPaged(page, size, searchTerm),
+        (page, size) => HallService.getAll(page, size, searchTerm),
         [searchTerm], { pageSize: 6 }
     );
 
