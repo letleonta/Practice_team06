@@ -18,13 +18,32 @@ public class HallService : IHallService
         _context = context;
         _mapper = mapper;
     }
-
-    public async Task<IEnumerable<HallDto>> GetAllAsync()
+    
+    public async Task<PagedResult<HallDto>> GetAllAsync(int page, int pageSize, string? searchTerm)
     {
-        return await _context.Halls
-            .AsNoTracking()
-            .ProjectTo<HallDto>(_mapper.ConfigurationProvider)
+        var query = _context.Halls.AsNoTracking();
+        
+        if (!string.IsNullOrWhiteSpace(searchTerm))
+        {
+            var lowerSearch = searchTerm.ToLower();
+            query = query.Where(h => h.Name.ToLower().Contains(lowerSearch));
+        }
+        
+        var totalCount = await query.CountAsync();
+        
+        var items = await query
+            .OrderBy(h => h.Id) 
+            .ApplyPagination(page, pageSize)
+            .ProjectTo<HallDto>(_mapper.ConfigurationProvider) 
             .ToListAsync();
+
+        return new PagedResult<HallDto>
+        {
+            Items = items,
+            TotalCount = totalCount,
+            Page = page,
+            PageSize = pageSize
+        };
     }
     
     public async Task<HallDto?> GetByIdAsync(int id)
@@ -67,6 +86,7 @@ public class HallService : IHallService
         await _context.SaveChangesAsync();
         return true;
     }
+
     public async Task<int> GenerateStandardSeatsAsync(GenerateStandardSeatsDto dto)
     {
         var hall = await _context.Halls.FindAsync(dto.HallId);
@@ -99,6 +119,7 @@ public class HallService : IHallService
 
     public async Task<int> GenerateFlexibleSeatsAsync(GenerateFlexibleSeatsDto dto)
     {
+        // Перевірка на наявність проданих квитків перед зміною схеми
         var hasTickets = await _context.Tickets.AnyAsync(t => t.Seat.HallId == dto.HallId);
     
         if (hasTickets)
@@ -130,38 +151,7 @@ public class HallService : IHallService
         await _context.SaveChangesAsync();
         return seatsToCreate.Count;
     }
-    public async Task<PagedResult<HallDto>> GetPagedAsync(int page, int pageSize, string searchTerm)
-    {
-        var query = _context.Halls.AsQueryable();
 
-        if (!string.IsNullOrWhiteSpace(searchTerm))
-        {
-            var lowerSearch = searchTerm.ToLower();
-            query = query.Where(h => h.Name.ToLower().Contains(lowerSearch));
-        }
-
-        var totalCount = await query.CountAsync();
-
-        var items = await query
-            .OrderBy(h => h.Id)
-            .ApplyPagination(page, pageSize) 
-            .Select(h => new HallDto 
-            {
-                Id = h.Id,
-                Name = h.Name,
-                PriceModifier = h.PriceModifier,
-                Description = h.Description
-            })
-            .ToListAsync();
-
-        return new PagedResult<HallDto> 
-        {
-            Items = items,
-            TotalCount = totalCount,
-            Page = page,
-            PageSize = pageSize
-        };
-    }
     public async Task<object> AddRowToHallAsync(int hallId, RowConfigDto rowConfig)
     {
         var hall = await _context.Halls.FindAsync(hallId);
