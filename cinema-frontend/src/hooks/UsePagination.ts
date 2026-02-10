@@ -1,10 +1,14 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import type {PagedResult} from "../types/common.ts";
+import type { PagedResult } from "../types/common.ts";
 
 interface UsePaginationOptions {
     pageSize?: number;
     resetOnFilterChange?: boolean;
+    mode?: 'url' | 'local';
+    key?: string;
+    pageSizeKey?: string;
+    scrollToTop?: boolean;
 }
 
 export function UsePagination<T>(
@@ -12,12 +16,32 @@ export function UsePagination<T>(
     dependencies: any[] = [],
     options: UsePaginationOptions = {}
 ) {
-    const { pageSize: defaultSize = 10, resetOnFilterChange = true } = options;
-    const [searchParams, setSearchParams] = useSearchParams();
+    const {
+        pageSize: defaultSize = 10,
+        resetOnFilterChange = true,
+        mode = 'url',
+        key = 'Page',
+        pageSizeKey = 'PageSize',
+        scrollToTop = true
+    } = options;
 
-    // Отримуємо поточну сторінку та розмір із URL
-    const currentPage = Number(searchParams.get('Page')) || 1;
-    const pageSize = Number(searchParams.get('PageSize')) || defaultSize;
+    const [searchParams, setSearchParams] = useSearchParams();
+    const [localPage, setLocalPage] = useState(1);
+
+    // Використовуємо useRef для fetchFunction, щоб уникнути циклів,
+    // якщо користувач передає анонімну функцію без useCallback
+    const fetchFunctionRef = useRef(fetchFunction);
+    useEffect(() => {
+        fetchFunctionRef.current = fetchFunction;
+    }, [fetchFunction]);
+
+    const currentPage = mode === 'url'
+        ? (Number(searchParams.get(key)) || 1)
+        : localPage;
+
+    const pageSize = mode === 'url'
+        ? (Number(searchParams.get(pageSizeKey)) || defaultSize)
+        : defaultSize;
 
     const [pagedResult, setPagedResult] = useState<PagedResult<T>>({
         items: [], totalCount: 0, page: currentPage, pageSize,
@@ -30,6 +54,20 @@ export function UsePagination<T>(
     const prevDepsRef = useRef(dependencies);
     const isFirstRender = useRef(true);
 
+    const setPage = useCallback((newPage: number) => {
+        if (mode === 'url') {
+            const newParams = new URLSearchParams(window.location.search); // Використовуємо актуальні параметри
+            newParams.set(key, newPage.toString());
+            newParams.set(pageSizeKey, pageSize.toString());
+            setSearchParams(newParams);
+
+            if (scrollToTop) window.scrollTo({ top: 0, behavior: 'smooth' });
+        } else {
+            setLocalPage(newPage);
+        }
+    }, [mode, key, pageSizeKey, pageSize, setSearchParams, scrollToTop]);
+
+    // Слідкуємо за зміною залежностей (фільтрів)
     useEffect(() => {
         if (isFirstRender.current) {
             isFirstRender.current = false;
@@ -37,29 +75,26 @@ export function UsePagination<T>(
         }
 
         const depsChanged = dependencies.some((dep, i) => dep !== prevDepsRef.current[i]);
-
         if (resetOnFilterChange && depsChanged) {
-            const newParams = new URLSearchParams(searchParams);
-            newParams.set('Page', '1');
-
-            setSearchParams(newParams, { replace: true });
+            // Важливо: скидаємо на 1 сторінку тільки якщо змінилися фільтри
+            setPage(1);
         }
-
         prevDepsRef.current = dependencies;
-    }, [dependencies, resetOnFilterChange, searchParams, setSearchParams]);
+    }, [dependencies, resetOnFilterChange, setPage]);
 
     const fetchData = useCallback(async () => {
         setLoading(true);
         try {
-
-            const result = await fetchFunction(currentPage, pageSize, ...dependencies);
+            // Викликаємо актуальну функцію з ref
+            const result = await fetchFunctionRef.current(currentPage, pageSize, ...dependencies);
             setPagedResult(result);
+            setError(null);
         } catch (err) {
             setError(err instanceof Error ? err.message : 'Fetch error');
         } finally {
             setLoading(false);
         }
-    }, [currentPage, pageSize, ...dependencies]);
+    }, [currentPage, pageSize, ...dependencies]); // ТУТ ми прибрали fetchFunction з залежностей
 
     useEffect(() => {
         fetchData();
@@ -67,56 +102,24 @@ export function UsePagination<T>(
 
     const goToPage = useCallback((page: number) => {
         if (page >= 1 && (pagedResult.totalPages === 0 || page <= pagedResult.totalPages)) {
-            const newParams = new URLSearchParams(searchParams);
-            newParams.set('Page', page.toString());
-            newParams.set('PageSize', pageSize.toString());
-
-            setSearchParams(newParams);
-            window.scrollTo({ top: 0, behavior: 'smooth' });
+            setPage(page);
         }
-    }, [searchParams, setSearchParams, pageSize, pagedResult.totalPages]);
-
-    const goToNextPage = useCallback(() => {
-        if (pagedResult.hasNextPage) {
-            goToPage(currentPage + 1);
-        }
-    }, [currentPage, pagedResult.hasNextPage, goToPage]);
-
-    const goToPreviousPage = useCallback(() => {
-        if (pagedResult.hasPreviousPage) {
-            goToPage(currentPage - 1);
-        }
-    }, [currentPage, pagedResult.hasPreviousPage, goToPage]);
-
-    const goToFirstPage = useCallback(() => {
-        goToPage(1);
-    }, [goToPage]);
-
-    const goToLastPage = useCallback(() => {
-        goToPage(pagedResult.totalPages);
-    }, [pagedResult.totalPages, goToPage]);
+    }, [pagedResult.totalPages, setPage]);
 
     return {
         items: pagedResult.items,
         totalCount: pagedResult.totalCount,
-
-        currentPage: pagedResult.page,
-        pageSize: pagedResult.pageSize,
+        currentPage,
+        pageSize,
         totalPages: pagedResult.totalPages,
         hasPreviousPage: pagedResult.hasPreviousPage,
         hasNextPage: pagedResult.hasNextPage,
-
         loading,
         error,
-
         goToPage,
-        goToNextPage,
-        goToPreviousPage,
-        goToFirstPage,
-        goToLastPage,
-
+        goToNextPage: () => pagedResult.hasNextPage && goToPage(currentPage + 1),
+        goToPreviousPage: () => pagedResult.hasPreviousPage && goToPage(currentPage - 1),
         refresh: fetchData,
-
         pagedResult
     };
 }

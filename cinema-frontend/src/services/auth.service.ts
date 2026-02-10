@@ -6,9 +6,10 @@ import type {
     RegisterDto,
     ChangePasswordDto,
     ResetPasswordDto,
-    UserDto,
     ChangeEmailDto
 } from "../types/auth";
+import type {UserDto, UserFilterDto} from '../types/user';
+import type {PagedResult} from "../types/common.ts";
 
 export const AuthService = {
     async register(data: RegisterDto): Promise<AuthResultDto> {
@@ -40,8 +41,10 @@ export const AuthService = {
         await axiosInstance.post("/auth/reset-password", data);
     },
 
-    async getAllUsers(): Promise<UserDto[]> {
-        const response = await axiosInstance.get<UserDto[]>("/auth/users");
+    async getAllUsers(filter: UserFilterDto): Promise<PagedResult<UserDto>> {
+        const response = await axiosInstance.get<PagedResult<UserDto>>("/auth/users", {
+            params: filter
+        });
         return response.data;
     },
 

@@ -248,7 +248,7 @@ export const HallSchemeModal = ({ hall, onClose, onSeatChange }: Props) => {
                         </div>
                         <div className="flex items-center gap-2.5">
                             <div className="w-3.5 h-3.5 bg-amber-500 rounded-sm shadow-[0_0_10px_rgba(245,158,11,0.2)]"></div>
-                            <span className="text-[10px] font-black uppercase tracking-widest">VIP Gold</span>
+                            <span className="text-[10px] font-black uppercase tracking-widest">VIP</span>
                         </div>
                     </div>
                     <div className="flex items-center gap-3 text-[9px] font-bold uppercase tracking-widest">
