@@ -116,7 +116,6 @@ const AdminDashboard = () => {
                         </div>
                     </div>
 
-                    {/* ГРУПА: СИСТЕМА (Доступна і Адміну, і Менеджеру) */}
                     {(userRole === 'Admin' || userRole === 'Manager') && (
                         <div>
                             <p className="text-[10px] font-black text-gray-600 uppercase tracking-[0.2em] mb-4 px-2">Система</p>
