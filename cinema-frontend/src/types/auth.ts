@@ -29,6 +29,7 @@ export interface ChangePasswordDto {
 }
 
 export interface ChangeEmailDto {
+    currentEmail: string;
     newEmail: string;
     currentPassword: string;
 }
@@ -37,12 +38,4 @@ export interface ResetPasswordDto {
     email: string;
     token: string;
     newPassword: string;
-}
-
-export interface UserDto {
-    id: number;
-    email: string;
-    firstName: string;
-    lastName: string;
-    roles: string[];
 }

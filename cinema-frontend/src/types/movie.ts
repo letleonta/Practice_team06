@@ -1,8 +1,13 @@
 import type {DirectorDto} from "./director.ts";
 import type {ActorDto} from "./actor.ts";
 import type {GenreDto} from "./genre.ts";
-
 import type {BaseFilterDto} from "./common.ts";
+
+export interface MovieActorDto {
+    actorId: number;
+    roleName: string;
+    actor?: ActorDto;
+}
 
 export interface MovieDto {
     id: number;
@@ -18,10 +23,12 @@ export interface MovieDto {
     startDate?: string;
     endDate?: string;
     director?: DirectorDto;
-    actors: ActorDto[];
+    movieActors: MovieActorDto[];
     genres: GenreDto[]
     languageIds: number[];
+    actors: ActorDto[];
 }
+
 export interface CreateMovieDto {
     title: string;
     description: string;
@@ -36,7 +43,7 @@ export interface CreateMovieDto {
     ageRestriction: number;
     directorId?: number;
     genreIds: number[];
-    actorIds: number[];
+    movieActors: { actorId: number; roleName: string }[];
     rating?: number;
 }
 

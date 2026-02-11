@@ -8,7 +8,6 @@ import {
 import { DirectorService } from '../../services/director.service.ts';
 import type { CreateDirectorDto, DirectorDto, DirectorFilterDto, DirectorMovieDto } from '../../types/director';
 import { UsePagination } from "../../hooks/UsePagination.ts";
-import { useLocalPagination } from "../../hooks/UseLocalPagination.ts";
 import { Pagination } from "../../components/Pagination";
 import { PaginationInfo } from "../../components/PaginationInfo";
 import { DataTable, type Column } from "../../components/DataTable.tsx";
@@ -16,7 +15,7 @@ import { notify } from "../../utils/toast";
 import { ConfirmModal } from "../../components/ui/ConfirmModal.tsx";
 import { CreateCard } from "../../components/CreateCard.tsx";
 import { API_CONFIG } from "../../../config.ts";
-import {SearchInput} from "../../components/ui/SearchInput.tsx";
+import { SearchInput } from "../../components/ui/SearchInput.tsx";
 
 const directorFields = [
     {
@@ -55,7 +54,7 @@ const AdminDirectors = () => {
         isOpen: false, id: null, name: ''
     });
 
-    // 1. ГОЛОВНА ПАГІНАЦІЯ (Режисери - впливає на URL)
+    //ГОЛОВНА ПАГІНАЦІЯ
     const {
         items: directors, totalCount, currentPage, totalPages, pageSize, loading, error, goToPage, refresh,
     } = UsePagination(async (p, ps) => {
@@ -69,23 +68,27 @@ const AdminDirectors = () => {
         return await DirectorService.getAll(filter);
     }, [searchTerm, sortBy, isDesc], { pageSize: 6 });
 
-    // 2. ЛОКАЛЬНА ПАГІНАЦІЯ (Фільми режисера - НЕ впливає на URL)
+    //ЛОКАЛЬНА ПАГІНАЦІЯ
     const {
         items: directorMovies,
         loading: loadingMovies,
         currentPage: moviePage,
         totalPages: totalMoviePages,
         goToPage: goToMoviePage
-    } = useLocalPagination<DirectorMovieDto>(
+    } = UsePagination<DirectorMovieDto>(
         async (page, size) => {
             if (!selectedDirector) return { items: [], totalCount: 0, page, pageSize: size, totalPages: 0, hasPreviousPage: false, hasNextPage: false };
             return await DirectorService.getDirectorMovies(selectedDirector.id, { Page: page, PageSize: size });
         },
         [selectedDirector?.id],
-        { pageSize: 4}
+        {
+            pageSize: 4,
+            mode: 'local',
+            scrollToTop: false
+        }
     );
 
-    // --- ОБРОБНИКИ ПОДІЙ ---
+    // ОБРОБНИКИ ПОДІЙ
 
     const handleOpenDetails = (director: DirectorDto) => {
         setSelectedDirector(director);
@@ -102,9 +105,12 @@ const AdminDirectors = () => {
         try {
             await DirectorService.create({ ...data, photoUri: data.photoUri?.trim() || undefined });
             notify.success("Режисера додано");
-            refresh();
-        } catch (err) { notify.error("Помилка додавання"); }
-        finally { setIsSaving(false); }
+            await refresh(); // Додано await
+        } catch {
+            notify.error("Помилка додавання");
+        } finally {
+            setIsSaving(false);
+        }
     };
 
     const onEditSubmit = async (data: CreateDirectorDto) => {
@@ -116,9 +122,12 @@ const AdminDirectors = () => {
             setSelectedDirector({ ...selectedDirector, ...payload });
             notify.success("Дані оновлено");
             setIsEditMode(false);
-            refresh();
-        } catch (err) { notify.error("Помилка оновлення"); }
-        finally { setIsSaving(false); }
+            await refresh(); // Додано await
+        } catch {
+            notify.error("Помилка оновлення");
+        } finally {
+            setIsSaving(false);
+        }
     };
 
     const handleConfirmDelete = async () => {
@@ -128,9 +137,22 @@ const AdminDirectors = () => {
             await DirectorService.delete(deleteModal.id);
             notify.success("Режисера видалено");
             if (selectedDirector?.id === deleteModal.id) setSelectedDirector(null);
-            refresh();
-        } catch (err) { notify.error("Не вдалося видалити"); }
-        finally { setIsSaving(false); setDeleteModal({ isOpen: false, id: null, name: '' }); }
+            await refresh(); // Додано await
+        } catch {
+            notify.error("Не вдалося видалити");
+        } finally {
+            setIsSaving(false);
+            setDeleteModal({ isOpen: false, id: null, name: '' });
+        }
+    };
+
+    const handleSort = (key: string) => {
+        if (sortBy === key) {
+            setIsDesc(!isDesc);
+        } else {
+            setSortBy(key as 'id' | 'firstname' | 'lastname');
+            setIsDesc(false);
+        }
     };
 
     const columns: Column<DirectorDto>[] = [
@@ -141,7 +163,11 @@ const AdminDirectors = () => {
             render: (director) => (
                 <div className="w-12 h-12 rounded-2xl bg-gray-800 border border-gray-700 overflow-hidden flex items-center justify-center">
                     {director.photoUri ? (
-                        <img src={director.photoUri.startsWith('http') ? director.photoUri : `${API_CONFIG.BASE_URL}${director.photoUri}`} className="w-full h-full object-cover" />
+                        <img
+                            src={director.photoUri.startsWith('http') ? director.photoUri : `${API_CONFIG.BASE_URL}${director.photoUri}`}
+                            alt={`${director.firstName} ${director.lastName}`}
+                            className="w-full h-full object-cover"
+                        />
                     ) : (
                         <UserIcon size={20} className="text-gray-600" />
                     )}
@@ -185,7 +211,15 @@ const AdminDirectors = () => {
                     placeholder="Пошук режисерів..."
                 />
 
-                <DataTable data={directors} columns={columns} loading={loading} error={error} onRowClick={handleOpenDetails} sortConfig={{ sortBy, isDesc }} onSort={(key) => sortBy === key ? setIsDesc(!isDesc) : (setSortBy(key as any), setIsDesc(false))} />
+                <DataTable
+                    data={directors}
+                    columns={columns}
+                    loading={loading}
+                    error={error}
+                    onRowClick={handleOpenDetails}
+                    sortConfig={{ sortBy, isDesc }}
+                    onSort={handleSort}
+                />
 
                 {!loading && totalPages > 0 && (
                     <div className="bg-[#161820] p-4 rounded-3xl border border-gray-800 flex flex-col sm:flex-row items-center justify-between gap-4 font-sans">
@@ -195,16 +229,20 @@ const AdminDirectors = () => {
                 )}
             </div>
 
-            {/* МОДАЛКА ДЕТАЛЕЙ */}
+            {/* ДЕТАЛЕЙ */}
             {selectedDirector && (
-                <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-300 font-sans">
+                <div className="fixed inset-0 z-100 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-300 font-sans">
                     <div className="bg-[#1a1d26] w-full max-w-2xl max-h-[90vh] overflow-hidden rounded-[2.5rem] border border-gray-800 shadow-2xl flex flex-col relative animate-in zoom-in-95 duration-300">
 
                         {/* Header Section */}
                         <div className="p-8 border-b border-gray-800 flex items-center gap-6 bg-linear-to-r from-red-600/10 to-transparent">
                             <div className="w-24 h-24 rounded-2xl border-2 border-red-600 p-1 overflow-hidden bg-gray-900 shrink-0">
                                 {selectedDirector.photoUri ? (
-                                    <img src={selectedDirector.photoUri.startsWith('http') ? selectedDirector.photoUri : `${API_CONFIG.BASE_URL}${selectedDirector.photoUri}`} className="w-full h-full object-cover rounded-xl" />
+                                    <img
+                                        src={selectedDirector.photoUri.startsWith('http') ? selectedDirector.photoUri : `${API_CONFIG.BASE_URL}${selectedDirector.photoUri}`}
+                                        alt={`${selectedDirector.firstName} ${selectedDirector.lastName}`}
+                                        className="w-full h-full object-cover rounded-xl"
+                                    />
                                 ) : (
                                     <div className="w-full h-full flex items-center justify-center text-gray-700"><UserIcon size={40} /></div>
                                 )}

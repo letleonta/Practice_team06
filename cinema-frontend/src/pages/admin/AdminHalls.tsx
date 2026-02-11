@@ -8,9 +8,9 @@ import { PaginationInfo } from "../../components/PaginationInfo";
 import { CreateCard } from '../../components/CreateCard';
 import { HallSchemeModal } from '../../components/HallSchemeModal';
 import type { HallDto } from '../../types/hall';
-import { Trash2, Search, Plus, FileText, DollarSign, Pencil, AlertCircle } from 'lucide-react'; // Додав AlertCircle
+import { Trash2, Search, Plus, FileText, DollarSign, Pencil, AlertCircle } from 'lucide-react';
 import { ConfirmModal } from "../../components/ui/ConfirmModal.tsx";
-import axios from 'axios'; // Не забудь імпортувати axios
+import axios from 'axios';
 
 const AdminHalls = () => {
     const [searchTerm, setSearchTerm] = useState('');
@@ -29,15 +29,13 @@ const AdminHalls = () => {
         message: ''
     });
 
-    // --- ПАГІНАЦІЯ ---
     const {
         items: halls, totalCount, currentPage, totalPages, pageSize, loading, error, goToPage, refresh,
     } = UsePagination(
-        (page, size) => HallService.getAllPaged(page, size, searchTerm),
+        (page, size) => HallService.getAll(page, size, searchTerm),
         [searchTerm], { pageSize: 6 }
     );
 
-    // --- ОБРАХУНОК МІСЦЬ ---
     const fetchCounts = async () => {
         const counts: Record<number, number> = {};
         await Promise.all(halls.map(async (h) => {
@@ -51,7 +49,6 @@ const AdminHalls = () => {
 
     useEffect(() => { if (halls.length > 0) fetchCounts(); }, [halls]);
 
-    // --- ФОРМА СТВОРЕННЯ (ДАНІ) ---
     const hallFields = [
         { name: 'name', label: 'Назва залу', placeholder: 'Напр. Зал 1 (IMAX)', icon: Plus },
         { name: 'description', label: 'Опис', placeholder: 'Технічні характеристики...', icon: FileText, required: false },
@@ -93,7 +90,6 @@ const AdminHalls = () => {
         }
     };
 
-    // --- КОЛОНКИ ТАБЛИЦІ ---
     const columns: Column<HallDto>[] = useMemo(() => [
         {
             key: 'id',

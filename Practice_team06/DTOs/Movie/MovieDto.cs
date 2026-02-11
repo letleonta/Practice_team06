@@ -21,4 +21,5 @@ public class MovieDto
     public DirectorDto? Director { get; set; }
     public List<ActorDto> Actors { get; set; } = new();
     public List<GenreDto> Genres { get; set; } = new();
+    public List<MovieActorDto> MovieActors { get; set; } = new();
 }

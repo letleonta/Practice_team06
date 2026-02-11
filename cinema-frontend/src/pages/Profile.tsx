@@ -7,7 +7,7 @@ import type { UserDto, UpdateProfileDto } from '../types/user';
 import type { ChangePasswordDto, ChangeEmailDto } from '../types/auth';
 import {
     Calendar, Camera, Loader2, LogOut, Check, KeyRound, X,
-    Pencil, User as UserIcon, AtSign, Trash2, Upload
+    Pencil, User as UserIcon, AtSign, Trash2, Upload, Eye, EyeOff
 } from 'lucide-react';
 import { Button } from '../components/ui/Button';
 import { useAuthStore } from '../store/useAuthStore';
@@ -28,6 +28,10 @@ export const Profile = () => {
     const [isAvatarModalOpen, setIsAvatarModalOpen] = useState(false);
     const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false); // НОВИЙ СТАН
     const [isActionLoading, setIsActionLoading] = useState(false);
+
+    const [showOldPassword, setShowOldPassword] = useState(false);
+    const [showNewPassword, setShowNewPassword] = useState(false);
+    const [showEmailPassword, setShowEmailPassword] = useState(false);
 
     const { register, handleSubmit, reset, formState: { isDirty } } = useForm<UpdateProfileDto>();
     const { register: regPass, handleSubmit: handlePassSubmit, reset: resetPass} = useForm<ChangePasswordDto>({ mode: 'onChange' });
@@ -314,35 +318,117 @@ export const Profile = () => {
             {/* ПОПАПИ ПАРОЛЯ ТА ПОШТИ */}
             {isPassModalOpen && (
                 <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
-                    <div className="absolute inset-0 bg-black/80 backdrop-blur-sm animate-in fade-in" onClick={() => setIsPassModalOpen(false)}></div>
-                    <div className="bg-[#1a1d26] w-full max-w-md p-8 rounded-[2.5rem] border border-gray-800 shadow-2xl relative z-10 animate-in zoom-in-95 text-white">
-                        <button onClick={() => setIsPassModalOpen(false)} className="absolute top-6 right-6 text-gray-500 hover:text-white transition-colors"><X size={24} /></button>
-                        <div className="mb-8 text-center text-white">
-                            <div className="bg-red-600/20 w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-4"><KeyRound className="text-red-600" size={32} /></div>
-                            <h4 className="text-2xl font-black uppercase tracking-tighter">Зміна пароля</h4>
+                    <div className="absolute inset-0 bg-black/80 backdrop-blur-sm" onClick={() => setIsPassModalOpen(false)} />
+                    <div className="bg-[#1a1d26] w-full max-w-md p-8 rounded-[2.5rem] border border-gray-800 shadow-2xl relative z-10">
+
+                        <button onClick={() => setIsPassModalOpen(false)} className="absolute top-6 right-6 text-gray-500 hover:text-white">
+                            <X size={24} />
+                        </button>
+
+                        <div className="mb-8 text-center">
+                            <div className="bg-red-600/20 w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                                <KeyRound className="text-red-600" size={32} />
+                            </div>
+                            <h4 className="text-2xl font-black uppercase">Зміна пароля</h4>
                         </div>
-                        <form onSubmit={handlePassSubmit(onChangePassword)} className="space-y-4 text-left">
-                            <input type="password" {...regPass('oldPassword', { required: true })} placeholder="Старий пароль" className="w-full p-4 bg-[#0f1117] border border-gray-800 rounded-2xl outline-none focus:border-red-600 text-white font-bold" />
-                            <input type="password" {...regPass('newPassword', { required: true, minLength: 6 })} placeholder="Новий пароль" className="w-full p-4 bg-[#0f1117] border border-gray-800 rounded-2xl outline-none focus:border-red-600 text-white font-bold" />
-                            <Button type="submit" isLoading={isActionLoading} className="w-full py-5 uppercase text-[10px] font-black tracking-widest mt-4">Оновити пароль</Button>
+
+                        <form onSubmit={handlePassSubmit(onChangePassword)} className="space-y-4">
+
+                            {/* OLD PASSWORD */}
+                            <div className="relative">
+                                <input
+                                    type={showOldPassword ? "text" : "password"}
+                                    {...regPass('oldPassword', { required: true })}
+                                    placeholder="Старий пароль"
+                                    className="w-full p-4 pr-12 bg-[#0f1117] border border-gray-800 rounded-2xl outline-none focus:border-red-600 font-bold"
+                                />
+                                <button
+                                    type="button"
+                                    onClick={() => setShowOldPassword(prev => !prev)}
+                                    className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-500 hover:text-white"
+                                >
+                                    {showOldPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                                </button>
+                            </div>
+
+                            {/* NEW PASSWORD */}
+                            <div className="relative">
+                                <input
+                                    type={showNewPassword ? "text" : "password"}
+                                    {...regPass('newPassword', { required: true })}
+                                    placeholder="Новий пароль"
+                                    className="w-full p-4 pr-12 bg-[#0f1117] border border-gray-800 rounded-2xl outline-none focus:border-red-600 font-bold"
+                                />
+                                <button
+                                    type="button"
+                                    onClick={() => setShowNewPassword(prev => !prev)}
+                                    className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-500 hover:text-white"
+                                >
+                                    {showNewPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                                </button>
+                            </div>
+
+                            <Button type="submit" isLoading={isActionLoading} className="w-full py-5 uppercase text-[10px] font-black tracking-widest mt-4">
+                                Оновити пароль
+                            </Button>
+
                         </form>
                     </div>
                 </div>
             )}
 
+            {/* ---------------- POPUP EMAIL ---------------- */}
             {isEmailModalOpen && (
                 <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
-                    <div className="absolute inset-0 bg-black/80 backdrop-blur-sm animate-in fade-in" onClick={() => setIsEmailModalOpen(false)}></div>
-                    <div className="bg-[#1a1d26] w-full max-w-md p-8 rounded-[2.5rem] border border-gray-800 shadow-2xl relative z-10 animate-in zoom-in-95 text-white">
-                        <button onClick={() => setIsEmailModalOpen(false)} className="absolute top-6 right-6 text-gray-500 hover:text-white transition-colors"><X size={24} /></button>
-                        <div className="mb-8 text-center text-white">
-                            <div className="bg-red-600/20 w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-4 font-sans"><AtSign className="text-red-600" size={32} /></div>
-                            <h4 className="text-2xl font-black uppercase tracking-tighter font-sans text-white">Новий Email</h4>
+                    <div className="absolute inset-0 bg-black/80 backdrop-blur-sm" onClick={() => setIsEmailModalOpen(false)} />
+                    <div className="bg-[#1a1d26] w-full max-w-md p-8 rounded-[2.5rem] border border-gray-800 shadow-2xl relative z-10">
+
+                        <button onClick={() => setIsEmailModalOpen(false)} className="absolute top-6 right-6 text-gray-500 hover:text-white">
+                            <X size={24} />
+                        </button>
+
+                        <div className="mb-8 text-center">
+                            <div className="bg-red-600/20 w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                                <AtSign className="text-red-600" size={32} />
+                            </div>
+                            <h4 className="text-2xl font-black uppercase">Зміна Email</h4>
                         </div>
-                        <form onSubmit={handleEmailSubmit(onChangeEmail)} className="space-y-4 text-left">
-                            <input type="email" {...regEmail('newEmail', { required: true })} className="w-full p-4 bg-[#0f1117] border border-gray-800 rounded-2xl outline-none focus:border-red-600 text-white font-bold" />
-                            <input type="password" {...regEmail('currentPassword', { required: true })} className="w-full p-4 bg-[#0f1117] border border-gray-800 rounded-2xl outline-none focus:border-red-600 text-white font-bold" />
-                            <Button type="submit" isLoading={isActionLoading} className="w-full py-5 uppercase text-[10px] font-black tracking-widest mt-4">Підтвердити зміну</Button>
+
+                        <form onSubmit={handleEmailSubmit(onChangeEmail)} className="space-y-4">
+
+                            <input
+                                type="email"
+                                {...regEmail('currentEmail', { required: true })}
+                                placeholder="Старий Email"
+                                className="w-full p-4 bg-[#0f1117] border border-gray-800 rounded-2xl outline-none focus:border-red-600 font-bold"
+                            />
+
+                            <input
+                                type="email"
+                                {...regEmail('newEmail', { required: true })}
+                                placeholder="Новий Email"
+                                className="w-full p-4 bg-[#0f1117] border border-gray-800 rounded-2xl outline-none focus:border-red-600 font-bold"
+                            />
+
+                            <div className="relative">
+                                <input
+                                    type={showEmailPassword ? "text" : "password"}
+                                    {...regEmail('currentPassword', { required: true })}
+                                    placeholder="Пароль"
+                                    className="w-full p-4 pr-12 bg-[#0f1117] border border-gray-800 rounded-2xl outline-none focus:border-red-600 font-bold"
+                                />
+                                <button
+                                    type="button"
+                                    onClick={() => setShowEmailPassword(prev => !prev)}
+                                    className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-500 hover:text-white"
+                                >
+                                    {showEmailPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                                </button>
+                            </div>
+
+                            <Button type="submit" isLoading={isActionLoading} className="w-full py-5 uppercase text-[10px] font-black tracking-widest mt-4">
+                                Підтвердити зміну
+                            </Button>
                         </form>
                     </div>
                 </div>
