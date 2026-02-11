@@ -2,8 +2,8 @@
 import type { SessionDto } from '../../types/session';
 import { SessionItem } from '../SessionComponents/SessionItem';
 import { Calendar, Loader2, Filter, X, Trash2, CheckSquare, Square } from 'lucide-react';
-import { Pagination } from '../Pagination';
-import { PaginationInfo } from '../PaginationInfo';
+import { Pagination } from '../ui/Pagination.tsx';
+import { PaginationInfo } from '../ui/PaginationInfo.tsx';
 
 interface Props {
     sessions: SessionDto[];

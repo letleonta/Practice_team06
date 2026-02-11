@@ -1,5 +1,5 @@
 import { PieChart, Pie, Sector, ResponsiveContainer, LabelList } from 'recharts';
-import type {BookingsStatsDto} from "../../types/booking";
+import type {BookingsStatsDto} from "../../types/booking.ts";
 
 interface StatusPieProps {
     stats: BookingsStatsDto;

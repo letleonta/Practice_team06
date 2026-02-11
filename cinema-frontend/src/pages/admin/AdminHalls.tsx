@@ -2,10 +2,10 @@
 import { UsePagination } from '../../hooks/UsePagination';
 import { HallService } from '../../services/hall.service';
 import { SeatService } from '../../services/seat.service';
-import { DataTable, type Column } from '../../components/DataTable';
-import { Pagination } from '../../components/Pagination';
-import { PaginationInfo } from "../../components/PaginationInfo";
-import { CreateCard } from '../../components/CreateCard';
+import { DataTable, type Column } from '../../components/ui/DataTable.tsx';
+import { Pagination } from '../../components/ui/Pagination.tsx';
+import { PaginationInfo } from "../../components/ui/PaginationInfo.tsx";
+import { CreateCard } from '../../components/ui/CreateCard.tsx';
 import { HallSchemeModal } from '../../components/HallSchemeModal';
 import type { HallDto } from '../../types/hall';
 import { Trash2, Search, Plus, FileText, DollarSign, Pencil, AlertCircle } from 'lucide-react';

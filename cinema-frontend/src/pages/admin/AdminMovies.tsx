@@ -6,9 +6,9 @@ import { Film, Search, Edit, Trash2, Clock, Star, Plus } from 'lucide-react';
 import { ConfirmModal } from "../../components/ui/ConfirmModal";
 import { notify } from "../../utils/toast";
 import { UsePagination } from "../../hooks/UsePagination";
-import { Pagination } from "../../components/Pagination";
-import { PaginationInfo } from "../../components/PaginationInfo";
-import { DataTable, type Column } from "../../components/DataTable";
+import { Pagination } from "../../components/ui/Pagination.tsx";
+import { PaginationInfo } from "../../components/ui/PaginationInfo.tsx";
+import { DataTable, type Column } from "../../components/ui/DataTable.tsx";
 import { MovieForm } from '../../components/AMoviesComponents/MovieForm';
 import { QuickCreateModal } from '../../components/AMoviesComponents/QuickCreateModal.tsx';
 

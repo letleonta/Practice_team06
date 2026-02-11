@@ -72,8 +72,7 @@ const AdminSessions = () => {
                 PageSize: PAGE_SIZE,
                 isActive: activeTab === 'active',
                 dateFrom: filterDates.from || undefined,
-                dateTo: filterDates.to || undefined,
-                // Якщо бекенд підтримує Weekdays, можна додати і їх
+                dateTo: filterDates.to || undefined
             };
 
             const result = await SessionService.getByMovieId(selectedMovie.id, filter);

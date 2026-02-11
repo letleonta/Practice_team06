@@ -19,7 +19,7 @@ import { SeatService } from "../services/seat.service";
 import { BookingService } from "../services/booking.service";
 import type {SessionSeatDto} from "../types/seat.ts";
 import {ConfirmModal} from "../components/ui/ConfirmModal.tsx";
-import {AgeRestrictionBadge} from "../components/AgeRestrictionBadge.tsx";
+import {AgeRestrictionBadge} from "../components/ui/AgeRestrictionBadge.tsx";
 
 const SessionPage = () => {
     const { user } = useAuthStore();

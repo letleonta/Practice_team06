@@ -6,9 +6,9 @@ import type { MovieDto } from '../types/movie';
 import type { SessionFilterDto } from '../types/session';
 import { ChevronLeft, ChevronRight, Clock, Calendar, Star, Ticket, ArrowLeft, User, Loader2, PlayCircle } from 'lucide-react';
 import { formatDateWithYear } from "../utils/formatTime.ts";
-import { AgeRestrictionBadge } from "../components/AgeRestrictionBadge.tsx";
+import { AgeRestrictionBadge } from "../components/ui/AgeRestrictionBadge.tsx";
 import { SessionItem } from "../components/SessionItem.tsx";
-import { Pagination } from "../components/Pagination";
+import { Pagination } from "../components/ui/Pagination.tsx";
 import { UsePagination } from "../hooks/UsePagination";
 
 const MoviePage = () => {
