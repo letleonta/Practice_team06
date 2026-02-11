@@ -1,17 +1,27 @@
-import { PieChart, Pie, Sector, ResponsiveContainer, LabelList } from 'recharts';
-import type {BookingsStatsDto} from "../../types/booking.ts";
+import { PieChart, Pie, Sector, ResponsiveContainer, LabelList, type SectorProps } from 'recharts';
+import type { BookingsStatsDto } from "../../types/booking.ts";
 
 interface StatusPieProps {
     stats: BookingsStatsDto;
 }
 
-const COLORS = ['#3C7E1B', '#940B48', '#FF0A12']; // Оплачено, В процесі, Скасовано
+interface StatusDataItem {
+    name: string;
+    value: number;
+}
 
-const MyCustomSector = (props: any) => {
+interface CustomSectorProps extends SectorProps {
+    index?: number;
+}
+
+const COLORS = ['#3C7E1B', '#940B48', '#FF0A12'];
+
+const MyCustomSector = (props: CustomSectorProps) => {
+    const { index = 0 } = props;
     return (
         <Sector
             {...props}
-            fill={COLORS[props.index % COLORS.length]}
+            fill={COLORS[index % COLORS.length]}
             className="outline-none cursor-pointer"
         />
     );
@@ -20,10 +30,10 @@ const MyCustomSector = (props: any) => {
 const StatusPie = ({ stats }: StatusPieProps) => {
     const total = (stats.paidCount || 0) + (stats.inProgressCount || 0) + (stats.cancelledCount || 0);
 
-    const data = [
-        { name: 'Оплачено', value: stats.paidCount },
-        { name: 'В процесі', value: stats.inProgressCount },
-        { name: 'Скасовано', value: stats.cancelledCount },
+    const data: StatusDataItem[] = [
+        { name: 'Оплачено', value: stats.paidCount || 0 },
+        { name: 'В процесі', value: stats.inProgressCount || 0 },
+        { name: 'Скасовано', value: stats.cancelledCount || 0 },
     ];
 
     const getPercent = (value: number) => (total > 0 ? ((value / total) * 100).toFixed(1) : "0.0");
@@ -43,7 +53,7 @@ const StatusPie = ({ stats }: StatusPieProps) => {
                                 outerRadius={65}
                                 dataKey="value"
                                 stroke="none"
-                                shape={MyCustomSector}
+                                shape={(props: SectorProps) => <MyCustomSector {...props} />}
                             >
                                 <LabelList
                                     dataKey="value"
@@ -52,7 +62,10 @@ const StatusPie = ({ stats }: StatusPieProps) => {
                                     fill="#9ca3af"
                                     fontSize={10}
                                     fontWeight="bold"
-                                    formatter={(val: any) => (val > 0 ? val : '')}
+                                    formatter={(val: unknown) => {
+                                        const num = Number(val);
+                                        return num > 0 ? String(num) : '';
+                                    }}
                                 />
                             </Pie>
                         </PieChart>
@@ -72,7 +85,7 @@ const StatusPie = ({ stats }: StatusPieProps) => {
                             <div className="flex items-center min-w-0">
                                 <div
                                     className="w-2.5 h-2.5 rounded-full mr-3 shrink-0"
-                                    style={{ backgroundColor: COLORS[index] }}
+                                    style={{ backgroundColor: COLORS[index % COLORS.length] }}
                                 />
                                 <span className="text-sm text-gray-400 font-medium truncate">
                                     {item.name}
