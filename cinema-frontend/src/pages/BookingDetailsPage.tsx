@@ -4,9 +4,9 @@ import {ArrowLeft, Calendar, Clock, Film, Ticket as TicketIcon} from 'lucide-rea
 import type {BookingDetailsDto} from "../types/booking.ts";
 import {getStatusColor, getStatusText} from "../utils/formatBookingStatus.ts";
 import {BookingService} from "../services/booking.service.ts";
-import {AgeRestrictionBadge} from "../components/AgeRestrictionBadge.tsx";
-import {Pagination} from "../components/Pagination.tsx";
-import {CancelBookingButton} from "../components/CancelBookingButton.tsx";
+import {AgeRestrictionBadge} from "../components/ui/AgeRestrictionBadge.tsx";
+import {Pagination} from "../components/ui/Pagination.tsx";
+import {CancelBookingButton} from "../components/BookingComponents/CancelBookingButton.tsx";
 import {formatDateWithoutYear} from "../utils/formatTime.ts";
 
 const BookingDetailsPage = () => {
@@ -77,7 +77,7 @@ const BookingDetailsPage = () => {
     }
 
     return (
-        <div className="min-h-screen bg-[#0f1117] text-white font-sans">
+        <div className="min-h-screen bg-[#0f1117] text-white font-sans pt-20">
             {/* Main Content */}
             <div className="max-w-7xl mx-auto px-4 py-8">
                 {/* Back Button */}

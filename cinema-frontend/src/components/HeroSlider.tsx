@@ -2,7 +2,7 @@
 import { useNavigate } from 'react-router-dom';
 import { Star, Clock, Info, ChevronLeft, ChevronRight } from 'lucide-react';
 import type { MovieDto } from '../types/movie';
-import { AgeRestrictionBadge } from "./AgeRestrictionBadge";
+import { AgeRestrictionBadge } from "./ui/AgeRestrictionBadge.tsx";
 import { formatDateWithYear } from "../utils/formatTime";
 import { Button } from "./ui/Button";
 

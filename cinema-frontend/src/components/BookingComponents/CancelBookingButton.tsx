@@ -1,9 +1,9 @@
 import { useState, useEffect } from 'react';
 import { RotateCcw } from 'lucide-react';
-import { BookingService } from '../services/booking.service';
-import { BOOKING_CONFIG } from '../config/constants';
-import { notify } from '../utils/toast';
-import { ConfirmModal } from './ui/ConfirmModal';
+import { BookingService } from '../../services/booking.service.ts';
+import { BOOKING_CONFIG } from '../../config/constants.ts';
+import { notify } from '../../utils/toast.ts';
+import { ConfirmModal } from '../ui/ConfirmModal.tsx';
 
 interface CancelBookingButtonProps {
     bookingId: number;

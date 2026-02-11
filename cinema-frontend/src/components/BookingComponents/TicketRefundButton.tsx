@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { RotateCcw } from 'lucide-react';
-import { BOOKING_CONFIG } from '../config/constants';
+import { BOOKING_CONFIG } from '../../config/constants.ts';
 
 interface TicketRefundButtonProps {
     startTime: string | Date;

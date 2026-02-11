@@ -9,10 +9,10 @@ import {
 } from 'lucide-react';
 
 import type { UserDto } from '../../types/user';
-import { DataTable, type Column } from "../../components/DataTable";
+import { DataTable, type Column } from "../../components/ui/DataTable.tsx";
 import { SearchInput } from "../../components/ui/SearchInput";
-import { Pagination } from "../../components/Pagination";
-import { PaginationInfo } from "../../components/PaginationInfo";
+import { Pagination } from "../../components/ui/Pagination.tsx";
+import { PaginationInfo } from "../../components/ui/PaginationInfo.tsx";
 import { notify } from "../../utils/toast";
 
 type UserSortKey = 'email' | 'firstname' | 'lastname' | 'id';
