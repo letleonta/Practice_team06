@@ -1,12 +1,13 @@
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Calendar, Clock, Map, Download, Share2, X, RotateCcw, ZoomIn } from 'lucide-react';
+import { ArrowLeft, Calendar, Clock, Map, Download, Share2, X, ZoomIn } from 'lucide-react';
 import { formatDateWithYear, formatTime } from '../utils/formatTime';
 import { AgeRestrictionBadge } from '../components/AgeRestrictionBadge';
 import { TicketService } from "../services/ticket.service.ts";
 import type { TicketDto } from "../types/ticket.ts";
 import { notify } from "../utils/toast.ts";
 import { ConfirmModal } from "../components/ui/ConfirmModal.tsx";
+import {TicketRefundButton} from "../components/TicketRefundButton.tsx";
 
 const TicketDetailsPage = () => {
     const { ticketId } = useParams<{ ticketId: string }>();
@@ -31,16 +32,8 @@ const TicketDetailsPage = () => {
                 setLoading(false);
             }
         };
-        fetchTicket();
+        void fetchTicket();
     }, [ticketId]);
-
-    const canRefund = () => {
-        if (!ticket) return false;
-        const startTime = new Date(ticket.startTime).getTime();
-        const now = new Date().getTime();
-        const diff = startTime - now;
-        return diff > 30 * 60 * 1000; // 30 хвилин у мілісекундах
-    };
 
     const handleReturnTicket = async () => {
         if (!ticket) return;
@@ -49,8 +42,9 @@ const TicketDetailsPage = () => {
             await TicketService.refund(ticket.id);
             notify.success("Квиток успішно повернуто");
             navigate('/bookings/my');
-        } catch (err: any) {
-            notify.error(err.response?.data || "Не вдалося повернути квиток");
+        } catch (err) {
+            console.error(err);
+            notify.error("Не вдалося повернути квиток");
         } finally {
             setIsReturning(false);
             setIsReturnModalOpen(false);
@@ -177,19 +171,12 @@ const TicketDetailsPage = () => {
                                 <div className="p-3 rounded-2xl bg-gray-800/30 group-hover:bg-gray-800"><Share2 size={20} /></div>
                                 <span className="text-[10px] font-black uppercase">Надіслати</span>
                             </button>
-                            <button
+                            <TicketRefundButton
+                                startTime={ticket.startTime}
+                                isActive={ticket.isActive}
+                                variant="icon"
                                 onClick={() => setIsReturnModalOpen(true)}
-                                disabled={!canRefund()}
-                                className={`flex flex-col items-center gap-2 transition-all ${
-                                    canRefund()
-                                        ? "text-gray-500 hover:text-orange-500"
-                                        : "text-gray-800 cursor-not-allowed opacity-30"
-                                }`}
-                                title={!canRefund() ? "Повернення неможливе (менше 30 хв до сеансу)" : ""}
-                            >
-                                <div className="p-3 rounded-2xl bg-gray-800/30 group-hover:bg-gray-800"><RotateCcw size={20} /></div>
-                                <span className="text-[10px] font-black uppercase">Повернути</span>
-                            </button>
+                            />
                         </div>
                     </div>
                 </div>

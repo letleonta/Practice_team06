@@ -6,7 +6,7 @@ interface AdminModalProps {
     onClose: () => void;
     title: ReactNode;
     headerExtra?: ReactNode;
-    children: ReactNode;
+    children?: ReactNode;
     footer?: ReactNode;
     maxWidth?: string;
 }
@@ -46,9 +46,11 @@ export const AdminModal = ({
                 </div>
 
                 {/* Content */}
-                <div className="p-6 md:p-8 overflow-y-auto flex-1 custom-scrollbar font-sans">
-                    {children}
-                </div>
+                {children && (
+                    <div className="p-6 md:p-8 overflow-y-auto flex-1 custom-scrollbar font-sans">
+                        {children}
+                    </div>
+                )}
 
                 {/* Footer */}
                 {footer && (

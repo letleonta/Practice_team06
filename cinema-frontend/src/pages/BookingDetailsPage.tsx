@@ -5,10 +5,9 @@ import type {BookingDetailsDto} from "../types/booking.ts";
 import {getStatusColor, getStatusText} from "../utils/formatBookingStatus.ts";
 import {BookingService} from "../services/booking.service.ts";
 import {AgeRestrictionBadge} from "../components/AgeRestrictionBadge.tsx";
-import {notify} from "../utils/toast.ts";
-import {ConfirmModal} from "../components/ui/ConfirmModal.tsx";
 import {Pagination} from "../components/Pagination.tsx";
-import {BOOKING_CONFIG} from "../config/constants.ts";
+import {CancelBookingButton} from "../components/CancelBookingButton.tsx";
+import {formatDateWithoutYear} from "../utils/formatTime.ts";
 
 const BookingDetailsPage = () => {
     const navigate = useNavigate();
@@ -16,11 +15,6 @@ const BookingDetailsPage = () => {
     const [booking, setBooking] = useState<BookingDetailsDto | null>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
-    const [cancelling, setCancelling] = useState(false);
-    const [isCancelModalOpen, setIsCancelModalOpen] = useState(false);
-
-    const [canCancel, setCanCancel] = useState(false);
-    const [isTooLate, setIsTooLate] = useState(false);
 
     const [ticketPage, setTicketPage] = useState(1);
     const TICKET_PAGE_SIZE = 6;
@@ -44,44 +38,6 @@ const BookingDetailsPage = () => {
     useEffect(() => {
         void fetchBooking();
     }, [fetchBooking]);
-
-    useEffect(() => {
-        if (!booking) return;
-
-        const checkStatus = () => {
-            const startString = booking.startTime.endsWith('Z') ? booking.startTime : `${booking.startTime}Z`;
-            const startTime = new Date(startString).getTime();
-            const now = Date.now();
-
-            const tooLate = (startTime - now) < BOOKING_CONFIG.CANCELLATION_MS;
-            setIsTooLate(tooLate);
-            setCanCancel(booking.status !== 'Cancelled' && !tooLate);
-        };
-
-        checkStatus();
-        const interval = setInterval(checkStatus, 60000);
-
-        return () => clearInterval(interval);
-    }, [booking]);
-
-    const handleCancelBooking = async () => {
-        if (!booking) return;
-        setCancelling(true);
-        try {
-            await BookingService.cancelBooking(booking.id);
-            const updatedData = await BookingService.getBookingById(Number(bookingId), {
-                Page: ticketPage,
-                PageSize: TICKET_PAGE_SIZE
-            });
-            setBooking(updatedData as BookingDetailsDto);
-        } catch (err) {
-            console.error("Помилка скасування: ", err);
-            notify.error("Помилка скасування: " + err);
-        } finally {
-            setCancelling(false);
-            setIsCancelModalOpen(false);
-        }
-    };
 
     if (loading) {
         return (
@@ -139,20 +95,13 @@ const BookingDetailsPage = () => {
                         Бронювання <span className="text-red-600">#{booking.id}</span>
                     </h1>
                     <div className="flex items-center gap-4">
-                        {booking.status !== 'Cancelled' && (
-                            <button
-                                onClick={() => setIsCancelModalOpen(true)}
-                                disabled={!canCancel}
-                                title={isTooLate ? `Скасування можливе не пізніше ніж за ${BOOKING_CONFIG.CANCELLATION_MINUTES} хв до початку` : ""}
-                                className={`px-6 py-2.5 rounded-xl border font-bold text-sm uppercase tracking-wider transition-all
-                                ${canCancel
-                                    ? 'border-gray-700 text-gray-400 hover:bg-red-600 hover:text-white hover:border-red-600 cursor-pointer'
-                                    : 'border-gray-800 text-gray-600 cursor-not-allowed opacity-50 bg-gray-900/20'
-                                }`}
-                            >
-                                Скасувати бронювання
-                            </button>
-                        )}
+                        <CancelBookingButton
+                            bookingId={booking.id}
+                            startTime={booking.startTime}
+                            status={booking.status}
+                            title={booking.title}
+                            onCancelSuccess={fetchBooking}
+                        />
 
                         <div className={`px-4 py-2 rounded-full border font-semibold ${getStatusColor(booking.status)}`}>
                             {getStatusText(booking.status)}
@@ -221,12 +170,7 @@ const BookingDetailsPage = () => {
                                         <div>
                                             <p className="text-gray-500 text-xs">Дата бронювання</p>
                                             <p className="font-semibold">
-                                                {new Date(booking.bookingTime).toLocaleDateString('uk-UA', {
-                                                    day: 'numeric',
-                                                    month: 'long',
-                                                    hour: '2-digit',
-                                                    minute: '2-digit'
-                                                })}
+                                                {formatDateWithoutYear(booking.bookingTime, true)}
                                             </p>
                                         </div>
                                     </div>
@@ -332,22 +276,6 @@ const BookingDetailsPage = () => {
                     </div>
                 </div>
             </div>
-            <ConfirmModal
-                isOpen={isCancelModalOpen}
-                title="Скасувати бронювання?"
-                variant="danger"
-                confirmText="Так, скасувати"
-                cancelText="Ні, залишити"
-                description={
-                    <div className="space-y-2">
-                        <p>Ви впевнені, що хочете скасувати бронювання на фільм <b>{booking.title}</b>?</p>
-                        <p className="text-xs text-gray-500">Кошти будуть повернуті згідно з правилами кінотеатру, а ваші місця знову стануть доступними для продажу.</p>
-                    </div>
-                }
-                onConfirm={handleCancelBooking}
-                onClose={() => setIsCancelModalOpen(false)}
-                isLoading={cancelling}
-            />
         </div>
     );
 };

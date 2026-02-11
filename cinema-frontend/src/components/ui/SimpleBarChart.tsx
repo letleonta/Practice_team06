@@ -11,7 +11,7 @@ export const SimpleBarChart = ({ data, dataKey, dataLabel, nameKey, color, chart
                 {chartName}
             </h3>
             <div className="flex-1 w-full min-h-75">
-                <ResponsiveContainer width="100%" height="100%">
+                <ResponsiveContainer width="100%" height="100%" debounce={1}>
                     <BarChart
                         data={data}
                         layout="vertical"
@@ -43,7 +43,7 @@ export const SimpleBarChart = ({ data, dataKey, dataLabel, nameKey, color, chart
                             <LabelList
                                 dataKey={nameKey}
                                 content={(props: any) => {
-                                    const { x, y, value } = props;
+                                    const { y, value } = props;
                                     return (
                                         <text
                                             x={0}
