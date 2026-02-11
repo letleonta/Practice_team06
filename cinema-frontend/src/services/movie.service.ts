@@ -21,7 +21,10 @@ export const MovieService = {
     // Фільми, що скоро вийдуть
     async getUpcoming(filter : MovieFilterDto) {
         const response = await axiosInstance.get<PagedResult<MovieDto>>("/movies/upcoming", {
-            params : filter
+            params : filter,
+            paramsSerializer: {
+                indexes: null
+            }
         });
         return response.data;
     },
