@@ -1,6 +1,6 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import Login from './pages/Login';
-import NowPlayingPage from './pages/NowPlayingPage.tsx';
+import HomePage from './pages/HomePage';
 import UpcomingPage from './pages/UpcomingPage.tsx';
 import MoviePage from './pages/MoviePage';
 import Register from './pages/Register';
@@ -47,10 +47,12 @@ function App() {
                     path="/register"
                     element={<Register />}
                 />
+
+                {/* Головний лейаут сайту */}
                 <Route element={<MainLayout />}>
                     <Route
                         path="/"
-                        element={<NowPlayingPage />}
+                        element={<HomePage />}
                     />
                     <Route
                         path="/upcoming"
@@ -80,6 +82,8 @@ function App() {
                         element={token ? <Profile /> : <Navigate to="/login" replace />}
                     />
                 </Route>
+
+                {/* Адмінка */}
                 <Route
                     path="/admin/*"
                     element={hasAdminAccess ? <AdminDashboard /> : <Navigate to="/" replace />}

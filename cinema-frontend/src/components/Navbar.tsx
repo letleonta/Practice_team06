@@ -1,102 +1,97 @@
-import { Link, useNavigate } from 'react-router-dom';
-import { LogOut, ShieldCheck, User as UserIcon } from 'lucide-react';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
+import { LogOut, ShieldCheck, User as UserIcon} from 'lucide-react';
 import { useAuthStore } from '../store/useAuthStore';
-import {API_CONFIG} from "../../config.ts";
-
+import { API_CONFIG } from "../../config.ts";
+import { useEffect, useState } from "react";
+import logoImg from '../assets/logo.png';
 
 const Navbar = () => {
     const { user, logout } = useAuthStore();
     const navigate = useNavigate();
+    const location = useLocation();
+
+    // Стан для відстеження скролу
+    const [isScrolled, setIsScrolled] = useState(false);
+
+    useEffect(() => {
+        const handleScroll = () => {
+            setIsScrolled(window.scrollY > 50);
+        };
+        window.addEventListener('scroll', handleScroll);
+        return () => window.removeEventListener('scroll', handleScroll);
+    }, []);
 
     const handleLogout = () => {
         logout();
         navigate('/');
     };
 
+    // Перевіряємо, чи ми на головній сторінці. Якщо ні - завжди показуємо темний фон.
+    const isHomePage = location.pathname === '/';
+    const navBackground = isHomePage && !isScrolled ? 'bg-transparent border-transparent' : 'bg-[#1a1d26]/95 border-gray-800 shadow-2xl backdrop-blur-md';
+
     return (
-        <nav className="sticky top-0 z-50 px-8 bg-[#1a1d26]/95 backdrop-blur-md flex justify-between items-center border-b border-gray-800 shadow-2xl h-16 font-sans">
+        <nav className={`fixed top-0 left-0 right-0 z-50 px-8 flex justify-between items-center h-20 transition-all duration-500 ${navBackground} border-b font-sans`}>
 
             {/* ЛІВА ЧАСТИНА: Логотип */}
             <div className="flex items-center gap-12">
-                <Link to="/" className="group">
-                    <h1 className="text-2xl font-black text-red-600 tracking-tighter transition-transform group-hover:scale-105">
-                        CINEMA
-                    </h1>
+                <Link to="/" className="flex items-center group select-none">
+                    <div className="relative w-12 h-12 md:w-14 md:h-14 transition-transform duration-300 group-hover:scale-110">
+                        <img
+                            src={logoImg}
+                            alt="Cinema Logo"
+                            className="w-full h-full object-contain drop-shadow-[0_0_8px_rgba(220,38,38,0.3)]"
+                        />
+                        {/* Додамо легке червоне сяйво позаду для стилю */}
+                        <div className="absolute inset-0 bg-red-600/20 blur-xl rounded-full opacity-0 group-hover:opacity-100 transition-opacity" />
+                    </div>
                 </Link>
 
-                {/* Навігація зі зміненим шрифтом */}
+                {/* Навігація */}
                 <div className="hidden md:flex gap-8">
-                    <Link to="/" className="text-[14px] font-extrabold uppercase tracking-[0.2em] text-gray-400 hover:text-white transition-colors">
-                        В прокаті
-                    </Link>
-                    <Link to="/upcoming" className="text-[14px] font-extrabold uppercase tracking-[0.2em] text-gray-400 hover:text-white transition-colors">
-                        Скоро в кіно
-                    </Link>
-                    {user && (user.role === 'Customer') && (
-                        <Link to="/bookings/my" className="text-[14px] font-extrabold uppercase tracking-[0.2em] text-gray-400 hover:text-white transition-colors">
-                            Бронювання
-                        </Link>
-                    )}
+                    {['В прокаті', 'Скоро в кіно', 'Бронювання'].map((item, idx) => {
+                        // Проста логіка посилань
+                        const path = idx === 0 ? '/' : idx === 1 ? '/upcoming' : '/bookings/my';
+                        if (item === 'Бронювання' && (!user || user.role !== 'Customer')) return null;
+
+                        return (
+                            <Link key={path} to={path} className="relative text-[13px] font-extrabold uppercase tracking-[0.2em] text-gray-300 hover:text-white transition-colors group overflow-hidden py-1">
+                                <span className="relative z-10">{item}</span>
+                                {/* Анімація підкреслення */}
+                                <span className="absolute bottom-0 left-0 w-0 h-0.5 bg-red-600 transition-all duration-300 group-hover:w-full"></span>
+                            </Link>
+                        )
+                    })}
                 </div>
             </div>
 
-            {/* ПРАВА ЧАСТИНА: Профіль та вихід */}
+            {/* ПРАВА ЧАСТИНА: Профіль */}
             <div className="flex items-center gap-5">
                 {user ? (
                     <div className="flex items-center gap-4">
-
-                        {/* Кнопка Адміна */}
                         {(user.role === 'Admin' || user.role === 'Manager') && (
-                            <Link
-                                to="/admin"
-                                className="hidden sm:flex items-center gap-2 bg-amber-500/10 hover:bg-amber-500/20 text-amber-500 border border-amber-500/20 px-5 py-2.5 rounded-2xl text-[11px] font-black uppercase tracking-widest transition-all"
-                            >
-                                <ShieldCheck size={16} />
-                                <span>Адмін</span>
+                            <Link to="/admin" className="hidden sm:flex items-center gap-2 bg-amber-500/10 hover:bg-amber-500/20 text-amber-500 border border-amber-500/20 px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all">
+                                <ShieldCheck size={14} /> <span>Адмін</span>
                             </Link>
                         )}
 
-                        {/* КНОПКА ПРОФІЛЮ */}
-                        <Link
-                            to="/profile"
-                            className="flex items-center gap-4 bg-[#0f1117]/50 hover:bg-[#0f1117] p-1.5 pr-6 rounded-full border border-gray-800 transition-all group"
-                        >
-                            <div className="w-11 h-11 rounded-full overflow-hidden bg-gray-900 flex items-center justify-center border-2 border-red-600 shadow-lg shadow-red-600/10">
+                        <Link to="/profile" className="flex items-center gap-3 pl-1 pr-4 py-1 rounded-full bg-black/20 hover:bg-black/40 border border-white/5 backdrop-blur-sm transition-all group">
+                            <div className="w-9 h-9 rounded-full overflow-hidden border border-white/20">
                                 {user.avatarUri ? (
-                                    <img
-                                        src={`${API_CONFIG.BASE_URL}${user.avatarUri}`}
-                                        alt="Ava"
-                                        className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
-                                    />
+                                    <img src={`${API_CONFIG.BASE_URL}${user.avatarUri}`} alt="Ava" className="w-full h-full object-cover" />
                                 ) : (
-                                    <UserIcon size={20} className="text-gray-500" />
+                                    <div className="w-full h-full bg-gray-800 flex items-center justify-center"><UserIcon size={16} className="text-gray-400" /></div>
                                 )}
                             </div>
-
-                            {/* Текст профілю */}
-                            <div className="flex flex-col text-left">
-                                <span className="text-white text-[13px] font-black uppercase tracking-wider leading-none mb-1">
-                                    {user.firstName || user.name}
-                                </span>
-                                <span className="text-red-500 text-[9px] font-black uppercase tracking-[0.15em] leading-none">
-                                    Мій кабінет
-                                </span>
-                            </div>
+                            <span className="text-xs font-bold text-white uppercase tracking-wider">{user.firstName || user.name}</span>
                         </Link>
 
-                        {/* Вихід */}
-                        <button
-                            onClick={handleLogout}
-                            className="p-2.5 text-gray-500 hover:text-red-500 hover:bg-red-500/5 rounded-xl transition-all"
-                        >
-                            <LogOut size={22} />
+                        <button onClick={handleLogout} className="p-2 text-gray-400 hover:text-red-500 transition-colors">
+                            <LogOut size={20} />
                         </button>
                     </div>
                 ) : (
-                    <Link
-                        to="/login"
-                        className="bg-red-600 hover:bg-red-700 text-white px-10 py-3 rounded-2xl text-[11px] font-black uppercase tracking-[0.25em] transition-all shadow-xl shadow-red-600/20 active:scale-95"
-                    >
+                    <Link to="/login" className="bg-red-600 hover:bg-red-700 text-white px-8 py-2.5 rounded-xl text-[11px] font-black uppercase tracking-[0.2em] transition-all shadow-lg shadow-red-600/20 hover:shadow-red-600/40 active:scale-95">
                         Увійти
                     </Link>
                 )}
