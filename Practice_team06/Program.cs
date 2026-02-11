@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
+using Practice_team06.Config;
 using Practice_team06.Data;
 using Practice_team06.Mappings;
 using Practice_team06.Models;
@@ -71,6 +72,9 @@ builder.Services.AddCors(options =>
         }
     });
 });
+
+builder.Services.Configure<BookingConfig>(
+    builder.Configuration.GetSection("BookingConfig"));
 
 builder.Services.AddAutoMapper(_ => {}, typeof(AuthProfile).Assembly);
 builder.Services.AddAutoMapper(_ => {}, typeof(UserProfile).Assembly);
