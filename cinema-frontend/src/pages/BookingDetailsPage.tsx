@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import {useCallback, useEffect, useState} from 'react';
 import {useParams, Link, useNavigate} from 'react-router-dom';
 import {ArrowLeft, Calendar, Clock, Film, Ticket as TicketIcon} from 'lucide-react';
 import type {BookingDetailsDto} from "../types/booking.ts";
@@ -8,6 +8,7 @@ import {AgeRestrictionBadge} from "../components/AgeRestrictionBadge.tsx";
 import {notify} from "../utils/toast.ts";
 import {ConfirmModal} from "../components/ui/ConfirmModal.tsx";
 import {Pagination} from "../components/Pagination.tsx";
+import {BOOKING_CONFIG} from "../config/constants.ts";
 
 const BookingDetailsPage = () => {
     const navigate = useNavigate();
@@ -18,44 +19,50 @@ const BookingDetailsPage = () => {
     const [cancelling, setCancelling] = useState(false);
     const [isCancelModalOpen, setIsCancelModalOpen] = useState(false);
 
+    const [canCancel, setCanCancel] = useState(false);
+    const [isTooLate, setIsTooLate] = useState(false);
+
     const [ticketPage, setTicketPage] = useState(1);
     const TICKET_PAGE_SIZE = 6;
 
-    useEffect(() => {
-        const fetchBooking = async () => {
-            if (!bookingId) return;
-            try {
-                const data = await BookingService.getBookingById(Number(bookingId), {
-                    Page: ticketPage,
-                    PageSize: TICKET_PAGE_SIZE
-                });
-                setBooking(data as BookingDetailsDto);
-            } catch (err: any) {
-                console.error("Error fetching booking:", err);
-                setError("Не вдалося завантажити бронювання.");
-            } finally {
-                setLoading(false);
-            }
-        };
-
-        fetchBooking();
+    const fetchBooking = useCallback(async () => {
+        if (!bookingId) return;
+        try {
+            const data = await BookingService.getBookingById(Number(bookingId), {
+                Page: ticketPage,
+                PageSize: TICKET_PAGE_SIZE
+            });
+            setBooking(data as BookingDetailsDto);
+        } catch (err) {
+            console.error("Помилка завантаження бронювань:", err);
+            setError("Не вдалося завантажити бронювання.");
+        } finally {
+            setLoading(false);
+        }
     }, [bookingId, ticketPage]);
 
-    const getCancelStatus = () => {
-        if (!booking) return { canCancel: false, isTooLate: false };
+    useEffect(() => {
+        void fetchBooking();
+    }, [fetchBooking]);
 
-        const startString = booking.startTime.endsWith('Z') ? booking.startTime : `${booking.startTime}Z`;
-        const startTime = new Date(startString).getTime();
-        const now = new Date().getTime();
+    useEffect(() => {
+        if (!booking) return;
 
-        const CANCELLATION_LIMIT_MS = 30 * 60 * 1000; // 30 хв
-        const isTooLate = (startTime - now) < CANCELLATION_LIMIT_MS;
-        const canCancel = booking.status !== 'Cancelled' && !isTooLate;
+        const checkStatus = () => {
+            const startString = booking.startTime.endsWith('Z') ? booking.startTime : `${booking.startTime}Z`;
+            const startTime = new Date(startString).getTime();
+            const now = Date.now();
 
-        return { canCancel, isTooLate };
-    };
+            const tooLate = (startTime - now) < BOOKING_CONFIG.CANCELLATION_MS;
+            setIsTooLate(tooLate);
+            setCanCancel(booking.status !== 'Cancelled' && !tooLate);
+        };
 
-    const { canCancel, isTooLate } = getCancelStatus();
+        checkStatus();
+        const interval = setInterval(checkStatus, 60000);
+
+        return () => clearInterval(interval);
+    }, [booking]);
 
     const handleCancelBooking = async () => {
         if (!booking) return;
@@ -67,10 +74,9 @@ const BookingDetailsPage = () => {
                 PageSize: TICKET_PAGE_SIZE
             });
             setBooking(updatedData as BookingDetailsDto);
-        } catch (err : any) {
-            console.error("Помилка скасування:", err);
-            const errorMessage = err.response?.data || err.message || "Помилка сервера";
-            notify.error(errorMessage);
+        } catch (err) {
+            console.error("Помилка скасування: ", err);
+            notify.error("Помилка скасування: " + err);
         } finally {
             setCancelling(false);
             setIsCancelModalOpen(false);
@@ -137,14 +143,14 @@ const BookingDetailsPage = () => {
                             <button
                                 onClick={() => setIsCancelModalOpen(true)}
                                 disabled={!canCancel}
-                                title={isTooLate ? "Скасування можливе не пізніше ніж за 30 хв до початку" : ""}
+                                title={isTooLate ? `Скасування можливе не пізніше ніж за ${BOOKING_CONFIG.CANCELLATION_MINUTES} хв до початку` : ""}
                                 className={`px-6 py-2.5 rounded-xl border font-bold text-sm uppercase tracking-wider transition-all
                                 ${canCancel
                                     ? 'border-gray-700 text-gray-400 hover:bg-red-600 hover:text-white hover:border-red-600 cursor-pointer'
                                     : 'border-gray-800 text-gray-600 cursor-not-allowed opacity-50 bg-gray-900/20'
                                 }`}
                             >
-                                Скасувати замовлення
+                                Скасувати бронювання
                             </button>
                         )}
 
