@@ -95,10 +95,22 @@ public class MovieService : IMovieService
             foreach (var genre in genres) movie.MovieGenres.Add(new MovieGenre { Genre = genre });
         }
 
-        if (dto.ActorIds.Any())
+        if (dto.MovieActors.Any())
         {
-            var actors = await _context.Actors.Where(a => dto.ActorIds.Contains(a.Id)).ToListAsync();
-            foreach (var actor in actors) movie.MovieActors.Add(new MovieActor { Actor = actor });
+            var actorIds = dto.MovieActors.Select(ma => ma.ActorId).ToList();
+            var existingActors = await _context.Actors.Where(a => actorIds.Contains(a.Id)).ToListAsync();
+
+            foreach (var movieActorDto in dto.MovieActors)
+            {
+                if (existingActors.Any(a => a.Id == movieActorDto.ActorId))
+                {
+                    movie.MovieActors.Add(new MovieActor 
+                    { 
+                        ActorId = movieActorDto.ActorId,
+                        RoleName = movieActorDto.RoleName
+                    });
+                }
+            }
         }
         
         _context.Movies.Add(movie);
@@ -140,12 +152,23 @@ public class MovieService : IMovieService
         }
 
         movie.MovieActors.Clear();
-        if (dto.ActorIds.Any())
+        if (dto.MovieActors.Any())
         {
-            var actors = await _context.Actors.Where(a => dto.ActorIds.Contains(a.Id)).ToListAsync();
-            foreach (var a in actors) movie.MovieActors.Add(new MovieActor { Actor = a });
+            var actorIds = dto.MovieActors.Select(ma => ma.ActorId).ToList();
+            var existingActors = await _context.Actors.Where(a => actorIds.Contains(a.Id)).ToListAsync();
+
+            foreach (var movieActorDto in dto.MovieActors)
+            {
+                if (existingActors.Any(a => a.Id == movieActorDto.ActorId))
+                {
+                    movie.MovieActors.Add(new MovieActor 
+                    { 
+                        ActorId = movieActorDto.ActorId,
+                        RoleName = movieActorDto.RoleName 
+                    });
+                }
+            }
         }
-        
         await _context.SaveChangesAsync();
         return await GetFullMovieDtoInternal(movie.Id);
     }

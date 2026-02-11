@@ -34,17 +34,17 @@ interface MultipleSelector<T extends Item> {
 }
 
 export function MultipleSelectGrid<T extends Item>({
-                                                   title,
-                                                   icon,
-                                                   items,
-                                                   selectedIds,
-                                                   onToggle,
-                                                   onAdd,
-                                                   renderLabel,
-                                                   color,
-                                                   itemsPerPage = 6,
-                                                   searchPlaceholder = 'Пошук...'
-                                               }: MultipleSelector<T>) {
+                                                       title,
+                                                       icon,
+                                                       items = [], // Додав дефолтне значення
+                                                       selectedIds = [], // Додав дефолтне значення
+                                                       onToggle,
+                                                       onAdd,
+                                                       renderLabel,
+                                                       color,
+                                                       itemsPerPage = 6,
+                                                       searchPlaceholder = 'Пошук...'
+                                                   }: MultipleSelector<T>) {
     const [searchTerm, setSearchTerm] = useState('');
     const [currentPage, setCurrentPage] = useState(1);
 
@@ -115,7 +115,10 @@ export function MultipleSelectGrid<T extends Item>({
             {/* Grid */}
             <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
                 {paginated.map(item => {
-                    const isSelected = selectedIds.includes(item.id);
+                    // --- ВИПРАВЛЕННЯ ТУТ ---
+                    // Ми порівнюємо як числа, щоб уникнути проблем "1" !== 1
+                    const isSelected = selectedIds.some(selId => Number(selId) === Number(item.id));
+
                     return (
                         <div
                             key={item.id}

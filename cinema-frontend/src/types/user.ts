@@ -1,20 +1,23 @@
-﻿export interface UserDto {
+﻿import type {BaseFilterDto} from "./common.ts";
+
+export interface UserDto {
     id: number;
     email: string;
     firstName: string;
     lastName: string;
-    birthDate: string; // ISO date string
+    birthDate: string;
     avatarUri?: string;
-    roles: string[]; // Масив ролей, бо Identity повертає список
-}
-
-export interface AssignRoleDto {
-    email: string;
-    roleName: string;
+    roles: string[];
 }
 
 export interface UpdateProfileDto {
     firstName: string;
     lastName: string;
     birthDate: string;
+}
+
+export interface UserFilterDto extends BaseFilterDto {
+    search?: string;
+    sortBy?: 'email' | 'firstname' | 'lastname' | 'id';
+    isDescending?: boolean;
 }

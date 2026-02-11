@@ -5,6 +5,7 @@ using Practice_team06.DTOs.Auth;
 using Practice_team06.DTOs.User;
 using Practice_team06.Services;
 using System.Security.Claims;
+using Practice_team06.DTOs.Common;
 
 namespace Practice_team06.Controllers;
 
@@ -98,10 +99,10 @@ public class AuthController : ControllerBase
 
     [HttpGet("users")]
     [Authorize(Roles = "Admin, Manager")] 
-    public async Task<ActionResult<IEnumerable<UserDto>>> GetUsers()
+    public async Task<ActionResult<PagedResult<UserDto>>> GetUsers([FromQuery] UserFilterDto filter)
     {
-        var usersData = await _authService.GetAllUsersWithRolesAsync();
-        var userDtos = _mapper.Map<IEnumerable<UserDto>>(usersData);
-        return Ok(userDtos);
+        var result = await _authService.GetAllUsersPagedAsync(filter);
+    
+        return Ok(result);
     }
 }

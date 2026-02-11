@@ -60,7 +60,7 @@ const SessionPage = () => {
 
     const toggleSeat = (seat: SessionSeatDto) => {
         // Забороняємо вибір місць для адміна
-        if (user?.role === 'Admin') return;
+        if (user?.role === 'Admin' || user?.role === 'Manager') return;
         if (!seat.isAvailable) return;
         setSelectedSeats((prev) =>
             prev.find((s) => s.seatId === seat.seatId)
@@ -214,11 +214,11 @@ const SessionPage = () => {
                                             <button
                                                 key={seat.seatId}
                                                 onClick={() => toggleSeat(seat)}
-                                                disabled={!seat.isAvailable || user?.role === 'Admin'}
+                                                disabled={!seat.isAvailable || user?.role === 'Admin' || user?.role === 'Manager'}
                                                 className={[
                                                     'w-8 h-8 rounded-md text-xs font-bold transition-all duration-150 border',
                                                     getSeatTypeColor(seat.type, seat.isAvailable, isSelected(seat)),
-                                                    user?.role === 'Admin' ? 'cursor-default' : ''
+                                                    user?.role === 'Admin' || user?.role === 'Manager' ? 'cursor-default' : ''
                                                 ].join(' ')}
                                             >
                                                 {seat.seatNumber}
@@ -232,14 +232,15 @@ const SessionPage = () => {
 
                     {/* ── Checkout Panel ─────────────────────── */}
                     <div className="xl:w-96 flex-shrink-0">
-                        {user?.role === 'Admin' ? (
+                        {/* Додаємо умову для Manager */}
+                        {user?.role === 'Admin' || user?.role === 'Manager' ? (
                             <div className="bg-amber-500/5 border border-amber-500/20 rounded-2xl p-8 text-center sticky top-24">
                                 <div className="w-16 h-16 bg-amber-500/10 rounded-full flex items-center justify-center mx-auto mb-4">
                                     <ShieldAlert className="text-amber-500" size={32} />
                                 </div>
                                 <h2 className="text-amber-500 font-bold text-lg mb-2">Режим перегляду</h2>
                                 <p className="text-gray-400 text-sm leading-relaxed">
-                                    Як адміністратор, ви бачите схему залу, але не можете здійснювати бронювання.
+                                    Як представник адміністрації, ви бачите схему залу, але не можете здійснювати бронювання.
                                 </p>
                             </div>
                         ) : (

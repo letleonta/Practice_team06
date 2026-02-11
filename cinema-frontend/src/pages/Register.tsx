@@ -3,7 +3,7 @@ import { useForm } from 'react-hook-form';
 import { useNavigate, Link } from 'react-router-dom';
 import { AuthService } from '../services/auth.service';
 import type { RegisterDto } from '../types/auth';
-import { Mail, Lock, Calendar, ChevronRight, AlertCircle } from 'lucide-react';
+import { Mail, Lock, Calendar, ChevronRight, AlertCircle, Eye, EyeOff} from 'lucide-react';
 import { notify } from '../utils/toast';
 import { useAuthStore } from '../store/useAuthStore';
 
@@ -23,6 +23,7 @@ const FieldError = ({ message }: { message?: string }) => {
 const Register = () => {
     const navigate = useNavigate();
     const [error, setError] = useState<string | null>(null);
+    const [showPassword, setShowPassword] = useState(false);
     const { setAuth } = useAuthStore();
 
     const {
@@ -154,7 +155,11 @@ const Register = () => {
                     {/* Пароль */}
                     <div className="flex flex-col">
                         <div className="relative">
-                            <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500" size={18} />
+                            <Lock
+                                className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500"
+                                size={18}
+                            />
+
                             <input
                                 {...register('password', {
                                     required: "Вигадайте пароль",
@@ -162,16 +167,31 @@ const Register = () => {
                                     validate: {
                                         hasUpper: (v) => /\p{Lu}/u.test(v) || "Має бути велика літера",
                                         hasNumber: (v) => /[0-9]/.test(v) || "Має бути цифра",
-                                        hasSpecial: (v) => /[!@#$%^&*(),.?":{}|<>]/.test(v) || "Додайте спецсимвол (!@#_)"
+                                        hasSpecial: (v) =>
+                                            /[!@#$%^&*(),.?":{}|<>]/.test(v) ||
+                                            "Додайте спецсимвол (!@#_)"
                                     }
                                 })}
-                                type="password"
+                                type={showPassword ? 'text' : 'password'}
                                 placeholder="Пароль"
-                                className={`w-full pl-12 pr-4 py-4 rounded-2xl bg-gray-900 border ${errors.password ? 'border-red-500' : 'border-gray-800'} focus:border-red-600 outline-none transition-all text-sm`}
+                                className={`w-full pl-12 pr-12 py-4 rounded-2xl bg-gray-900 border ${
+                                    errors.password ? 'border-red-500' : 'border-gray-800'
+                                } focus:border-red-600 outline-none transition-all text-sm`}
                             />
+
+                            <button
+                                type="button"
+                                onClick={() => setShowPassword(prev => !prev)}
+                                className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-500 hover:text-red-500 transition-colors"
+                                aria-label={showPassword ? 'Сховати пароль' : 'Показати пароль'}
+                            >
+                                {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                            </button>
                         </div>
+
                         <FieldError message={errors.password?.message} />
                     </div>
+
 
                     <button
                         disabled={isSubmitting}
