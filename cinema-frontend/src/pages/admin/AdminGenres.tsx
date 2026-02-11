@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
-import { Plus, Trash2, Loader2, Pencil, Check, X, Tag } from 'lucide-react';
+import { Plus, Trash2, Loader2, Pencil, Check, Tag } from 'lucide-react';
 
 import { GenreService } from '../../services/genre.service';
 import type { GenreDto, CreateGenreDto, GenreFilterDto } from '../../types/genre';
@@ -12,6 +12,7 @@ import { notify } from "../../utils/toast";
 import { ConfirmModal } from "../../components/ui/ConfirmModal";
 import { CreateCard } from "../../components/CreateCard";
 import { SearchInput } from "../../components/ui/SearchInput";
+import {AdminModal} from "../../components/AdminModal.tsx";
 
 const genreFields = [
     {
@@ -71,7 +72,7 @@ const AdminGenres = () => {
         try {
             await GenreService.create(data);
             notify.success("Жанр додано");
-            refresh();
+            await refresh();
         } catch {
             notify.error("Помилка додавання");
         } finally {
@@ -88,7 +89,7 @@ const AdminGenres = () => {
             setSelectedGenre({ ...selectedGenre, ...data });
             notify.success("Жанр оновлено");
             setIsEditMode(false);
-            refresh();
+            await refresh();
         } catch {
             notify.error("Помилка оновлення");
         } finally {
@@ -108,7 +109,7 @@ const AdminGenres = () => {
                 setSelectedGenre(null);
             }
 
-            refresh();
+            await refresh();
         } catch {
             notify.error("Не вдалося видалити");
         } finally {
@@ -212,11 +213,16 @@ const AdminGenres = () => {
                     error={error}
                     onRowClick={handleOpenDetails}
                     sortConfig={{ sortBy, isDesc }}
-                    onSort={(key) =>
-                        sortBy === key
-                            ? setIsDesc(!isDesc)
-                            : (setSortBy(key as any), setIsDesc(false))
-                    }
+                    onSort={(key) => {
+                        const typedKey = key as 'id' | 'name';
+
+                        if (sortBy === typedKey) {
+                            setIsDesc(!isDesc);
+                        } else {
+                            setSortBy(typedKey);
+                            setIsDesc(false);
+                        }
+                    }}
                 />
 
                 {!loading && totalPages > 0 && (
@@ -237,85 +243,74 @@ const AdminGenres = () => {
                 )}
             </div>
 
-            {selectedGenre && (
-                <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-300 font-sans">
-
-                    <div className="bg-[#1a1d26] w-full max-w-xl rounded-[2.5rem] border border-gray-800 shadow-2xl flex flex-col relative animate-in zoom-in-95 duration-300">
-
-                        <div className="p-8 border-b border-gray-800 flex items-center justify-between bg-linear-to-r from-red-600/10 to-transparent">
-
-                            {!isEditMode ? (
-                                <h4 className="text-3xl font-black uppercase tracking-tighter text-white">
-                                    {selectedGenre.name}
-                                </h4>
-                            ) : (
-                                <input
-                                    {...editForm.register('name', { required: true })}
-                                    className="w-full bg-[#0f1117] border border-red-600/30 rounded-xl p-2 text-xl font-bold outline-none focus:border-red-600 text-white"
-                                />
-                            )}
-
-                            <button
-                                onClick={() => {
-                                    setSelectedGenre(null);
-                                    setIsEditMode(false);
-                                }}
-                                className="p-2 hover:bg-gray-800 rounded-full text-gray-500 hover:text-white transition-all"
-                            >
-                                <X size={24} />
-                            </button>
+            <AdminModal
+                isOpen={!!selectedGenre}
+                onClose={() => { setSelectedGenre(null); setIsEditMode(false); }}
+                maxWidth="max-w-md"
+                title={
+                    <div className="flex items-center gap-5">
+                        <div className="w-14 h-14 rounded-2xl border-2 border-red-600 p-1 bg-gray-900 flex items-center justify-center shrink-0 shadow-lg shadow-red-600/20">
+                            <Tag size={24} className="text-white" />
                         </div>
-
-                        <div className="p-6 bg-gray-900/50 border-t border-gray-800 flex gap-4">
-
+                        <div className="text-left flex-1">
                             {!isEditMode ? (
                                 <>
-                                    <button
-                                        onClick={() => setIsEditMode(true)}
-                                        className="flex-1 flex items-center justify-center gap-2 py-4 bg-gray-800 hover:bg-gray-700 text-white rounded-2xl font-black text-[10px] uppercase tracking-widest transition-all"
-                                    >
-                                        <Pencil size={16} className="text-red-600" />
-                                        Редагувати
-                                    </button>
-
-                                    <button
-                                        onClick={() =>
-                                            setDeleteModal({
-                                                isOpen: true,
-                                                id: selectedGenre.id,
-                                                name: selectedGenre.name
-                                            })
-                                        }
-                                        className="flex-1 flex items-center justify-center gap-2 py-4 bg-red-600/10 hover:bg-red-600 text-red-600 hover:text-white rounded-2xl font-black text-[10px] uppercase tracking-widest transition-all border border-red-600/20"
-                                    >
-                                        <Trash2 size={16} />
-                                        Видалити
-                                    </button>
+                                    <p className="text-[9px] font-black text-red-600 uppercase tracking-[0.2em] leading-none mb-1">Жанр</p>
+                                    <h2 className="text-2xl font-black text-white uppercase tracking-tighter leading-none truncate">
+                                        {selectedGenre?.name}
+                                    </h2>
                                 </>
                             ) : (
-                                <>
-                                    <button
-                                        onClick={editForm.handleSubmit(onEditSubmit)}
-                                        disabled={isSaving}
-                                        className="flex-1 flex items-center justify-center gap-2 py-4 bg-red-600 hover:bg-red-700 text-white rounded-2xl font-black uppercase text-[10px] tracking-widest transition-all shadow-lg shadow-red-600/30"
-                                    >
-                                        {isSaving
-                                            ? <Loader2 className="animate-spin" size={16} />
-                                            : <><Check size={16} /> Зберегти зміни</>}
-                                    </button>
-
-                                    <button
-                                        onClick={() => setIsEditMode(false)}
-                                        className="px-8 py-4 bg-gray-800 hover:bg-gray-700 text-white rounded-2xl font-black uppercase text-[10px] tracking-widest transition-all"
-                                    >
-                                        Скасувати
-                                    </button>
-                                </>
+                                <div className="w-full">
+                                    <p className="text-[9px] font-black text-red-600 uppercase tracking-[0.2em] leading-none mb-1">Редагування</p>
+                                    <input
+                                        {...editForm.register('name', { required: true })}
+                                        className="bg-transparent border-b-2 border-red-600 text-2xl font-black text-white outline-none w-full uppercase py-0"
+                                        autoFocus
+                                    />
+                                </div>
                             )}
                         </div>
                     </div>
-                </div>
-            )}
+                }
+                footer={
+                    <div className="flex w-full gap-3 items-center justify-center">
+                        {!isEditMode ? (
+                            <>
+                                <button
+                                    onClick={() => setIsEditMode(true)}
+                                    className="flex-1 flex items-center justify-center gap-2 py-4 bg-gray-800 hover:bg-gray-700 text-white rounded-2xl font-black text-[10px] uppercase tracking-widest transition-all"
+                                >
+                                    <Pencil size={14} className="text-red-600" /> Редагувати
+                                </button>
+                                <button
+                                    onClick={() => setDeleteModal({ isOpen: true, id: selectedGenre!.id, name: selectedGenre!.name })}
+                                    className="flex-1 flex items-center justify-center gap-2 py-4 bg-red-600/10 hover:bg-red-600 text-red-600 hover:text-white rounded-2xl font-black text-[10px] uppercase tracking-widest transition-all border border-red-600/20"
+                                >
+                                    <Trash2 size={14} /> Видалити
+                                </button>
+                            </>
+                        ) : (
+                            <>
+                                <button
+                                    onClick={editForm.handleSubmit(onEditSubmit)}
+                                    disabled={isSaving}
+                                    className="flex-1 flex items-center justify-center gap-2 py-4 bg-red-600 hover:bg-red-700 text-white rounded-2xl font-black text-[10px] uppercase tracking-widest transition-all shadow-lg shadow-red-600/30"
+                                >
+                                    {isSaving ? <Loader2 className="animate-spin" size={16} /> : <><Check size={16} /> Зберегти</>}
+                                </button>
+                                <button
+                                    onClick={() => setIsEditMode(false)}
+                                    className="px-8 py-4 bg-gray-800 hover:bg-gray-700 text-white rounded-2xl font-black text-[10px] uppercase tracking-widest transition-all"
+                                >
+                                    Скасувати
+                                </button>
+                            </>
+                        )}
+                    </div>
+                }
+            >
+            </AdminModal>
         </div>
     );
 };
