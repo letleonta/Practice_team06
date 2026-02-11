@@ -1,6 +1,8 @@
 ﻿using AutoMapper;
 using AutoMapper.QueryableExtensions;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
+using Practice_team06.Config;
 using Practice_team06.DTOs.Booking;
 using Practice_team06.DTOs.Booking.Stats;
 using Practice_team06.DTOs.Common;
@@ -14,11 +16,16 @@ public class BookingService : IBookingService
 {
     private readonly PostgresContext _context;
     private readonly IMapper _mapper;
+    private readonly BookingConfig _config;
     
-    public BookingService(PostgresContext context, IMapper mapper)
+    public BookingService(
+        PostgresContext context, 
+        IMapper mapper, 
+        IOptions<BookingConfig> config)
     {
         _context = context;
         _mapper = mapper;
+        _config = config.Value;
     }
 
     public async Task<PagedResult<AdminBookingDto>> GetAllBookingsAsync(BookingFilterDto filter)
@@ -211,10 +218,10 @@ public class BookingService : IBookingService
             throw new InvalidOperationException("Сеанс вже почався або закінчився.");
         }
 
-        if (minutesRemaining < 30)
+        if (minutesRemaining < _config.CancellationDeadlineMinutes)
         {
             throw new InvalidOperationException(
-                $"Запізно для скасування. До сеансу залишилося {Math.Round(minutesRemaining)} хв. (мінімум 30)");
+                $"Запізно для скасування. До сеансу залишилося {Math.Round(minutesRemaining)} хв. (мінімум {_config.CancellationDeadlineMinutes}) хв");
         }
 
         if (booking.Status == BookingStatus.Cancelled) return;

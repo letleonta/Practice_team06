@@ -89,7 +89,7 @@ const AdminSessions = () => {
 
     // Викликаємо завантаження при зміні будь-якого фільтра
     useEffect(() => {
-        fetchSessions();
+        void fetchSessions();
     }, [fetchSessions]);
 
     // --- HANDLERS ---
@@ -119,7 +119,7 @@ const AdminSessions = () => {
                 languageId: Number(item.languageId)
             })));
             notify.success(`Створено сеансів: ${dataList.length}`);
-            fetchSessions();
+            await fetchSessions();
         } catch (err) {
             notify.error('Помилка при створенні (можливо, накладання часу)');
         }
@@ -136,7 +136,7 @@ const AdminSessions = () => {
             });
             notify.success("Сеанс оновлено");
             setSessionToEdit(null);
-            fetchSessions();
+            await fetchSessions();
         } catch (err) {
             notify.error("Не вдалося оновити сеанс");
         }
@@ -148,8 +148,8 @@ const AdminSessions = () => {
             await Promise.all(selectedIds.map(id => SessionService.delete(id)));
             notify.success(`Видалено сеансів: ${selectedIds.length}`);
             setSelectedIds([]);
-            fetchSessions();
-        } catch (e) {
+            await fetchSessions();
+        } catch (err) {
             notify.error("Помилка при видаленні.");
         } finally {
             setDeleteModal({ isOpen: false });

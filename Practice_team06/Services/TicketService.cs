@@ -1,6 +1,8 @@
 ﻿using AutoMapper;
 using AutoMapper.QueryableExtensions;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
+using Practice_team06.Config;
 using Practice_team06.DTOs.Common;
 using Practice_team06.DTOs.Ticket;
 using Practice_team06.Extensions;
@@ -12,11 +14,16 @@ public class TicketService : ITicketService
 {
     private readonly PostgresContext _context;
     private readonly IMapper _mapper;
+    private readonly BookingConfig _config;
 
-    public TicketService(PostgresContext context, IMapper mapper)
+    public TicketService(
+        PostgresContext context, 
+        IMapper mapper, 
+        IOptions<BookingConfig> config)
     {
         _context = context;
         _mapper = mapper;
+        _config = config.Value;
     }
 
     public async Task<PagedResult<AdminTicketDto>> GetAllTicketsAsync(BaseFilterDto filter)
@@ -74,8 +81,8 @@ public class TicketService : ITicketService
             throw new KeyNotFoundException("Квиток не знайдено або ви не є його власником.");
 
         var timeUntilSession = ticket.Booking.Session.StartTime - DateTime.UtcNow;
-        if (timeUntilSession.TotalMinutes < 30)
-            throw new InvalidOperationException("Повернення можливе не пізніше ніж за 30 хвилин до початку.");
+        if (timeUntilSession.TotalMinutes < _config.CancellationDeadlineMinutes)
+            throw new InvalidOperationException($"Повернення можливе не пізніше ніж за {_config.CancellationDeadlineMinutes} хвилин до початку.");
 
         await ExecuteRefundAsync(ticket);
     }
