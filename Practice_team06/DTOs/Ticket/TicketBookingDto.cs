@@ -11,4 +11,5 @@ public class TicketBookingDto
     public decimal ActualPrice { get; set; }
     public short RowNumber { get; set; }
     public short SeatNumber { get; set; }
+    public bool IsActive { get; set; }
 }
