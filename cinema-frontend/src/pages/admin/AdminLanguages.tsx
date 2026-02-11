@@ -2,7 +2,7 @@
 import { useForm } from 'react-hook-form';
 import {
     Plus, Trash2, Globe, Loader2,
-    X, Pencil, Check, Languages
+    Pencil, Check, Languages
 } from 'lucide-react';
 
 import { LanguageService } from '../../services/language.service';
@@ -16,6 +16,7 @@ import { notify } from "../../utils/toast";
 import { ConfirmModal } from "../../components/ui/ConfirmModal";
 import { CreateCard } from "../../components/CreateCard";
 import { SearchInput } from "../../components/ui/SearchInput";
+import {AdminModal} from "../../components/AdminModal.tsx";
 
 const languageFields = [
     {
@@ -90,7 +91,7 @@ const AdminLanguages = () => {
         try {
             await LanguageService.create(data);
             notify.success("Мову додано");
-            refresh();
+            await refresh();
         } catch {
             notify.error("Помилка додавання");
         } finally {
@@ -110,7 +111,7 @@ const AdminLanguages = () => {
             setSelectedLanguage({ ...selectedLanguage, ...data });
             notify.success("Дані оновлено");
             setIsEditMode(false);
-            refresh();
+            await refresh();
         } catch {
             notify.error("Помилка оновлення");
         } finally {
@@ -127,7 +128,7 @@ const AdminLanguages = () => {
             notify.success("Мову видалено");
             // Якщо видалили ту, що відкрита в модалці - закриваємо модалку
             if (selectedLanguage?.id === deleteModal.id) setSelectedLanguage(null);
-            refresh();
+            await refresh();
         } catch {
             notify.error("Не вдалося видалити");
         } finally {
@@ -235,12 +236,17 @@ const AdminLanguages = () => {
                     loading={loading}
                     error={error}
                     sortConfig={{ sortBy, isDesc }}
-                    onRowClick={handleOpenDetails} // Клік по рядку відкриває деталі
-                    onSort={(key) =>
-                        sortBy === key
-                            ? setIsDesc(!isDesc)
-                            : (setSortBy(key as any), setIsDesc(false))
-                    }
+                    onRowClick={handleOpenDetails}
+                    onSort={(key) => {
+                        const typedKey = key as 'id' | 'name';
+
+                        if (sortBy === typedKey) {
+                            setIsDesc(!isDesc);
+                        } else {
+                            setSortBy(typedKey);
+                            setIsDesc(false);
+                        }
+                    }}
                 />
 
                 {!loading && totalPages > 0 && (
@@ -260,101 +266,70 @@ const AdminLanguages = () => {
                     </div>
                 )}
             </div>
-
-            {/* DETAILS / EDIT OVERLAY MODAL */}
-            {selectedLanguage && (
-                <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-300 font-sans">
-                    <div className="bg-[#1a1d26] w-full max-w-lg max-h-[90vh] overflow-hidden rounded-[2.5rem] border border-gray-800 shadow-2xl flex flex-col relative animate-in zoom-in-95 duration-300">
-
-                        {/* Header Section */}
-                        <div className="p-8 border-b border-gray-800 flex items-center gap-6 bg-linear-to-r from-red-600/10 to-transparent">
-                            <div className="w-20 h-20 rounded-2xl border-2 border-red-600 p-1 overflow-hidden bg-gray-900 shrink-0 flex items-center justify-center">
-                                <Languages size={32} className="text-white" />
-                            </div>
-                            <div className="flex-1 text-left">
-                                {!isEditMode ? (
-                                    <>
-                                        <h4 className="text-xl font-bold uppercase tracking-widest text-gray-400 mb-1">Мова</h4>
-                                        <h4 className="text-3xl font-black uppercase tracking-tighter text-white leading-none">
-                                            {selectedLanguage.name}
-                                        </h4>
-                                    </>
-                                ) : (
-                                    <div className="space-y-2 pr-4 text-left w-full">
-                                        <label className="text-[10px] font-black text-red-600 uppercase tracking-widest">Редагування назви</label>
-                                        <input
-                                            {...editForm.register('name', { required: true })}
-                                            className="w-full bg-[#0f1117] border border-red-600/30 rounded-xl p-3 text-xl font-bold outline-none focus:border-red-600 text-white"
-                                            placeholder="Назва мови"
-                                            autoFocus
-                                        />
-                                    </div>
-                                )}
-                            </div>
-                            <button
-                                onClick={() => { setSelectedLanguage(null); setIsEditMode(false); }}
-                                className="p-2 self-start hover:bg-gray-800 rounded-full text-gray-500 hover:text-white transition-all"
-                            >
-                                <X size={24} />
-                            </button>
+            <AdminModal
+                isOpen={!!selectedLanguage}
+                onClose={() => { setSelectedLanguage(null); setIsEditMode(false); }}
+                maxWidth="max-w-xl"
+                title={
+                    <div className="flex items-center gap-6">
+                        <div className="w-16 h-16 rounded-2xl border-2 border-red-600 p-1 bg-gray-900 flex items-center justify-center shrink-0 shadow-lg shadow-red-600/20">
+                            <Languages size={28} className="text-white" />
                         </div>
-
-                        {/* Content Area (Можна додати більше інфо, якщо є) */}
-                        <div className="p-8 overflow-y-auto flex-1 custom-scrollbar text-white text-left font-sans">
-                            <div className="bg-gray-900/50 border border-gray-800 p-6 rounded-3xl flex flex-col items-center justify-center gap-4 text-center">
-                                <Globe size={48} className="text-gray-700" />
-                                <div className="space-y-1">
-                                    <p className="text-gray-400 text-sm">Системний ID</p>
-                                    <p className="text-2xl font-black text-red-600 tracking-tighter">#{selectedLanguage.id}</p>
-                                </div>
-                            </div>
-                        </div>
-
-                        {/* Footer Actions */}
-                        <div className="p-6 bg-gray-900/50 border-t border-gray-800 flex gap-4 font-sans">
+                        <div className="text-left">
                             {!isEditMode ? (
                                 <>
-                                    <button
-                                        onClick={() => {
-                                            setIsEditMode(true);
-                                            editForm.setValue('name', selectedLanguage.name);
-                                        }}
-                                        className="flex-1 flex items-center justify-center gap-2 py-4 bg-gray-800 hover:bg-gray-700 text-white rounded-2xl font-black text-[10px] uppercase tracking-widest transition-all font-sans"
-                                    >
-                                        <Pencil size={16} className="text-red-600" /> Редагувати
-                                    </button>
-                                    <button
-                                        onClick={() => setDeleteModal({
-                                            isOpen: true,
-                                            id: selectedLanguage.id,
-                                            name: selectedLanguage.name
-                                        })}
-                                        className="flex-1 flex items-center justify-center gap-2 py-4 bg-red-600/10 hover:bg-red-600 text-red-600 hover:text-white rounded-2xl font-black text-[10px] uppercase tracking-widest transition-all border border-red-600/20 font-sans"
-                                    >
-                                        <Trash2 size={16} /> Видалити
-                                    </button>
+                                    <p className="text-[10px] font-black text-red-600 uppercase tracking-[0.2em] mb-1">Мова</p>
+                                    <h2 className="text-2xl font-black text-white uppercase tracking-tighter">{selectedLanguage?.name}</h2>
                                 </>
                             ) : (
                                 <>
-                                    <button
-                                        onClick={editForm.handleSubmit(onEditSubmit)}
-                                        disabled={isSaving}
-                                        className="flex-1 flex items-center justify-center gap-2 py-4 bg-red-600 hover:bg-red-700 text-white rounded-2xl font-black uppercase text-[10px] tracking-widest transition-all shadow-lg shadow-red-600/30 font-sans"
-                                    >
-                                        {isSaving ? <Loader2 className="animate-spin" size={16} /> : <><Check size={16} /> Зберегти зміни</>}
-                                    </button>
-                                    <button
-                                        onClick={() => setIsEditMode(false)}
-                                        className="px-8 py-4 bg-gray-800 hover:bg-gray-700 text-white rounded-2xl font-black uppercase text-[10px] tracking-widest transition-all font-sans"
-                                    >
-                                        Скасувати
-                                    </button>
+                                    <p className="text-[10px] font-black text-red-600 uppercase tracking-[0.2em] mb-1">Редагування</p>
+                                    <input
+                                        {...editForm.register('name', { required: true })}
+                                        className="bg-transparent border-b-2 border-red-600 text-2xl font-black text-white outline-none w-full uppercase"
+                                        autoFocus
+                                    />
                                 </>
                             )}
                         </div>
                     </div>
-                </div>
-            )}
+                }
+                footer={
+                    !isEditMode ? (
+                        <>
+                            <button
+                                onClick={() => setIsEditMode(true)}
+                                className="flex-1 flex items-center justify-center gap-2 py-4 bg-gray-800 hover:bg-gray-700 text-white rounded-2xl font-black text-[10px] uppercase tracking-widest transition-all"
+                            >
+                                <Pencil size={14} className="text-red-600" /> Редагувати
+                            </button>
+                            <button
+                                onClick={() => setDeleteModal({ isOpen: true, id: selectedLanguage!.id, name: selectedLanguage!.name })}
+                                className="flex-1 flex items-center justify-center gap-2 py-4 bg-red-600/10 hover:bg-red-600 text-red-600 hover:text-white rounded-2xl font-black text-[10px] uppercase tracking-widest transition-all border border-red-600/20"
+                            >
+                                <Trash2 size={14} /> Видалити
+                            </button>
+                        </>
+                    ) : (
+                        <>
+                            <button
+                                onClick={editForm.handleSubmit(onEditSubmit)}
+                                disabled={isSaving}
+                                className="flex-1 flex items-center justify-center gap-2 py-4 bg-red-600 hover:bg-red-700 text-white rounded-2xl font-black text-[10px] uppercase tracking-widest transition-all shadow-lg shadow-red-600/30"
+                            >
+                                {isSaving ? <Loader2 className="animate-spin" size={16} /> : <><Check size={16} /> Зберегти</>}
+                            </button>
+                            <button
+                                onClick={() => setIsEditMode(false)}
+                                className="px-6 py-4 bg-gray-800 hover:bg-gray-700 text-white rounded-2xl font-black text-[10px] uppercase tracking-widest transition-all"
+                            >
+                                Скасувати
+                            </button>
+                        </>
+                    )
+                }
+            >
+            </AdminModal>
         </div>
     );
 };

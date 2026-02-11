@@ -2,7 +2,7 @@ import {useCallback, useEffect, useState} from 'react';
 import {
     Search, Filter, X, Eye,
     Calendar, Clock, User, Film, Ticket as TicketIcon,
-    TrendingUp, ChevronDown, Ticket, Trash2, RotateCcw
+    TrendingUp, ChevronDown, Ticket, Trash2
 } from 'lucide-react';
 import { getStatusColor, getStatusText } from '../../utils/formatBookingStatus';
 import {type AdminBookingDetailsDto, type BookingsStatsDto, BookingStatus} from "../../types/booking.ts";
@@ -22,6 +22,9 @@ import {StatCard} from "../../components/ui/StatCard.tsx";
 import {AdminModal} from "../../components/AdminModal.tsx";
 import {notify} from "../../utils/toast.ts";
 import {ConfirmModal} from "../../components/ui/ConfirmModal.tsx";
+import {TicketService} from "../../services/ticket.service.ts";
+import {CancelBookingButton} from "../../components/CancelBookingButton.tsx";
+import {TicketRefundButton} from "../../components/TicketRefundButton.tsx";
 
 type StatusFilter = BookingStatus | 'ALL';
 type SortBy = 'date' | 'status' | 'userEmail';
@@ -46,14 +49,22 @@ const AdminBookingsPage = () => {
     const [selectedBooking, setSelectedBooking] = useState<AdminBookingDto | AdminBookingDetailsDto | null>(null);
     const [detailsLoading, setDetailsLoading] = useState(false);
     const [isSaving, setIsSaving] = useState(false);
-    const [confirmCancel, setConfirmCancel] = useState<{isOpen: boolean; id: number | null}>({ isOpen: false, id: null });
     const [confirmDelete, setConfirmDelete] = useState<{isOpen: boolean; id: number | null}>({ isOpen: false, id: null });
 
     const [refreshTrigger, setRefreshTrigger] = useState(0);
     const handleRefresh = () => setRefreshTrigger(prev => prev + 1);
 
-    const handleCancelClick = (id: number) => setConfirmCancel({ isOpen: true, id });
     const handleDeleteClick = (id: number) => setConfirmDelete({ isOpen: true, id });
+
+    const [confirmTicket, setConfirmTicket] = useState<{
+        isOpen: boolean;
+        id: number | null;
+        type: 'cancel' | 'delete' | null;
+    }>({
+        isOpen: false,
+        id: null,
+        type: null
+    });
 
     // Fetch function for pagination hook
     const fetchBookings = useCallback(async (Page: number, PageSize: number) => {
@@ -74,7 +85,7 @@ const AdminBookingsPage = () => {
         return await BookingService.getAllBookings(filter);
     }, [statusFilter, sessionFrom, sessionTo, bookingFrom, bookingTo, userEmail, searchQuery, sortBy, isDesc]);
 
-    const loadStats = async () => {
+    const loadStats = useCallback(async () => {
         setStatsLoading(true);
         try {
             const filter: BookingFilterDto = {
@@ -91,11 +102,11 @@ const AdminBookingsPage = () => {
         } finally {
             setStatsLoading(false);
         }
-    };
+    }, [bookingFrom, bookingTo, searchQuery, sessionFrom, sessionTo, statusFilter, userEmail]);
 
     useEffect(() => {
-        loadStats();
-    }, [statusFilter, sessionFrom, sessionTo, bookingFrom, bookingTo, userEmail, searchQuery]);
+        void loadStats();
+    }, [statusFilter, sessionFrom, sessionTo, bookingFrom, bookingTo, userEmail, searchQuery, loadStats]);
 
     useEffect(() => {
         const fetchDetails = async () => {
@@ -113,7 +124,7 @@ const AdminBookingsPage = () => {
                 setDetailsLoading(false);
             }
         };
-        fetchDetails();
+        void fetchDetails();
     }, [selectedBooking?.id, ticketPage]);
 
     // Use pagination hook
@@ -146,24 +157,6 @@ const AdminBookingsPage = () => {
         }
     };
 
-    const onConfirmCancel = async () => {
-        if (!confirmCancel.id) return;
-        setIsSaving(true);
-        try {
-            await BookingService.cancelBooking(confirmCancel.id);
-            notify.success("Бронювання успішно скасовано");
-
-            loadStats();
-            handleRefresh();
-            setSelectedBooking(null);
-        } catch (err) {
-            console.error("Cancel error:", err);
-        } finally {
-            setIsSaving(false);
-            setConfirmCancel({ isOpen: false, id: null });
-        }
-    };
-
     const onConfirmDelete = async () => {
         if (!confirmDelete.id) return;
         setIsSaving(true);
@@ -171,7 +164,7 @@ const AdminBookingsPage = () => {
             await BookingService.deleteBooking(confirmDelete.id);
             notify.success("Запис видалено");
 
-            loadStats();
+            await loadStats();
             handleRefresh();
             setSelectedBooking(null);
         } catch (err) {
@@ -179,6 +172,37 @@ const AdminBookingsPage = () => {
         } finally {
             setIsSaving(false);
             setConfirmDelete({ isOpen: false, id: null });
+        }
+    }
+
+    const onConfirmTicketAction = async () => {
+        if (!confirmTicket.id || !confirmTicket.type) return;
+        setIsSaving(true);
+
+        try {
+            if (confirmTicket.type === 'cancel') {
+                await TicketService.refund(confirmTicket.id);
+                notify.success("Квиток скасовано");
+            } else {
+                await TicketService.delete(confirmTicket.id);
+                notify.success("Квиток видалено");
+            }
+
+            if (selectedBooking?.id) {
+                const data = await BookingService.getBookingById(selectedBooking.id, {
+                    Page: ticketPage,
+                    PageSize: TICKET_PAGE_SIZE
+                });
+                setSelectedBooking(data as AdminBookingDetailsDto);
+            }
+            await loadStats();
+            handleRefresh();
+        } catch (err) {
+            console.error("Помилка:", err);
+            notify.error("Помилка при виконанні дії: " + err);
+        } finally {
+            setIsSaving(false);
+            setConfirmTicket({ isOpen: false, id: null, type: null });
         }
     };
 
@@ -259,8 +283,8 @@ const AdminBookingsPage = () => {
             sortKey: 'date',
             render: (booking) => (
                 <div className="whitespace-nowrap">
-                    <p className="text-gray-300">{formatDateWithYear(booking.bookingTime)}</p>
-                    <p className="text-gray-600 text-xs">{formatTime(booking.bookingTime)}</p>
+                    <p className="text-gray-300">{formatDateWithYear(booking.bookingTime, true)}</p>
+                    <p className="text-gray-600 text-xs">{formatTime(booking.bookingTime, true)}</p>
                 </div>
             )
         },
@@ -510,12 +534,15 @@ const AdminBookingsPage = () => {
                 footer={selectedBooking && (
                     <>
                         {selectedBooking.status !== 'Cancelled' && (
-                            <button
-                                onClick={() => handleCancelClick(selectedBooking.id)}
-                                className="flex-1 flex items-center justify-center gap-2 py-4 bg-gray-800 hover:bg-orange-600/20 text-white hover:text-orange-500 rounded-2xl font-black text-[10px] uppercase tracking-widest transition-all border border-transparent hover:border-orange-600/30"
-                            >
-                                <RotateCcw size={16} /> Скасувати бронювання
-                            </button>
+                            <CancelBookingButton
+                                bookingId={selectedBooking.id}
+                                startTime={selectedBooking.startTime}
+                                status={selectedBooking.status}
+                                title={selectedBooking.title}
+                                onCancelSuccess={() => {
+                                    void fetchBookings(currentPage, pageSize);
+                                }}
+                            />
                         )}
 
                         <button
@@ -556,11 +583,11 @@ const AdminBookingsPage = () => {
                                     </div>
                                     <div className="flex items-center gap-2 text-gray-400">
                                         <Calendar size={14} className="text-red-600"/>
-                                        <span>Сеанс: <span className="text-gray-200">{formatDateWithYear(selectedBooking.startTime)} в {formatTime(selectedBooking.startTime)}</span></span>
+                                        <span>Сеанс: <span className="text-gray-200">{formatDateWithYear(selectedBooking.startTime)} о {formatTime(selectedBooking.startTime)}</span></span>
                                     </div>
                                     <div className="flex items-center gap-2 text-gray-400">
                                         <Clock size={14} className="text-red-600"/>
-                                        <span>Час бронювання: <span className="text-gray-200">{formatDateWithYear(selectedBooking.bookingTime)} о {formatTime(selectedBooking.bookingTime)}</span></span>
+                                        <span>Час бронювання: <span className="text-gray-200">{formatDateWithYear(selectedBooking.bookingTime, true)} о {formatTime(selectedBooking.bookingTime, true)}</span></span>
                                     </div>
                                 </div>
                             </div>
@@ -579,13 +606,43 @@ const AdminBookingsPage = () => {
                                     <>
                                         {selectedBooking.pagedTickets.items.map((t, i) => (
                                             <div key={i} className="bg-gray-900/50 border border-gray-800 rounded-2xl p-4 flex items-center justify-between group hover:border-red-600/30 transition-colors">
-                                                <div>
-                                                    <p className="text-[10px] text-gray-500 uppercase font-black tracking-tight">Ряд {t.rowNumber} · Місце {t.seatNumber}</p>
-                                                    <p className="text-white font-bold text-sm mt-1 opacity-80">
-                                                        Квиток #{(ticketPage - 1) * TICKET_PAGE_SIZE + i + 1}
+                                                <div className="flex-1">
+                                                    <p className="text-[10px] text-gray-500 uppercase font-black tracking-tight">
+                                                        Ряд {t.rowNumber} · Місце {t.seatNumber}
                                                     </p>
+                                                    <div className="flex flex-col gap-1 mt-1">
+                                                        <p className="text-white font-bold text-sm opacity-80">
+                                                            Квиток #{(ticketPage - 1) * TICKET_PAGE_SIZE + i + 1}
+                                                        </p>
+                                                        {!t.isActive && (
+                                                            <span className="w-fit text-[8px] bg-red-500/10 text-red-500 px-1.5 py-0.5 rounded uppercase font-black border border-red-500/20">
+                                                                Скасовано
+                                                            </span>
+                                                        )}
+                                                    </div>
                                                 </div>
-                                                <span className="text-red-600 font-black text-lg">{t.actualPrice}₴</span>
+
+                                                <div className="px-4">
+                                                    <span className={`text-lg font-black whitespace-nowrap ${!t.isActive ? 'text-gray-600 line-through' : 'text-red-600'}`}>
+                                                        {t.actualPrice}₴
+                                                    </span>
+                                                </div>
+
+                                                <div className="flex flex-col gap-1 border-l border-gray-800 pl-3 opacity-0 group-hover:opacity-100 transition-opacity">
+                                                    <TicketRefundButton
+                                                        startTime={selectedBooking.startTime}
+                                                        isActive={t.isActive}
+                                                        variant="vertical"
+                                                        onClick={() => setConfirmTicket({ isOpen: true, id: t.id, type: 'cancel' })}
+                                                    />
+                                                    <button
+                                                        onClick={() => setConfirmTicket({ isOpen: true, id: t.id, type: 'delete' })}
+                                                        title="Видалити"
+                                                        className="p-1.5 text-gray-500 hover:text-red-500 hover:bg-red-500/10 rounded-lg transition-all"
+                                                    >
+                                                        <Trash2 size={14} />
+                                                    </button>
+                                                </div>
                                             </div>
                                         ))}
                                         {selectedBooking.pagedTickets.totalCount > TICKET_PAGE_SIZE && (
@@ -615,18 +672,6 @@ const AdminBookingsPage = () => {
             </AdminModal>
 
             <ConfirmModal
-                isOpen={confirmCancel.isOpen}
-                variant="warning"
-                title="Скасувати бронювання?"
-                description="Квитки будуть анульовані та повернуться у вільний продаж. Цю дію можна змінити лише через базу даних."
-                confirmText="Так, скасувати"
-                cancelText="Ні"
-                onConfirm={onConfirmCancel}
-                onClose={() => setConfirmCancel({ isOpen: false, id: null })}
-                isLoading={isSaving}
-            />
-
-            <ConfirmModal
                 isOpen={confirmDelete.isOpen}
                 variant="danger"
                 title="Остаточне видалення"
@@ -634,6 +679,21 @@ const AdminBookingsPage = () => {
                 confirmText="Видалити назавжди"
                 onConfirm={onConfirmDelete}
                 onClose={() => setConfirmDelete({ isOpen: false, id: null })}
+                isLoading={isSaving}
+            />
+
+            <ConfirmModal
+                isOpen={confirmTicket.isOpen}
+                variant={confirmTicket.type === 'delete' ? 'danger' : 'warning'}
+                title={confirmTicket.type === 'delete' ? "Видалити квиток?" : "Скасувати квиток?"}
+                description={
+                    confirmTicket.type === 'delete'
+                        ? "Цей квиток буде повністю видалено з системи. Ця дія незворотна."
+                        : "Квиток змінить статус на 'Скасовано' і місце звільниться для продажу."
+                }
+                confirmText={confirmTicket.type === 'delete' ? "Видалити назавжди" : "Так, скасувати"}
+                onConfirm={onConfirmTicketAction}
+                onClose={() => setConfirmTicket({ isOpen: false, id: null, type: null })}
                 isLoading={isSaving}
             />
 
