@@ -23,6 +23,8 @@ public class BookingFilterDto : BaseFilterDto
     
     public string? SearchQuery { get; set; }
     
+    public string? GroupBy { get; set; } // Можливі значення: "Day", "Week", "Month", "Year"
+    
     public string? SortBy { get; set; }       // "date", "status", "useremail"
     public bool? IsDescending { get; set; }
 }

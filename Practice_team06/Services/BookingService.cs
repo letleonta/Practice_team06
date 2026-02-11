@@ -251,6 +251,34 @@ public class BookingService : IBookingService
         query = ApplyFilter(query, filter);
         DateTime endDate = filter.BookingToDate ?? DateTime.UtcNow;
         DateTime startDate = filter.BookingFromDate ?? endDate.AddDays(-30);
+        
+        var revenueBaseQuery = query.Where(b => b.Status == BookingStatus.Paid 
+                                                     && b.BookingTime >= startDate 
+                                                     && b.BookingTime <= endDate.AddDays(1));
+
+        IQueryable<RevenuePointDto> revenuePointsQuery = filter.GroupBy?.ToLower() switch
+        {
+            "month" => revenueBaseQuery
+                .GroupBy(b => new { b.BookingTime.Year, b.BookingTime.Month })
+                .Select(g => new RevenuePointDto {
+                    Date = new DateTime(g.Key.Year, g.Key.Month, 1),
+                    Amount = g.SelectMany(b => b.Tickets).Sum(t => t.ActualPrice)
+                }),
+            
+            "hour" => revenueBaseQuery
+                .GroupBy(b => new { b.BookingTime.Date, b.BookingTime.Hour })
+                .Select(g => new RevenuePointDto {
+                    Date = g.Key.Date.AddHours(g.Key.Hour),
+                    Amount = g.SelectMany(b => b.Tickets).Sum(t => t.ActualPrice)
+                }),
+            
+            _ => revenueBaseQuery
+                .GroupBy(b => b.BookingTime.Date)
+                .Select(g => new RevenuePointDto {
+                    Date = g.Key,
+                    Amount = g.SelectMany(b => b.Tickets).Sum(t => t.ActualPrice)
+                })
+        };
         return new BookingsStatsDto
         {
             TotalCount = await query.CountAsync(),
@@ -264,20 +292,11 @@ public class BookingService : IBookingService
             TotalRevenue = await query.Where(b => b.Status == BookingStatus.Paid)
                 .SelectMany(b => b.Tickets)
                 .SumAsync(t => t.ActualPrice),
-            RevenuePoints = await query
-                .Where(b => b.Status == BookingStatus.Paid && b.BookingTime >= startDate && b.BookingTime <= endDate)
-                .GroupBy(b => b.BookingTime.Date)
-                .Select(g => new RevenuePointDto
-                {
-                    Date = g.Key,
-                    Amount = g.SelectMany(b => b.Tickets).Sum(t => t.ActualPrice)
-                })
-                .OrderBy(p => p.Date)
-                .ToListAsync(),
+            RevenuePoints = await revenuePointsQuery.OrderBy(p => p.Date).ToListAsync(),
             HallPoints = await query
                 .Where(b => b.Status == BookingStatus.Paid
                             && b.BookingTime >= startDate
-                            && b.BookingTime <= endDate)
+                            && b.BookingTime <= endDate.AddDays(1))
                 .SelectMany(b => b.Tickets)
                 .GroupBy(t => t.Booking.Session.Hall.Name)
                 .Select(g => new HallPointDto
@@ -291,7 +310,7 @@ public class BookingService : IBookingService
             GenrePoints = await query
                 .Where(b => b.Status == BookingStatus.Paid
                             && b.BookingTime >= startDate
-                            && b.BookingTime <= endDate)
+                            && b.BookingTime <= endDate.AddDays(1))
                 .SelectMany(b => b.Tickets)
                 .SelectMany(t => t.Booking.Session.Movie.MovieGenres)
                 .GroupBy(mg => mg.Genre.Name)
@@ -318,13 +337,13 @@ public class BookingService : IBookingService
             query = query.Where(b => b.BookingTime >= filter.BookingFromDate.Value);
 
         if (filter.BookingToDate != null)
-            query = query.Where(b => b.BookingTime <= filter.BookingToDate.Value);
+            query = query.Where(b => b.BookingTime <= filter.BookingToDate.Value.AddDays(1));
 
         if (filter.SessionFromDate != null)
             query = query.Where(b => b.Session.StartTime >= filter.SessionFromDate.Value);
 
         if (filter.SessionToDate != null)
-            query = query.Where(b => b.Session.StartTime <= filter.SessionToDate.Value);
+            query = query.Where(b => b.Session.StartTime <= filter.SessionToDate.Value.AddDays(1));
 
         if (!string.IsNullOrEmpty(filter.UserEmail))
         {
