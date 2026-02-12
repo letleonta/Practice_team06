@@ -69,7 +69,7 @@ const MoviesLayout = ({ title }: Props) => {
         pageSize,
         loading,
         goToPage
-    } = UsePagination(fetchMovies, [movieFilter, title], { pageSize: 5 });
+    } = UsePagination(fetchMovies, [movieFilter, title], { pageSize: 5, scrollToTop: false});
 
     const uniqueGenres = useMemo(() => {
         return ['Всі', ...availableGenres];
