@@ -16,6 +16,7 @@ import {useEffect} from "react";
 import {UserService} from "./services/user.service.ts";
 import TicketDetailsPage from "./pages/TicketDetailsPage.tsx";
 import AboutUsPage from "./pages/AboutUsPage.tsx";
+import DefaultPageLayout from "./layouts/DefaultPageLayout.tsx";
 
 function App() {
     const { user, token, updateUser } = useAuthStore();
@@ -49,44 +50,45 @@ function App() {
                     element={<Register />}
                 />
 
-                {/* Головний лейаут сайту */}
                 <Route element={<MainLayout />}>
                     <Route
                         path="/"
                         element={<HomePage />}
                     />
-                    <Route
-                        path="/upcoming"
-                        element={<UpcomingPage />}
-                    />
-                    <Route
-                        path="/about"
-                        element={<AboutUsPage />}
-                    />
-                    <Route path="/movie/:id"
-                           element={<MoviePage />}
-                    />
-                    <Route
-                        path="/bookings/my"
-                        element={<MyBookingsPage />}
-                    />
+                    <Route element={<DefaultPageLayout />}>
+                        <Route
+                            path="/upcoming"
+                            element={<UpcomingPage />}
+                        />
+                        <Route
+                            path="/about"
+                            element={<AboutUsPage />}
+                        />
+                        <Route path="/movie/:id"
+                               element={<MoviePage />}
+                        />
+                        <Route
+                            path="/bookings/my"
+                            element={<MyBookingsPage />}
+                        />
 
-                    <Route
-                        path="/bookings/:bookingId"
-                        element={<BookingDetailsPage />}
-                    />
-                    <Route
-                        path="/tickets/:ticketId"
-                        element={<TicketDetailsPage />}
-                    />
-                    <Route
-                        path="/sessions/:sessionId"
-                        element={<SessionPage />}
-                    />
-                    <Route
-                        path="/profile"
-                        element={token ? <Profile /> : <Navigate to="/login" replace />}
-                    />
+                        <Route
+                            path="/bookings/:bookingId"
+                            element={<BookingDetailsPage />}
+                        />
+                        <Route
+                            path="/tickets/:ticketId"
+                            element={<TicketDetailsPage />}
+                        />
+                        <Route
+                            path="/sessions/:sessionId"
+                            element={<SessionPage />}
+                        />
+                        <Route
+                            path="/profile"
+                            element={token ? <Profile /> : <Navigate to="/login" replace />}
+                        />
+                    </Route>
                 </Route>
 
                 {/* Адмінка */}

@@ -31,8 +31,8 @@ export const HeroSlider: React.FC<HeroSliderProps> = ({ movies, currentSlide, on
                     className="w-full h-screen object-cover animate-[scaleIn_20s_infinite_alternate] opacity-50"
                     style={{ objectPosition: 'center 20%' }}
                 />
-                <div className="absolute inset-0 bg-gradient-to-r from-[#0f1117] via-[#0f1117]/60 to-transparent z-10" />
-                <div className="absolute inset-0 bg-gradient-to-t from-[#0f1117] via-transparent to-transparent z-10" />
+                <div className="absolute inset-0 bg-linear-to-r from-[#0f1117] via-[#0f1117]/60 to-transparent z-10" />
+                <div className="absolute inset-0 bg-linear-to-t from-[#0f1117] via-transparent to-transparent z-10" />
             </div>
 
             <button
