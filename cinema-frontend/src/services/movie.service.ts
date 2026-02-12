@@ -57,5 +57,12 @@ export const MovieService = {
             // Прокидуємо повідомлення з бекенду, якщо воно є
             throw new Error(error.response?.data?.message || "Помилка видалення");
         }
+    },
+
+    async getRecommendations(count: number = 6): Promise<MovieDto[]> {
+        const response = await axiosInstance.get<MovieDto[]>(`/movies/recommendations`, {
+            params: { count }
+        });
+        return response.data;
     }
 };

@@ -44,7 +44,7 @@ const MyBookingsPage = () => {
     } = UsePagination(fetchBookings, [activeFilter], { pageSize: 6 });
 
     return (
-        <div className="min-h-screen bg-[#0f1117] text-white font-sans pt-20">
+        <div className="min-h-screen bg-[#0f1117] text-white font-sans">
             <main className="max-w-7xl mx-auto p-6 md:p-10">
                 <header className="mb-12">
                     <h2 className="text-5xl font-black text-white mb-8 tracking-tighter uppercase">Ваші бронювання</h2>

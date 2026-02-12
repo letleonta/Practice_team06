@@ -53,7 +53,7 @@ const MoviePage = () => {
         totalPages,
         loading: loadingSessions,
         goToPage
-    } = UsePagination(fetchSessions, [id, selectedDate], { pageSize: 12 });
+    } = UsePagination(fetchSessions, [id, selectedDate], { pageSize: 12,scrollToTop: false});
 
     useEffect(() => {
         if (!id) return;

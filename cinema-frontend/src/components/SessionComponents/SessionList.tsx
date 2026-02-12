@@ -58,7 +58,7 @@ export const SessionList = ({
     const isAllPageSelected = sessions.length > 0 && sessions.every(s => selectedIds.includes(s.id));
 
     return (
-        <div className="bg-[#1a1d26] flex-1 rounded-4xl border border-gray-800 shadow-xl overflow-hidden flex flex-col min-h-[500px]">
+        <div className="bg-[#1a1d26] flex-1 rounded-4xl border border-gray-800 shadow-xl overflow-hidden flex flex-col min-h-125">
             <div className="p-6 border-b border-gray-800 bg-gray-900/30 flex flex-col xl:flex-row justify-between items-start xl:items-center gap-4">
                 <div className="flex items-center gap-4 w-full xl:w-auto">
                     {selectedIds.length > 0 ? (
@@ -109,7 +109,7 @@ export const SessionList = ({
                         </button>
                     </div>
 
-                    <div className="flex items-center gap-2 bg-gray-900/50 p-1 rounded-xl border border-gray-700 min-h-[42px]">
+                    <div className="flex items-center gap-2 bg-gray-900/50 p-1 rounded-xl border border-gray-700 min-h-10.5">
                         <Filter size={14} className="text-gray-500 ml-2" />
 
                         {uiMode === 'weekday' ? (
@@ -134,7 +134,7 @@ export const SessionList = ({
                                     type="date"
                                     value={dateFrom}
                                     onChange={(e) => setDateFrom(e.target.value)}
-                                    className="bg-transparent text-white text-xs outline-none p-2 w-28 [color-scheme:dark] cursor-pointer font-bold uppercase"
+                                    className="bg-transparent text-white text-xs outline-none p-2 w-28 scheme-dark cursor-pointer font-bold uppercase"
                                     placeholder="Від"
                                 />
                                 <span className="text-gray-600 font-bold">-</span>
@@ -142,7 +142,7 @@ export const SessionList = ({
                                     type="date"
                                     value={dateTo}
                                     onChange={(e) => setDateTo(e.target.value)}
-                                    className="bg-transparent text-white text-xs outline-none p-2 w-28 [color-scheme:dark] cursor-pointer font-bold uppercase"
+                                    className="bg-transparent text-white text-xs outline-none p-2 w-28 scheme-dark cursor-pointer font-bold uppercase"
                                     placeholder="До"
                                 />
                             </>

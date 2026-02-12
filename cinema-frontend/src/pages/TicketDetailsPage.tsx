@@ -67,7 +67,7 @@ const TicketDetailsPage = () => {
     );
 
     return (
-        <div className="min-h-screen bg-[#0f1117] text-white p-4 pt-30">
+        <div className="min-h-screen bg-[#0f1117] text-white p-4">
             <div className="max-w-xl mx-auto">
                 <button
                     onClick={() => navigate(-1)}
