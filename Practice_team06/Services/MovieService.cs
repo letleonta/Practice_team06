@@ -235,18 +235,8 @@ public class MovieService : IMovieService
         .Select(b => b.Session.MovieId)
         .Distinct()
         .ToListAsync();
-    
-    if (!bookedMovieIds.Any())
-    {
-        var todayDate = DateOnly.FromDateTime(DateTime.Now);
-        return await _context.Movies
-            .AsNoTracking()
-            .Where(m => m.EndDate == null || m.EndDate >= todayDate)
-            .OrderByDescending(m => m.ReleaseDate)
-            .Take(count)
-            .ProjectTo<MovieDto>(_mapper.ConfigurationProvider)
-            .ToListAsync();
-    }
+
+    if (!bookedMovieIds.Any()) return new List<MovieDto>();
     
     var historyData = await _context.Movies
         .AsNoTracking()
@@ -254,7 +244,7 @@ public class MovieService : IMovieService
         .Include(m => m.MovieGenres)
         .Include(m => m.MovieActors)
         .ToListAsync();
-    
+
     var genreWeights = historyData.SelectMany(m => m.MovieGenres)
         .GroupBy(mg => mg.GenreId)
         .ToDictionary(g => g.Key, g => g.Count());
@@ -269,38 +259,39 @@ public class MovieService : IMovieService
         .ToDictionary(g => g.Key, g => g.Count());
     
     var today = DateOnly.FromDateTime(DateTime.Now);
+    
     var candidates = await _context.Movies
         .AsNoTracking()
-        .Where(m => !bookedMovieIds.Contains(m.Id) && (m.EndDate == null || m.EndDate >= today))
-        .Include(m => m.MovieGenres)
-            .ThenInclude(mg => mg.Genre)
-        .Include(m => m.MovieActors)
-            .ThenInclude(ma => ma.Actor) 
+        .Where(m => !bookedMovieIds.Contains(m.Id)) 
+        .Where(m => 
+            (m.StartDate != null && m.EndDate != null && m.StartDate <= today && m.EndDate >= today) ||
+            (m.StartDate == null && m.ReleaseDate <= today && (m.EndDate == null || m.EndDate >= today))
+        )
+        .Include(m => m.MovieGenres).ThenInclude(mg => mg.Genre)
+        .Include(m => m.MovieActors).ThenInclude(ma => ma.Actor)
         .Include(m => m.Director)
         .ToListAsync();
     
     var recommended = candidates.Select(m =>
-        {
-            double metaScore = 0;
-            
-            metaScore += m.MovieGenres.Sum(mg => genreWeights.GetValueOrDefault(mg.GenreId, 0)) * 3.0;
-    
-            if (m.DirectorId.HasValue)
-                metaScore += directorWeights.GetValueOrDefault(m.DirectorId.Value, 0) * 2.0;
+    {
+        double metaScore = 0;
+        metaScore += m.MovieGenres.Sum(mg => genreWeights.GetValueOrDefault(mg.GenreId, 0)) * 3.0;
+        
+        if (m.DirectorId.HasValue)
+            metaScore += directorWeights.GetValueOrDefault(m.DirectorId.Value, 0) * 2.0;
 
-            metaScore += m.MovieActors.Sum(ma => actorWeights.GetValueOrDefault(ma.ActorId, 0)) * 1.0;
-            
-            if (metaScore == 0) return new { Movie = m, FinalScore = 0.0 };
-            
-            double finalScore = metaScore + ((double)(m.Rating ?? 0) / 10.0);
+        metaScore += m.MovieActors.Sum(ma => actorWeights.GetValueOrDefault(ma.ActorId, 0)) * 1.0;
 
-            return new { Movie = m, FinalScore = finalScore };
-        })
-        .Where(x => x.FinalScore > 1.0) 
-        .OrderByDescending(x => x.FinalScore)
-        .Take(count)
-        .ToList();
-    
+        if (metaScore <= 0) return new { Movie = m, FinalScore = 0.0 };
+
+        double finalScore = metaScore + ((double)(m.Rating ?? 0) / 10.0);
+        return new { Movie = m, FinalScore = finalScore };
+    })
+    .Where(x => x.FinalScore > 0)
+    .OrderByDescending(x => x.FinalScore)
+    .Take(count)
+    .ToList();
+
     return recommended.Select(x => _mapper.Map<MovieDto>(x.Movie)).ToList();
 }
 }
