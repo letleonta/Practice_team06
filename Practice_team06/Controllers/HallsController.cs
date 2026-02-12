@@ -74,7 +74,7 @@ public class HallsController : ControllerBase
         }
     }
         
-    [HttpPost("{id}/add-row")]
+    [HttpPost("{id}/rows")]
     [Authorize(Roles = "Admin, Manager")]
     public async Task<IActionResult> AddRow(int id, [FromBody] RowConfigDto dto)
     {
