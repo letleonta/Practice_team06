@@ -1,28 +1,25 @@
-import { Film, MapPin, Phone, Mail, Armchair } from "lucide-react";
-import { useEffect, useState } from "react";
+import {Film, MapPin, Phone, Mail, Armchair, Send, MessageCircle} from "lucide-react";
 import { HallService } from "../services/hall.service";
+import { Pagination } from "../components/ui/Pagination.tsx";
+import { UsePagination } from "../hooks/UsePagination";
 import type { HallDto } from "../types/hall";
 
 const PAGE_SIZE = 3;
 
 const AboutPage = () => {
-    const [halls, setHalls] = useState<HallDto[]>([]);
-    const [currentPage, setCurrentPage] = useState(1);
-    const [totalPages, setTotalPages] = useState(1);
 
-    const loadHalls = async (page: number) => {
-        try {
-            const result = await HallService.getAll(page, PAGE_SIZE);
-            setHalls(result.items);
-            setTotalPages(Math.ceil(result.totalCount / PAGE_SIZE));
-        } catch (error) {
-            console.error("Помилка завантаження залів", error);
-        }
+    const fetchHalls = async (Page: number, PageSize: number) => {
+        return await HallService.getAll(Page, PageSize);
     };
 
-    useEffect(() => {
-        loadHalls(currentPage);
-    }, [currentPage]);
+    const {
+        items: halls,
+        totalPages,
+        currentPage,
+        loading,
+        error,
+        goToPage
+    } = UsePagination<HallDto>(fetchHalls, [], { pageSize: PAGE_SIZE });
 
     return (
         <div className="min-h-screen bg-[#0f1117] text-white font-sans overflow-x-hidden">
@@ -67,46 +64,44 @@ const AboutPage = () => {
                         <h2 className="text-3xl font-bold tracking-tight">Наші зали</h2>
                     </div>
 
-                    <div className="grid md:grid-cols-3 gap-8">
-                        {halls.map(hall => (
-                            <div
-                                key={hall.id}
-                                className="bg-[#1a1d26] p-8 rounded-3xl border border-white/5 hover:border-red-600/40 transition-all"
-                            >
-                                <h3 className="text-xl font-bold mb-4">
-                                    {hall.name}
-                                </h3>
+                    {loading ? (
+                        <div className="flex justify-center py-20">
+                            <div className="h-16 w-16 rounded-full border-4 border-gray-800 border-t-red-600 animate-spin"></div>
+                        </div>
+                    ) : error ? (
+                        <div className="text-center py-20">
+                            <p className="text-red-500">{error}</p>
+                        </div>
+                    ) : (
+                        <>
+                            <div className="grid md:grid-cols-3 gap-8">
+                                {halls.map((hall) => (
+                                    <div
+                                        key={hall.id}
+                                        className="bg-[#1a1d26] p-8 rounded-3xl border border-white/5 hover:border-red-600/40 transition-all"
+                                    >
+                                        <h3 className="text-xl font-bold mb-4">
+                                            {hall.name}
+                                        </h3>
 
-                                <p className="text-gray-400">
-                                    {hall.description || "Опис залу відсутній"}
-                                </p>
+                                        <p className="text-gray-400">
+                                            {hall.description || "Опис залу відсутній"}
+                                        </p>
+                                    </div>
+                                ))}
                             </div>
-                        ))}
-                    </div>
 
-                    {/* PAGINATION */}
-                    <div className="flex justify-center mt-12 gap-3 flex-wrap">
-
-                        {Array.from({ length: totalPages }, (_, i) => {
-                            const page = i + 1;
-
-                            return (
-                                <button
-                                    key={page}
-                                    onClick={() => setCurrentPage(page)}
-                                    className={`px-4 py-2 rounded-xl text-sm font-bold transition-all
-                                        ${currentPage === page
-                                        ? "bg-red-600 text-white shadow-lg shadow-red-600/30"
-                                        : "bg-[#1a1d26] text-gray-300 hover:text-white hover:border-red-600/40 border border-white/5"
-                                    }`}
-                                >
-                                    {page}
-                                </button>
-                            );
-                        })}
-
-                    </div>
-
+                            {/* Pagination */}
+                            {totalPages > 1 && (
+                                <Pagination
+                                    currentPage={currentPage}
+                                    totalPages={totalPages}
+                                    onPageChange={goToPage}
+                                    className="mt-12"
+                                />
+                            )}
+                        </>
+                    )}
                 </section>
 
                 {/* КОНТАКТИ */}
@@ -138,7 +133,23 @@ const AboutPage = () => {
                                 <p className="text-gray-400">cinema@example.com</p>
                             </div>
                         </div>
+                        {/* TELEGRAM */}
+                        <div className="flex items-start gap-4">
+                            <Send className="text-red-600 mt-1" />
+                            <div>
+                                <p className="font-bold">Telegram підтримка</p>
+                                <p className="text-gray-400">@CinemaSupportUA</p>
+                            </div>
+                        </div>
 
+                        {/* VIBER */}
+                        <div className="flex items-start gap-4">
+                            <MessageCircle className="text-red-600 mt-1" />
+                            <div>
+                                <p className="font-bold">Viber підтримка</p>
+                                <p className="text-gray-400">+380 95 713 44 29</p>
+                            </div>
+                        </div>
                     </div>
                 </section>
 

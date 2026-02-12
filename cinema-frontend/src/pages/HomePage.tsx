@@ -30,7 +30,7 @@ const HomePage = () => {
                 setLoading(false);
             }
         };
-        loadData();
+        void loadData();
     }, []);
 
     useEffect(() => {

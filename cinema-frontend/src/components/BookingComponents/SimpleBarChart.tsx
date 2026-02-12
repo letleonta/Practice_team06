@@ -5,19 +5,19 @@ interface SimpleBarChartProps<T> {
     data: T[];
     dataKey: keyof T;
     dataLabel: string;
-    nameKey: keyof T;
+    nameKey: string;
     color: string;
     chartName: string;
 }
 
-export const SimpleBarChart = <T extends Record<string, unknown>>({
-                                                                      data,
-                                                                      dataKey,
-                                                                      dataLabel,
-                                                                      nameKey,
-                                                                      color,
-                                                                      chartName,
-                                                                  }: SimpleBarChartProps<T>): ReactElement => {
+export const SimpleBarChart = <T extends object>({
+                                                      data,
+                                                      dataKey,
+                                                      dataLabel,
+                                                      nameKey,
+                                                      color,
+                                                      chartName,
+                                                  }: SimpleBarChartProps<T>): ReactElement => {
 
     const maxValue = data && data.length > 0
         ? Math.max(...data.map((d) => Number(d[dataKey]) || 0))
