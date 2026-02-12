@@ -35,13 +35,9 @@ export const SessionCreateForm = ({ movie, halls, languages, initialData, onSubm
 
     const { register, handleSubmit, reset, setValue, formState: { errors } } = useForm<SessionFormValues>();
 
-    // --- ОБЧИСЛЕННЯ ДАТ ДЛЯ ОБМЕЖЕНЬ ---
-
     const now = new Date();
-    // Вираховуємо зміщення часового поясу (у хвилинах), щоб отримати локальний час в ISO
     const tzOffset = now.getTimezoneOffset() * 60000;
 
-    // Перевіряємо, чи є дати прокату. Якщо немає — ставимо дефолтні значення.
     const movieStart = movie.startDate ? new Date(movie.startDate) : new Date(0);
     const movieEnd = movie.endDate ? new Date(movie.endDate) : new Date(now.getFullYear() + 10, 0, 1);
     movieEnd.setHours(23, 59, 59, 999);
@@ -61,7 +57,6 @@ export const SessionCreateForm = ({ movie, halls, languages, initialData, onSubm
 
     useEffect(() => {
         if (initialData) {
-            // РЕДАГУВАННЯ
             setValue('hallId', String(initialData.hallId));
 
             const lang = languages.find(l => l.name === initialData.languageName);
@@ -105,7 +100,7 @@ export const SessionCreateForm = ({ movie, halls, languages, initialData, onSubm
                 setEndDate(movie.endDate.split('T')[0]);
             }
         }
-    }, [initialData, setValue, reset, languages, movie]); // Додали movie в залежності
+    }, [initialData, setValue, reset, languages, movie]);
 
     const createDateAsUTC = (dateString: string): Date => {
         const date = new Date(dateString);

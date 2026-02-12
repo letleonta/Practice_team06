@@ -104,8 +104,6 @@ const AdminLanguages = () => {
         if (!selectedLanguage) return;
         setIsSaving(true);
         try {
-            // Припускаємо, що у сервісі є метод update(id, data)
-            // Якщо немає - додайте його в LanguageService, або видаліть цей блок
             await LanguageService.update(selectedLanguage.id, data);
 
             setSelectedLanguage({ ...selectedLanguage, ...data });

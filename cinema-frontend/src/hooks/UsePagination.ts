@@ -28,8 +28,6 @@ export function UsePagination<T>(
     const [searchParams, setSearchParams] = useSearchParams();
     const [localPage, setLocalPage] = useState(1);
 
-    // Використовуємо useRef для fetchFunction, щоб уникнути циклів,
-    // якщо користувач передає анонімну функцію без useCallback
     const fetchFunctionRef = useRef(fetchFunction);
     useEffect(() => {
         fetchFunctionRef.current = fetchFunction;
@@ -67,7 +65,6 @@ export function UsePagination<T>(
         }
     }, [mode, key, pageSizeKey, pageSize, setSearchParams, scrollToTop]);
 
-    // Слідкуємо за зміною залежностей (фільтрів)
     useEffect(() => {
         if (isFirstRender.current) {
             isFirstRender.current = false;
@@ -76,7 +73,6 @@ export function UsePagination<T>(
 
         const depsChanged = dependencies.some((dep, i) => dep !== prevDepsRef.current[i]);
         if (resetOnFilterChange && depsChanged) {
-            // Важливо: скидаємо на 1 сторінку тільки якщо змінилися фільтри
             setPage(1);
         }
         prevDepsRef.current = dependencies;
@@ -94,7 +90,7 @@ export function UsePagination<T>(
         } finally {
             setLoading(false);
         }
-    }, [currentPage, pageSize, ...dependencies]); // ТУТ ми прибрали fetchFunction з залежностей
+    }, [currentPage, pageSize, ...dependencies]);
 
     useEffect(() => {
         fetchData();

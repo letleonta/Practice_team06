@@ -16,7 +16,6 @@ export const QuickCreateModal = ({ isOpen, type, onClose, onSuccess }: Props) =>
 
     const isPerson = ['actors', 'directors'].includes(type);
 
-    // Відображення заголовка (опціонально можна зробити мапу перекладів)
     const getTitle = () => {
         if (type === 'actors') return 'Додати актора';
         if (type === 'directors') return 'Додати режисера';
@@ -36,7 +35,6 @@ export const QuickCreateModal = ({ isOpen, type, onClose, onSuccess }: Props) =>
             setFormData({ firstName: '', lastName: '', name: '' });
         } catch (error) {
             console.error(error);
-            // Тут можна додати notify.error("Помилка при створенні")
         }
     };
 

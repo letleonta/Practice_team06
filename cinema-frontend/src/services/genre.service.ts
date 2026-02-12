@@ -24,12 +24,6 @@ export const GenreService = {
         return response.data;
     },
 
-    // Масове створення
-    async createBulk(data: CreateGenreDto[]) {
-        const response = await axiosInstance.post<GenreDto[]>("/genres/bulk", data);
-        return response.data;
-    },
-
     // Оновити назву жанру
     async update(id: number, data: CreateGenreDto) {
         await axiosInstance.put(`/genres/${id}`, data);

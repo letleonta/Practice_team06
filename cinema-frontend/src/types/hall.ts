@@ -15,17 +15,6 @@ export interface CreateHallDto {
     totalSeats?: number;
 }
 
-export interface RowConfigDto {
-    rowNumber: number;
-    seatCount: number;
-    type: SeatType;
-}
-
-export interface GenerateFlexibleSeatsDto {
-    hallId: number;
-    rows: RowConfigDto[];
-}
-
 export interface SeatDto {
     id: number;
     hallId: number;
@@ -33,4 +22,10 @@ export interface SeatDto {
     seatNumber: number;
     priceModifier: number;
     seatType: SeatType;
+}
+
+export interface AddRowDto {
+    rowNumber: number;
+    seatCount: number;
+    type: number;
 }

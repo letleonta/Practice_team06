@@ -7,6 +7,9 @@ import { AsyncMultiSelectGrid, AsyncSingleSelectGrid } from './AsyncSelectGrids'
 import { ActorService } from '../../services/actor.service';
 import { DirectorService } from '../../services/director.service';
 import { GenreService } from '../../services/genre.service';
+import type {DirectorDto} from "../../types/director.ts";
+import type {ActorDto} from "../../types/actor.ts";
+import type {GenreDto} from "../../types/genre.ts";
 
 interface Props {
     formMethods: UseFormReturn<CreateMovieDto>;
@@ -30,12 +33,11 @@ export const MovieForm = ({
             const currentActors = getValues('movieActors') || [];
             const currentGenres = getValues('genreIds') || [];
 
-            // Якщо є дані, примусово оновлюємо поля, щоб watch() спрацював
             if (currentActors.length > 0) {
                 setValue('movieActors', currentActors, { shouldDirty: false, shouldTouch: false });
             }
             if (currentGenres.length > 0) {
-                setValue('genreIds', currentGenres.map(Number) as any, { shouldDirty: false, shouldTouch: false });
+                setValue('genreIds', currentGenres.map(Number), { shouldDirty: false, shouldTouch: false });
             }
         }
     }, [isEditing, getValues, setValue]);
@@ -50,7 +52,7 @@ export const MovieForm = ({
         const newValues = current.includes(numericId)
             ? current.filter(v => v !== numericId)
             : [...current, numericId];
-        setValue('genreIds', newValues as any, { shouldDirty: true, shouldValidate: true });
+        setValue('genreIds', newValues, { shouldDirty: true, shouldValidate: true });
     };
 
     const toggleActor = (id: number) => {
@@ -165,7 +167,7 @@ export const MovieForm = ({
                                 selectedId={selectedDirectorId ? Number(selectedDirectorId) : undefined}
                                 onSelect={(id) => setValue('directorId', id, { shouldDirty: true })}
                                 onAdd={onAddDirector}
-                                renderLabel={(d: any) => `${d.firstName} ${d.lastName}`}
+                                renderLabel={(d: DirectorDto) => `${d.firstName} ${d.lastName}`}
                                 itemsPerPage={6}
                                 refreshTrigger={refreshTrigger}
                             />
@@ -179,7 +181,7 @@ export const MovieForm = ({
                                 selectedIds={actorIdsOnly}
                                 onToggle={toggleActor}
                                 onAdd={onAddActor}
-                                renderLabel={(a: any) => `${a.firstName} ${a.lastName}`}
+                                renderLabel={(a: ActorDto) => `${a.firstName} ${a.lastName}`}
                                 itemsPerPage={6}
                                 refreshTrigger={refreshTrigger}
                                 withRoleInput={true}
@@ -198,7 +200,7 @@ export const MovieForm = ({
                                 selectedIds={genreIdsOnly}
                                 onToggle={toggleGenre}
                                 onAdd={onAddGenre}
-                                renderLabel={(g: any) => g.name || ''}
+                                renderLabel={(g: GenreDto) => g.name || ''}
                                 itemsPerPage={8}
                                 refreshTrigger={refreshTrigger}
                             />

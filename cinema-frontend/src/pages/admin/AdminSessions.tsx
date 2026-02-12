@@ -22,7 +22,6 @@ const AdminSessions = () => {
     const [loadingSessions, setLoadingSessions] = useState(false);
     const [deleteModal, setDeleteModal] = useState({ isOpen: false });
 
-    // --- СЕРВЕРНА ПАГІНАЦІЯ ТА ДАНІ ---
     const [pagedResult, setPagedResult] = useState<PagedResult<SessionDto>>({
         items: [],
         totalCount: 0,
@@ -36,33 +35,34 @@ const AdminSessions = () => {
     const [selectedIds, setSelectedIds] = useState<number[]>([]);
     const [sessionToEdit, setSessionToEdit] = useState<SessionDto | null>(null);
 
-    // Вкладки: 'active' | 'past'
     const [activeTab, setActiveTab] = useState<'active' | 'past'>('active');
 
-    // Фільтри
     const [currentPage, setCurrentPage] = useState(1);
     const PAGE_SIZE = 6;
     const [filterDates, setFilterDates] = useState<{ from: string, to: string, weekdays: number[] }>({
         from: '', to: '', weekdays: []
     });
 
-    // Завантаження довідників
     useEffect(() => {
         const loadDicts = async () => {
             try {
-                const [hRes, lRes] = await Promise.all([HallService.getAll(), LanguageService.getAll()]);
-                const hallsData = Array.isArray(hRes) ? hRes : (hRes as any).items;
-                const langsData = Array.isArray(lRes) ? lRes : (lRes as any).items;
+                const [hRes, lRes] = await Promise.all([
+                    HallService.getAll(1, 100, ""),
+                    LanguageService.getAll({ Page: 1, PageSize: 100 })
+                ]);
+                const hallsData = hRes.items;
+                const langsData = lRes.items;
+
                 setHalls(hallsData);
                 setLanguages(langsData);
             } catch (err) {
+                console.error(err);
                 notify.error("Не вдалося завантажити довідники");
             }
         };
         void loadDicts();
     }, []);
 
-    // --- ГОЛОВНА ФУНКЦІЯ ЗАВАНТАЖЕННЯ (СЕРВЕРНА) ---
     const fetchSessions = useCallback(async () => {
         if (!selectedMovie) return;
         setLoadingSessions(true);
@@ -86,12 +86,10 @@ const AdminSessions = () => {
         }
     }, [selectedMovie, currentPage, activeTab, filterDates]);
 
-    // Викликаємо завантаження при зміні будь-якого фільтра
     useEffect(() => {
         void fetchSessions();
     }, [fetchSessions]);
 
-    // --- HANDLERS ---
     const handleToggleSelect = (id: number) => {
         setSelectedIds(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]);
     };
@@ -120,6 +118,7 @@ const AdminSessions = () => {
             notify.success(`Створено сеансів: ${dataList.length}`);
             await fetchSessions();
         } catch (err) {
+            console.error(err);
             notify.error('Помилка при створенні (можливо, накладання часу)');
         }
     };
@@ -137,6 +136,7 @@ const AdminSessions = () => {
             setSessionToEdit(null);
             await fetchSessions();
         } catch (err) {
+            console.error(err);
             notify.error("Не вдалося оновити сеанс");
         }
     };
@@ -149,6 +149,7 @@ const AdminSessions = () => {
             setSelectedIds([]);
             await fetchSessions();
         } catch (err) {
+            console.error(err);
             notify.error("Помилка при видаленні.");
         } finally {
             setDeleteModal({ isOpen: false });
@@ -161,7 +162,7 @@ const AdminSessions = () => {
                 selectedMovieId={selectedMovie?.id}
                 onSelectMovie={(movie) => {
                     setSelectedMovie(movie);
-                    setCurrentPage(1); // Скидаємо сторінку при зміні фільму
+                    setCurrentPage(1);
                 }}
             />
 
@@ -214,7 +215,6 @@ const AdminSessions = () => {
                                 window.scrollTo({ top: 0, behavior: 'smooth' });
                             }}
 
-                            // Використовуємо дані з PagedResult
                             totalCount={pagedResult.totalCount}
                             currentPage={pagedResult.page}
                             totalPages={pagedResult.totalPages}

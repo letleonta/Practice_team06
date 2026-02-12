@@ -121,7 +121,7 @@ function useLocalAsyncPagination<T>(
         };
         load();
         return () => { mounted = false; };
-    }, [currentPage, debouncedSearch, pageSize, refreshTrigger]);
+    }, [currentPage, debouncedSearch, fetchData, pageSize, refreshTrigger]);
 
     return { items, totalCount, currentPage, totalPages: Math.ceil(totalCount / pageSize), loading, goToPage: setCurrentPage, searchTerm, setSearchTerm };
 }
@@ -182,7 +182,6 @@ export function AsyncMultiSelectGrid<T extends Item>(props: MultiProps<T>) {
                                 </span>
                             </div>
 
-                            {/* --- ІНПУТ ДЛЯ РОЛІ (З'являється тільки якщо вибрано і увімкнено) --- */}
                             {isSelected && props.withRoleInput && (
                                 <div className="mt-3 animate-in slide-in-from-top-2 fade-in duration-200">
                                     <input

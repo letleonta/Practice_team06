@@ -19,7 +19,6 @@ const MoviePage = () => {
     const [loadingMovie, setLoadingMovie] = useState(true);
     const scrollRef = useRef<HTMLDivElement>(null);
 
-    // 1. Панель дат
     const dateTabs = useMemo(() => {
         const dates = [];
         for (let i = 0; i < 7; i++) {
@@ -32,7 +31,6 @@ const MoviePage = () => {
 
     const [selectedDate, setSelectedDate] = useState<Date>(dateTabs[0]);
 
-    // 2. Логіка завантаження СЕАНСІВ
     const fetchSessions = async (Page: number, PageSize: number) => {
         const start = new Date(selectedDate);
         start.setHours(0, 0, 0, 0);
@@ -57,7 +55,6 @@ const MoviePage = () => {
         goToPage
     } = UsePagination(fetchSessions, [id, selectedDate], { pageSize: 12 });
 
-    // 3. Завантаження даних про фільм
     useEffect(() => {
         if (!id) return;
         MovieService.getById(Number(id))
@@ -95,7 +92,6 @@ const MoviePage = () => {
 
     return (
         <div className="min-h-screen bg-[#0f1117] text-white font-sans overflow-x-hidden">
-            {/* Трейлер на фоні */}
             <div className="relative h-[85vh] w-full bg-black overflow-hidden group">
                 {trailerId ? (
                     <div className="absolute inset-0 w-full h-full scale-[1.35]">
@@ -164,7 +160,7 @@ const MoviePage = () => {
                     </div>
                 </div>
 
-                {/* СЛАЙДЕР КОМАНДИ (НИЖЧЕ) */}
+                {/* СЛАЙДЕР КОМАНДИ */}
                 <section className="mb-20">
                     <div className="flex justify-between items-end mb-8">
                         <h3 className="text-2xl font-black border-l-4 border-red-600 pl-4 uppercase tracking-tighter">Знімальна група та склад</h3>

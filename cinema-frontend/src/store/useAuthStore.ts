@@ -1,14 +1,13 @@
 ﻿import { create } from 'zustand';
 import { jwtDecode } from 'jwt-decode';
 
-// 1. Оновлюємо інтерфейс користувача
 interface UserInfo {
     email: string;
     name: string;
     role: string | string[];
     id: string;
-    firstName?: string;  // Додано
-    avatarUri?: string;  // Додано
+    firstName?: string;
+    avatarUri?: string;
 }
 
 interface AuthState {
@@ -16,7 +15,6 @@ interface AuthState {
     token: string | null;
     isAuth: boolean;
     setAuth: (token: string) => void;
-    // 2. Метод для оновлення даних "на льоту" (для синхронізації з Navbar)
     updateUser: (data: Partial<UserInfo>) => void;
     logout: () => void;
 }
@@ -87,7 +85,6 @@ export const useAuthStore = create<AuthState>((set) => ({
         }
     },
 
-    // 3. Додаємо реалізацію оновлення користувача
     updateUser: (data) => set((state) => ({
         user: state.user ? { ...state.user, ...data } : null
     })),

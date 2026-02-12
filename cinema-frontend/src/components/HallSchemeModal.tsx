@@ -104,8 +104,11 @@ export const HallSchemeModal = ({ hall, onClose, onSeatChange }: Props) => {
         const nextRowNumber = currentRows.length > 0 ? Math.max(...currentRows) + 1 : 1;
 
         try {
-            const config = { rowNumber: nextRowNumber, seatCount: 10, type: 0 };
-            await HallService.addRow(hall.id, config as unknown as any);
+            await HallService.addRow(hall.id, {
+                rowNumber: nextRowNumber,
+                seatCount: 10,
+                type: 0
+            });
             await loadSeats();
             onSeatChange();
         } catch (err) {
@@ -172,7 +175,6 @@ export const HallSchemeModal = ({ hall, onClose, onSeatChange }: Props) => {
                             {groupedRows.map(([r, rowSeats]) => (
                                 <div key={r} className="flex items-center gap-5 group/row">
                                     <div className="flex items-center gap-3 pr-5 border-r border-white/5">
-                                        {/* КНОПКА ВИДАЛЕННЯ РЯДУ - викликає askDeleteRow */}
                                         <button
                                             onClick={() => askDeleteRow(r)}
                                             className="p-1.5 text-zinc-700 hover:text-rose-500 transition-all opacity-0 group-hover/row:opacity-100"
