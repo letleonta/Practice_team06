@@ -50,7 +50,7 @@ const Navbar = () => {
     return (
         <nav className={`fixed top-0 left-0 right-0 z-50 px-8 flex justify-between items-center h-20 transition-all duration-500 ${navBackground} border-b font-sans`}>
 
-            <div className="flex-shrink-0">
+            <div className="shrink-0">
                 <Link to="/" onClick={handleLogoClick} className="flex items-center group select-none">
                     <div className="relative w-12 h-12 md:w-14 md:h-14 transition-transform duration-300 group-hover:scale-110">
                         <img src={logoImg} alt="Cinema Logo" className="w-full h-full object-contain drop-shadow-[0_0_8px_rgba(220,38,38,0.3)]" />
