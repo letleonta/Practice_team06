@@ -55,7 +55,7 @@ const HomePage = () => {
             />
 
             <div className="relative z-20 space-y-4">
-                <div id="now-playing" className="relative z-30 pb-20">
+                <div id="now-playing" className="relative z-30 pb-20 scroll-mt-20">
                     <MoviesLayout title="Зараз у кіно" />
                 </div>
             </div>
