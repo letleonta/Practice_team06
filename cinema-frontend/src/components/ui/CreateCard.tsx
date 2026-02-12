@@ -1,6 +1,6 @@
 import { useForm } from 'react-hook-form';
 import { Loader2, type LucideIcon } from 'lucide-react';
-import { FormInput } from './Form/FormSection';
+import { FormInput } from '../Form/FormSection.tsx';
 
 interface FieldConfig {
     name: string;

@@ -4,9 +4,9 @@ import {ArrowLeft, Calendar, Clock, Film, Ticket as TicketIcon} from 'lucide-rea
 import type {BookingDetailsDto} from "../types/booking.ts";
 import {getStatusColor, getStatusText} from "../utils/formatBookingStatus.ts";
 import {BookingService} from "../services/booking.service.ts";
-import {AgeRestrictionBadge} from "../components/AgeRestrictionBadge.tsx";
-import {Pagination} from "../components/Pagination.tsx";
-import {CancelBookingButton} from "../components/CancelBookingButton.tsx";
+import {AgeRestrictionBadge} from "../components/ui/AgeRestrictionBadge.tsx";
+import {Pagination} from "../components/ui/Pagination.tsx";
+import {CancelBookingButton} from "../components/BookingComponents/CancelBookingButton.tsx";
 import {formatDateWithoutYear} from "../utils/formatTime.ts";
 
 const BookingDetailsPage = () => {

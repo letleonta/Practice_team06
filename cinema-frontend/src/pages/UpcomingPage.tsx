@@ -1,7 +1,11 @@
-import MoviesLayout from "../layouts/MoviesLayout.tsx";
+import MoviesLayout from '../layouts/MoviesLayout';
 
 const UpcomingPage = () => {
-    return <MoviesLayout title="Скоро в прокаті" />;
+    return (
+        <div className="min-h-screen bg-[#0f1117]">
+            <MoviesLayout title="Скоро" />
+        </div>
+    );
 };
 
 export default UpcomingPage;

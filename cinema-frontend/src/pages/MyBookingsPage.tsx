@@ -2,12 +2,12 @@ import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Ticket, Calendar, Clock, Film, ChevronRight } from 'lucide-react';
 import { type BookingFilterDto, BookingStatus } from "../types/booking";
-import BookingFilterBar, { type FilterStatus } from "../components/BookingFilterBar";
+import BookingFilterBar, { type FilterStatus } from "../components/BookingComponents/BookingFilterBar.tsx";
 import { getStatusColor, getStatusText } from "../utils/formatBookingStatus";
 import { formatDateWithYear, formatTime } from "../utils/formatTime";
 import { BookingService } from "../services/booking.service";
-import { AgeRestrictionBadge } from "../components/AgeRestrictionBadge";
-import { Pagination } from "../components/Pagination";
+import { AgeRestrictionBadge } from "../components/ui/AgeRestrictionBadge.tsx";
+import { Pagination } from "../components/ui/Pagination.tsx";
 import { UsePagination } from "../hooks/UsePagination";
 
 const MyBookingsPage = () => {

@@ -9,14 +9,14 @@ import { LanguageService } from '../../services/language.service';
 import type { LanguageDto, CreateLanguageDto, LanguageFilterDto } from '../../types/language';
 
 import { UsePagination } from "../../hooks/UsePagination";
-import { Pagination } from "../../components/Pagination";
-import { PaginationInfo } from "../../components/PaginationInfo";
-import { DataTable, type Column } from "../../components/DataTable";
+import { Pagination } from "../../components/ui/Pagination.tsx";
+import { PaginationInfo } from "../../components/ui/PaginationInfo.tsx";
+import { DataTable, type Column } from "../../components/ui/DataTable.tsx";
 import { notify } from "../../utils/toast";
 import { ConfirmModal } from "../../components/ui/ConfirmModal";
-import { CreateCard } from "../../components/CreateCard";
+import { CreateCard } from "../../components/ui/CreateCard.tsx";
 import { SearchInput } from "../../components/ui/SearchInput";
-import {AdminModal} from "../../components/AdminModal.tsx";
+import {AdminModal} from "../../components/ui/AdminModal.tsx";
 
 const languageFields = [
     {

@@ -6,8 +6,8 @@ import {MovieService} from "../services/movie.service.ts";
 import {GenreService} from "../services/genre.service.ts";
 import type {GenreDto} from "../types/genre.ts";
 import {UsePagination} from "../hooks/UsePagination.ts";
-import {Pagination} from "../components/Pagination.tsx";
-import {PaginationInfo} from "../components/PaginationInfo.tsx";
+import {Pagination} from "../components/ui/Pagination.tsx";
+import {PaginationInfo} from "../components/ui/PaginationInfo.tsx";
 
 interface Props {
     title: string;
@@ -30,7 +30,7 @@ const MoviesLayout = ({ title }: Props) => {
         if (title === "Зараз у кіно") {
             return await MovieService.getNowPlaying(request);
         }
-        if (title === "Скоро в прокаті") {
+        if (title === "Скоро") {
             return await MovieService.getUpcoming(request);
         }
 
@@ -107,7 +107,6 @@ const MoviesLayout = ({ title }: Props) => {
                 <h1 className="text-5xl font-black text-white mb-8 tracking-tighter uppercase">{title}</h1>
 
                 <div className="flex flex-col gap-4">
-                    {/* Пошук */}
                     <div className="relative w-full">
                         <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500" size={20} />
                         <input
@@ -119,7 +118,6 @@ const MoviesLayout = ({ title }: Props) => {
                         />
                     </div>
 
-                    {/* Жанри */}
                     <div className="flex flex-wrap md:flex-wrap gap-2 pb-2">
                         {uniqueGenres.map(genre => (
                             <button

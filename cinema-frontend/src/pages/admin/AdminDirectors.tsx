@@ -8,12 +8,12 @@ import {
 import { DirectorService } from '../../services/director.service.ts';
 import type { CreateDirectorDto, DirectorDto, DirectorFilterDto, DirectorMovieDto } from '../../types/director';
 import { UsePagination } from "../../hooks/UsePagination.ts";
-import { Pagination } from "../../components/Pagination";
-import { PaginationInfo } from "../../components/PaginationInfo";
-import { DataTable, type Column } from "../../components/DataTable.tsx";
+import { Pagination } from "../../components/ui/Pagination.tsx";
+import { PaginationInfo } from "../../components/ui/PaginationInfo.tsx";
+import { DataTable, type Column } from "../../components/ui/DataTable.tsx";
 import { notify } from "../../utils/toast";
 import { ConfirmModal } from "../../components/ui/ConfirmModal.tsx";
-import { CreateCard } from "../../components/CreateCard.tsx";
+import { CreateCard } from "../../components/ui/CreateCard.tsx";
 import { API_CONFIG } from "../../../config.ts";
 import { SearchInput } from "../../components/ui/SearchInput.tsx";
 

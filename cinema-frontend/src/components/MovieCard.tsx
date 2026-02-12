@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom';
 import { Clock, Ticket } from 'lucide-react';
-import { AgeRestrictionBadge } from './AgeRestrictionBadge';
+import { AgeRestrictionBadge } from './ui/AgeRestrictionBadge.tsx';
 import type { MovieDto } from '../types/movie';
 import {formatDateShortWithoutYear} from "../utils/formatTime.ts";
 import {useState} from "react";

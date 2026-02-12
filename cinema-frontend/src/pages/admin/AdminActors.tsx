@@ -8,13 +8,13 @@ import {
 import { ActorService } from '../../services/actor.service.ts';
 import type { CreateActorDto, ActorDto, ActorFilterDto, ActorMovieDto } from '../../types/actor';
 import { UsePagination } from "../../hooks/UsePagination.ts";
-import { Pagination } from "../../components/Pagination";
-import { PaginationInfo } from "../../components/PaginationInfo";
+import { Pagination } from "../../components/ui/Pagination.tsx";
+import { PaginationInfo } from "../../components/ui/PaginationInfo.tsx";
 import { SearchInput } from "../../components/ui/SearchInput";
-import { DataTable, type Column } from "../../components/DataTable.tsx";
+import { DataTable, type Column } from "../../components/ui/DataTable.tsx";
 import { notify } from "../../utils/toast";
 import { ConfirmModal } from "../../components/ui/ConfirmModal.tsx";
-import { CreateCard } from "../../components/CreateCard.tsx";
+import { CreateCard } from "../../components/ui/CreateCard.tsx";
 import { API_CONFIG } from "../../../config.ts";
 
 const actorFields = [

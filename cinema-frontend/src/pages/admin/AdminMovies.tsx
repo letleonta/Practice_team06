@@ -6,9 +6,9 @@ import { Film, Search, Edit, Trash2, Clock, Star, Plus } from 'lucide-react';
 import { ConfirmModal } from "../../components/ui/ConfirmModal";
 import { notify } from "../../utils/toast";
 import { UsePagination } from "../../hooks/UsePagination";
-import { Pagination } from "../../components/Pagination";
-import { PaginationInfo } from "../../components/PaginationInfo";
-import { DataTable, type Column } from "../../components/DataTable";
+import { Pagination } from "../../components/ui/Pagination.tsx";
+import { PaginationInfo } from "../../components/ui/PaginationInfo.tsx";
+import { DataTable, type Column } from "../../components/ui/DataTable.tsx";
 import { MovieForm } from '../../components/AMoviesComponents/MovieForm';
 import { QuickCreateModal } from '../../components/AMoviesComponents/QuickCreateModal.tsx';
 
@@ -196,7 +196,10 @@ const AdminMovies = () => {
         },
         {
             key: 'rating', header: 'Рейтинг', width: '100px', align: 'center',
-            render: (movie) => <div className="flex items-center justify-center gap-1 text-yellow-500 font-bold text-xs bg-yellow-500/10 px-2 py-1 rounded-lg border border-yellow-500/20"><Star size={10} fill="currentColor" /> {movie.rating?.toFixed(1)}</div>
+            render: (movie) => <div className="flex items-center justify-center gap-1 text-yellow-500 font-bold text-[11px] bg-yellow-500/10 px-1.5 py-1 rounded-md border border-yellow-500/20 mx-auto w-fit min-w-[45px]">
+                <Star size={10} fill="currentColor" />
+                {movie.rating?.toFixed(1)}
+            </div>
         },
         {
             key: 'duration', header: 'Час', width: '100px',

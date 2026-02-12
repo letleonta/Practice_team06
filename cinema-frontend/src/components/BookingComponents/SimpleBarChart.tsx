@@ -1,8 +1,26 @@
-import { Bar, BarChart, ResponsiveContainer, Tooltip, XAxis, YAxis, LabelList } from "recharts";
+import type {ReactElement} from "react";
+import {Bar, BarChart, ResponsiveContainer, Tooltip, XAxis, YAxis, LabelList, type LabelProps} from "recharts";
 
-export const SimpleBarChart = ({ data, dataKey, dataLabel, nameKey, color, chartName }: any) => {
+interface SimpleBarChartProps<T> {
+    data: T[];
+    dataKey: keyof T;
+    dataLabel: string;
+    nameKey: keyof T;
+    color: string;
+    chartName: string;
+}
+
+export const SimpleBarChart = <T extends Record<string, unknown>>({
+                                                                      data,
+                                                                      dataKey,
+                                                                      dataLabel,
+                                                                      nameKey,
+                                                                      color,
+                                                                      chartName,
+                                                                  }: SimpleBarChartProps<T>): ReactElement => {
+
     const maxValue = data && data.length > 0
-        ? Math.max(...data.map((d: any) => d[dataKey]))
+        ? Math.max(...data.map((d) => Number(d[dataKey]) || 0))
         : 0;
 
     return (
@@ -23,49 +41,58 @@ export const SimpleBarChart = ({ data, dataKey, dataLabel, nameKey, color, chart
                             hide
                             domain={[0, maxValue]}
                         />
-                        <YAxis dataKey={nameKey} type="category" hide />
+                        <YAxis
+                            dataKey={nameKey as string}
+                            type="category"
+                            hide
+                        />
 
                         <Tooltip
-                            cursor={{ fill: 'transparent' }}
+                            cursor={{ fill: "transparent" }}
                             contentStyle={{
-                                backgroundColor: '#111827',
-                                border: '1px solid #374151',
-                                borderRadius: '12px'
+                                backgroundColor: "#111827",
+                                border: "1px solid #374151",
+                                borderRadius: "12px",
                             }}
+                            itemStyle={{ color: color, fontSize: "12px", fontWeight: "bold" }}
+                            formatter={(value: unknown) => [Number(value).toLocaleString(), dataLabel]}
                         />
 
                         <Bar
                             name={dataLabel}
-                            dataKey={dataKey}
+                            dataKey={dataKey as string}
                             fill={color}
                             radius={[0, 4, 4, 0]}
                         >
                             <LabelList
-                                dataKey={nameKey}
-                                content={(props: any) => {
+                                dataKey={nameKey as string}
+                                content={(props: LabelProps) => {
                                     const { y, value } = props;
+                                    const yVal = typeof y === "number" ? y : 0;
+
                                     return (
                                         <text
                                             x={0}
-                                            y={y - 10}
+                                            y={yVal - 10}
                                             fill="#9ca3af"
                                             fontSize={11}
                                             fontWeight={700}
                                             textAnchor="start"
-                                            style={{ textTransform: 'uppercase', letterSpacing: '0.05em' }}
+                                            style={{ textTransform: "uppercase", letterSpacing: "0.05em" }}
                                         >
-                                            {value}
+                                            {String(value ?? "")}
                                         </text>
                                     );
                                 }}
                             />
                             <LabelList
-                                dataKey={dataKey}
+                                dataKey={dataKey as string}
                                 position="right"
                                 offset={12}
                                 fill="#ffffff"
                                 fontSize={12}
                                 fontWeight={800}
+                                formatter={(val: unknown) => Number(val).toLocaleString()}
                             />
                         </Bar>
                     </BarChart>

@@ -8,6 +8,7 @@ export const BookingStatus = {
     Cancelled: "Cancelled",
 } as const;
 
+export type GroupByPeriod = 'Hour' | 'Day' | 'Month';
 export type SortBy = 'date' | 'status' | 'userEmail' | null;
 
 export type BookingStatus = typeof BookingStatus[keyof typeof BookingStatus];
@@ -55,6 +56,7 @@ export interface BookingFilterDto extends BaseFilterDto {
     SessionFromDate?: string | null;
     SessionToDate?: string | null;
     SearchQuery?: string | null;
+    GroupBy?: GroupByPeriod;
     SortBy?: SortBy;
     IsDescending?: boolean;
 }
