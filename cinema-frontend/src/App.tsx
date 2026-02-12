@@ -15,6 +15,7 @@ import { Toaster } from 'react-hot-toast';
 import {useEffect} from "react";
 import {UserService} from "./services/user.service.ts";
 import TicketDetailsPage from "./pages/TicketDetailsPage.tsx";
+import AboutUsPage from "./pages/AboutUsPage.tsx";
 
 function App() {
     const { user, token, updateUser } = useAuthStore();
@@ -58,6 +59,10 @@ function App() {
                         path="/upcoming"
                         element={<UpcomingPage />}
                     />
+                    <Route
+                        path="/about"
+                        element={<AboutUsPage />}
+                    />
                     <Route path="/movie/:id"
                            element={<MoviePage />}
                     />
@@ -65,6 +70,7 @@ function App() {
                         path="/bookings/my"
                         element={<MyBookingsPage />}
                     />
+
                     <Route
                         path="/bookings/:bookingId"
                         element={<BookingDetailsPage />}
