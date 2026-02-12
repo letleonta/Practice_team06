@@ -77,7 +77,7 @@ const BookingDetailsPage = () => {
     }
 
     return (
-        <div className="min-h-screen bg-[#0f1117] text-white font-sans pt-20">
+        <div className="min-h-screen bg-[#0f1117] text-white font-sans">
             {/* Main Content */}
             <div className="max-w-7xl mx-auto px-4 py-8">
                 {/* Back Button */}
