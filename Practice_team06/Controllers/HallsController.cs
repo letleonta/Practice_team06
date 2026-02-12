@@ -37,19 +37,7 @@ public class HallsController : ControllerBase
         return hall == null ? NotFound() : Ok(hall);
     }
 
-    [HttpGet("{id}/seats")]
-    public async Task<IActionResult> GetHallSeats(int id)
-    {
-        var hall = await _hallService.GetByIdAsync(id);
-        if (hall == null)
-        {
-            return NotFound(new { message = $"Зал з ID {id} не знайдено" });
-        }
-
-        var seats = await _seatService.GetSeatsByHallAsync(id);
-        return Ok(seats);
-    }
-
+    
     [HttpPost]
     [Authorize(Roles = "Admin, Manager")]
     public async Task<IActionResult> Create(CreateHallDto dto)
@@ -85,35 +73,7 @@ public class HallsController : ControllerBase
             return BadRequest(new { message = "Неможливо видалити зал: на нього вже продано квитки або існують активні сеанси." });
         }
     }
-
-    [HttpPost("generate-standard-seats")]
-    [Authorize(Roles = "Admin, Manager")]
-    public async Task<IActionResult> GenerateStandardSeats(GenerateStandardSeatsDto dto)
-    {
-        var count = await _hallService.GenerateStandardSeatsAsync(dto);
-        if (count == 0) return BadRequest(new { message = "Не вдалося знайти зал." });
-        return Ok(new { Message = $"Створено зал: {count} місць ({dto.RowCount} рядів по {dto.SeatsPerRow} місць)" });
-    }
-
-    [HttpPost("generate-flexible-seats")]
-    [Authorize(Roles = "Admin, Manager")]
-    public async Task<IActionResult> GenerateFlexibleSeats(GenerateFlexibleSeatsDto dto)
-    {
-        try 
-        {
-            var count = await _hallService.GenerateFlexibleSeatsAsync(dto);
-            return Ok(new { message = $"Згенеровано {count} місць" });
-        }
-        catch (InvalidOperationException ex)    
-        {
-            return BadRequest(new { message = ex.Message });
-        }
-        catch (Exception)
-        {
-            return StatusCode(500, new { message = "Внутрішня помилка сервера" });
-        }
-    }
-    
+        
     [HttpPost("{id}/add-row")]
     [Authorize(Roles = "Admin, Manager")]
     public async Task<IActionResult> AddRow(int id, [FromBody] RowConfigDto dto)
