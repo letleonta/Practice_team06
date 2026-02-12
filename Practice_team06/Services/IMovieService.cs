@@ -11,4 +11,5 @@ public interface IMovieService
     Task<MovieDto> CreateMovieAsync(CreateMovieDto dto);
     Task<MovieDto> UpdateMovieAsync(int id, CreateMovieDto dto);
     Task DeleteMovieAsync(int id);
+    Task<List<MovieDto>> GetRecommendationsAsync(int userId, int count = 6);
 }
