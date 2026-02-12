@@ -11,4 +11,5 @@ public interface ISessionService
     Task<SessionDto> UpdateSessionAsync(int id, CreateSessionDto dto);
     Task DeleteSessionAsync(int id);
     Task<PagedResult<SessionDto>> GetAllSessionsAsync(SessionFilterDto filter);
+    Task CreateBatchAsync(List<CreateSessionDto> dto);
 }

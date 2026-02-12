@@ -96,4 +96,27 @@ public class SessionsController : ControllerBase
         await _sessionService.DeleteSessionAsync(id);
         return NoContent();
     }
+    [HttpPost("batch")]
+    [Authorize(Roles = "Admin, Manager")]
+    public async Task<IActionResult> CreateBatch([FromBody] List<CreateSessionDto> dtos)
+    {
+        try
+        {
+            if (dtos.Any(d => d.StartTime < DateTime.UtcNow.AddMinutes(-1)))
+            {
+                return BadRequest(new { message = "Не можна створювати сеанси у минулому часі." });
+            }
+
+            await _sessionService.CreateBatchAsync(dtos);
+            return Ok(new { message = $"Успішно створено {dtos.Count} сеансів." });
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, new { message = "Помилка сервера: " + ex.Message });
+        }
+    }
 }
