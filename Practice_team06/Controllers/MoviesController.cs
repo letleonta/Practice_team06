@@ -59,7 +59,6 @@ public class MoviesController : ControllerBase
         try 
         {
             var created = await _movieService.CreateMovieAsync(dto);
-            // Повертаємо 201 Created і посилання на отримання створеного ресурсу
             return CreatedAtAction(nameof(GetById), new { id = created.Id }, created);
         }
         catch (ArgumentException ex)
@@ -100,12 +99,25 @@ public class MoviesController : ControllerBase
         }
         catch (InvalidOperationException ex)
         {
-            // Якщо є активні сеанси
             return BadRequest(new { message = ex.Message });
         }
         catch (Exception)
         {
             return StatusCode(500, new { message = "Сталася помилка при видаленні фільму." });
         }
+    }
+    [HttpGet("recommendations")]
+    [Authorize]
+    public async Task<ActionResult<IEnumerable<MovieDto>>> GetRecommendations([FromQuery] int count = 6)
+    {
+        var userIdClaim = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+    
+        if (string.IsNullOrEmpty(userIdClaim) || !int.TryParse(userIdClaim, out int userId))
+        {
+            return Unauthorized(new { message = "Користувач не ідентифікований" });
+        }
+
+        var result = await _movieService.GetRecommendationsAsync(userId, count);
+        return Ok(result);
     }
 }

@@ -3,6 +3,7 @@ import { MovieService } from '../services/movie.service';
 import type { MovieDto } from '../types/movie';
 import { HeroSlider } from '../components/HeroSlider';
 import MoviesLayout from '../layouts/MoviesLayout';
+import {RecommendedSection} from "../components/RecommendedSection.tsx";
 
 const HomePage = () => {
     const [heroMovies, setHeroMovies] = useState<MovieDto[]>([]);
@@ -29,7 +30,7 @@ const HomePage = () => {
                 setLoading(false);
             }
         };
-        loadData();
+        void loadData();
     }, []);
 
     useEffect(() => {
@@ -54,8 +55,10 @@ const HomePage = () => {
                 onSlideChange={setCurrentSlide}
             />
 
-            <div className="relative z-20 space-y-4">
-                <div id="now-playing" className="relative z-30 pb-20">
+            <div className="relative z-20">
+                <RecommendedSection />
+
+                <div id="now-playing" className="relative z-30 pb-20 scroll-mt-20">
                     <MoviesLayout title="Зараз у кіно" />
                 </div>
             </div>

@@ -24,7 +24,6 @@ const Navbar = () => {
         navigate('/');
     };
 
-    // Плавний скрол до слайдера (верху сторінки) при кліку на лого
     const handleLogoClick = (e: React.MouseEvent) => {
         if (location.pathname === '/') {
             e.preventDefault();
@@ -51,7 +50,7 @@ const Navbar = () => {
     return (
         <nav className={`fixed top-0 left-0 right-0 z-50 px-8 flex justify-between items-center h-20 transition-all duration-500 ${navBackground} border-b font-sans`}>
 
-            <div className="flex-shrink-0">
+            <div className="shrink-0">
                 <Link to="/" onClick={handleLogoClick} className="flex items-center group select-none">
                     <div className="relative w-12 h-12 md:w-14 md:h-14 transition-transform duration-300 group-hover:scale-110">
                         <img src={logoImg} alt="Cinema Logo" className="w-full h-full object-contain drop-shadow-[0_0_8px_rgba(220,38,38,0.3)]" />
@@ -61,6 +60,7 @@ const Navbar = () => {
             </div>
 
             <div className="hidden md:flex absolute left-1/2 -translate-x-1/2 gap-10">
+
                 <button
                     onClick={handleScrollToNowPlaying}
                     className="relative text-[13px] font-extrabold uppercase tracking-[0.2em] text-gray-300 hover:text-white transition-colors group overflow-hidden py-1"
@@ -77,12 +77,23 @@ const Navbar = () => {
                     <span className="absolute bottom-0 left-0 w-0 h-0.5 bg-red-600 transition-all duration-300 group-hover:w-full"></span>
                 </Link>
 
+
                 {user?.role === 'Customer' && (
-                    <Link to="/bookings/my" className="relative text-[13px] font-extrabold uppercase tracking-[0.2em] text-gray-300 hover:text-white transition-colors group overflow-hidden py-1">
+                    <Link
+                        to="/bookings/my"
+                        className="relative text-[13px] font-extrabold uppercase tracking-[0.2em] text-gray-300 hover:text-white transition-colors group overflow-hidden py-1"
+                    >
                         <span className="relative z-10">Бронювання</span>
                         <span className="absolute bottom-0 left-0 w-0 h-0.5 bg-red-600 transition-all duration-300 group-hover:w-full"></span>
                     </Link>
                 )}
+                <Link
+                    to="/about"
+                    className="relative text-[13px] font-extrabold uppercase tracking-[0.2em] text-gray-300 hover:text-white transition-colors group overflow-hidden py-1"
+                >
+                    <span className="relative z-10">Про нас</span>
+                    <span className="absolute bottom-0 left-0 w-0 h-0.5 bg-red-600 transition-all duration-300 group-hover:w-full"></span>
+                </Link>
             </div>
 
             <div className="flex items-center gap-5 flex-shrink-0">
@@ -93,26 +104,36 @@ const Navbar = () => {
                                 <ShieldCheck size={14} /> <span>Адмін</span>
                             </Link>
                         )}
+
                         <Link to="/profile" className="flex items-center gap-3 pl-1 pr-4 py-1 rounded-full bg-black/20 hover:bg-black/40 border border-white/5 backdrop-blur-sm transition-all group">
                             <div className="w-9 h-9 rounded-full overflow-hidden border border-white/20">
                                 {user.avatarUri ? (
                                     <img src={`${API_CONFIG.BASE_URL}${user.avatarUri}`} alt="Ava" className="w-full h-full object-cover" />
                                 ) : (
-                                    <div className="w-full h-full bg-gray-800 flex items-center justify-center"><UserIcon size={16} className="text-gray-400" /></div>
+                                    <div className="w-full h-full bg-gray-800 flex items-center justify-center">
+                                        <UserIcon size={16} className="text-gray-400" />
+                                    </div>
                                 )}
                             </div>
-                            <span className="text-xs font-bold text-white uppercase tracking-wider">{user.firstName || user.name}</span>
+                            <span className="text-xs font-bold text-white uppercase tracking-wider">
+                                {user.firstName || user.name}
+                            </span>
                         </Link>
+
                         <button onClick={handleLogout} className="p-2 text-gray-400 hover:text-red-500 transition-colors">
                             <LogOut size={20} />
                         </button>
                     </div>
                 ) : (
-                    <Link to="/login" className="bg-red-600 hover:bg-red-700 text-white px-8 py-2.5 rounded-xl text-[11px] font-black uppercase tracking-[0.2em] transition-all shadow-lg shadow-red-600/20 hover:shadow-red-600/40 active:scale-95">
+                    <Link
+                        to="/login"
+                        className="bg-red-600 hover:bg-red-700 text-white px-8 py-2.5 rounded-xl text-[11px] font-black uppercase tracking-[0.2em] transition-all shadow-lg shadow-red-600/20 hover:shadow-red-600/40 active:scale-95"
+                    >
                         Увійти
                     </Link>
                 )}
             </div>
+
         </nav>
     );
 };
