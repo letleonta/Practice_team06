@@ -1,6 +1,6 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import Login from './pages/Login';
-import NowPlayingPage from './pages/NowPlayingPage.tsx';
+import HomePage from './pages/HomePage';
 import UpcomingPage from './pages/UpcomingPage.tsx';
 import MoviePage from './pages/MoviePage';
 import Register from './pages/Register';
@@ -15,6 +15,7 @@ import { Toaster } from 'react-hot-toast';
 import {useEffect} from "react";
 import {UserService} from "./services/user.service.ts";
 import TicketDetailsPage from "./pages/TicketDetailsPage.tsx";
+import AboutUsPage from "./pages/AboutUsPage.tsx";
 
 function App() {
     const { user, token, updateUser } = useAuthStore();
@@ -47,14 +48,20 @@ function App() {
                     path="/register"
                     element={<Register />}
                 />
+
+                {/* Головний лейаут сайту */}
                 <Route element={<MainLayout />}>
                     <Route
                         path="/"
-                        element={<NowPlayingPage />}
+                        element={<HomePage />}
                     />
                     <Route
                         path="/upcoming"
                         element={<UpcomingPage />}
+                    />
+                    <Route
+                        path="/about"
+                        element={<AboutUsPage />}
                     />
                     <Route path="/movie/:id"
                            element={<MoviePage />}
@@ -63,6 +70,7 @@ function App() {
                         path="/bookings/my"
                         element={<MyBookingsPage />}
                     />
+
                     <Route
                         path="/bookings/:bookingId"
                         element={<BookingDetailsPage />}
@@ -80,6 +88,8 @@ function App() {
                         element={token ? <Profile /> : <Navigate to="/login" replace />}
                     />
                 </Route>
+
+                {/* Адмінка */}
                 <Route
                     path="/admin/*"
                     element={hasAdminAccess ? <AdminDashboard /> : <Navigate to="/" replace />}

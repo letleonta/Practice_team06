@@ -2,12 +2,12 @@ import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Calendar, Clock, Map, Download, Share2, X, ZoomIn } from 'lucide-react';
 import { formatDateWithYear, formatTime } from '../utils/formatTime';
-import { AgeRestrictionBadge } from '../components/AgeRestrictionBadge';
+import { AgeRestrictionBadge } from '../components/ui/AgeRestrictionBadge.tsx';
 import { TicketService } from "../services/ticket.service.ts";
 import type { TicketDto } from "../types/ticket.ts";
 import { notify } from "../utils/toast.ts";
 import { ConfirmModal } from "../components/ui/ConfirmModal.tsx";
-import {TicketRefundButton} from "../components/TicketRefundButton.tsx";
+import {TicketRefundButton} from "../components/BookingComponents/TicketRefundButton.tsx";
 
 const TicketDetailsPage = () => {
     const { ticketId } = useParams<{ ticketId: string }>();
@@ -67,7 +67,7 @@ const TicketDetailsPage = () => {
     );
 
     return (
-        <div className="min-h-screen bg-[#0f1117] text-white p-4 md:p-8">
+        <div className="min-h-screen bg-[#0f1117] text-white p-4">
             <div className="max-w-xl mx-auto">
                 <button
                     onClick={() => navigate(-1)}

@@ -5,40 +5,57 @@ import {
     TrendingUp, ChevronDown, Ticket, Trash2
 } from 'lucide-react';
 import { getStatusColor, getStatusText } from '../../utils/formatBookingStatus';
-import {type AdminBookingDetailsDto, type BookingsStatsDto, BookingStatus} from "../../types/booking.ts";
+import {
+    type AdminBookingDetailsDto,
+    type BookingsStatsDto,
+    BookingStatus,
+    type GroupByPeriod
+} from "../../types/booking.ts";
 import type { AdminBookingDto, BookingFilterDto } from "../../types/booking.ts";
 import { BookingService } from "../../services/booking.service";
 import { formatDateWithYear, formatTime } from "../../utils/formatTime";
-import { Pagination } from "../../components/Pagination";
-import { PaginationInfo } from "../../components/PaginationInfo";
+import { Pagination } from "../../components/ui/Pagination.tsx";
+import { PaginationInfo } from "../../components/ui/PaginationInfo.tsx";
 import {UsePagination} from "../../hooks/UsePagination.ts";
-import {AgeRestrictionBadge} from "../../components/AgeRestrictionBadge.tsx";
-import StatusPie from "../../components/ui/StatusPie.tsx";
-import RevenueChart from "../../components/ui/RevenueChart.tsx";
-import {SimpleBarChart} from "../../components/ui/SimpleBarChart.tsx";
-import {BookingFilters} from "../../components/BookingFilters.tsx";
-import {DataTable, type Column} from "../../components/DataTable.tsx";
-import {StatCard} from "../../components/ui/StatCard.tsx";
-import {AdminModal} from "../../components/AdminModal.tsx";
+import {AgeRestrictionBadge} from "../../components/ui/AgeRestrictionBadge.tsx";
+import StatusPie from "../../components/BookingComponents/StatusPie.tsx";
+import RevenueChart, {type TimePreset} from "../../components/BookingComponents/RevenueChart.tsx";
+import {SimpleBarChart} from "../../components/BookingComponents/SimpleBarChart.tsx";
+import {BookingFilters} from "../../components/BookingComponents/BookingFilters.tsx";
+import {DataTable, type Column} from "../../components/ui/DataTable.tsx";
+import {StatCard} from "../../components/BookingComponents/StatCard.tsx";
+import {AdminModal} from "../../components/ui/AdminModal.tsx";
 import {notify} from "../../utils/toast.ts";
 import {ConfirmModal} from "../../components/ui/ConfirmModal.tsx";
 import {TicketService} from "../../services/ticket.service.ts";
-import {CancelBookingButton} from "../../components/CancelBookingButton.tsx";
-import {TicketRefundButton} from "../../components/TicketRefundButton.tsx";
+import {CancelBookingButton} from "../../components/BookingComponents/CancelBookingButton.tsx";
+import {TicketRefundButton} from "../../components/BookingComponents/TicketRefundButton.tsx";
+import {useSearchParams} from "react-router-dom";
 
 type StatusFilter = BookingStatus | 'ALL';
 type SortBy = 'date' | 'status' | 'userEmail';
 
 const AdminBookingsPage = () => {
+    const [searchParams, setSearchParams] = useSearchParams();
     const [stats, setStats] = useState<BookingsStatsDto | null>(null);
     const [statsLoading, setStatsLoading] = useState(false);
-    const [statusFilter, setStatusFilter] = useState<StatusFilter>('ALL');
-    const [sessionFrom, setSessionFrom] = useState('');
-    const [sessionTo, setSessionTo] = useState('');
-    const [bookingFrom, setBookingFrom] = useState('');
-    const [bookingTo, setBookingTo] = useState('');
-    const [userEmail, setUserEmail] = useState('');
-    const [searchQuery, setSearchQuery] = useState('');
+    const userEmail = searchParams.get('userEmail') || '';
+    const sessionId = searchParams.get('sessionId') || '';
+    const sessionFrom = searchParams.get('sessionFrom') || '';
+    const sessionTo = searchParams.get('sessionTo') || '';
+    const bookingFrom = searchParams.get('bookingFrom') || '';
+    const bookingTo = searchParams.get('bookingTo') || '';
+    const searchQuery = searchParams.get('q') || '';
+    const grouping = (searchParams.get('groupBy') as GroupByPeriod) || 'Day';
+    const status = (searchParams.get('status') as StatusFilter) || 'ALL';
+    const setUserEmail = (val: string) => updateFilters({ userEmail: val });
+    const setSessionId = (val: string) => updateFilters({ sessionId: val });
+    const setSessionFrom = (val: string) => updateFilters({ sessionFrom: val });
+    const setSessionTo = (val: string) => updateFilters({ sessionTo: val });
+    const setBookingFrom = (val: string) => updateFilters({ bookingFrom: val });
+    const setBookingTo = (val: string) => updateFilters({ bookingTo: val });
+    const setSearchQuery = (val: string) => updateFilters({ q: val });
+    const setStatus = (val : string) => updateFilters({ status: val });
     const [ticketPage, setTicketPage] = useState(1);
     const TICKET_PAGE_SIZE = 6;
 
@@ -66,15 +83,36 @@ const AdminBookingsPage = () => {
         type: null
     });
 
-    // Fetch function for pagination hook
+    const handlePresetChange = (preset: TimePreset, step: GroupByPeriod) => {
+        const to = new Date();
+        const from = new Date();
+
+        if (preset === 'День') {
+            from.setDate(to.getDate());
+        } else if (preset === 'Тиждень') {
+            from.setDate(to.getDate() - 7);
+        } else if (preset === 'Місяць') {
+            from.setMonth(to.getMonth() - 1);
+        } else if (preset === 'Рік') {
+            from.setFullYear(to.getFullYear() - 1);
+        }
+
+        updateFilters({
+            bookingFrom: from.toISOString().split('T')[0],
+            bookingTo: to.toISOString().split('T')[0],
+            groupBy: step
+        });
+    };
+
     const fetchBookings = useCallback(async (Page: number, PageSize: number) => {
         const filter: BookingFilterDto = {
-            Status: statusFilter !== 'ALL' ? statusFilter : undefined,
+            Status: status !== 'ALL' ? status : undefined,
+            UserEmail: userEmail || undefined,
+            SessionId: sessionId || undefined,
             SessionFromDate: sessionFrom || undefined,
             SessionToDate: sessionTo || undefined,
             BookingFromDate: bookingFrom || undefined,
             BookingToDate: bookingTo || undefined,
-            UserEmail: userEmail || undefined,
             SearchQuery: searchQuery || undefined,
             SortBy: sortBy,
             IsDescending: isDesc,
@@ -83,30 +121,31 @@ const AdminBookingsPage = () => {
         };
 
         return await BookingService.getAllBookings(filter);
-    }, [statusFilter, sessionFrom, sessionTo, bookingFrom, bookingTo, userEmail, searchQuery, sortBy, isDesc]);
+    }, [status, userEmail, sessionId, sessionFrom, sessionTo, bookingFrom, bookingTo, searchQuery, sortBy, isDesc]);
 
     const loadStats = useCallback(async () => {
         setStatsLoading(true);
         try {
             const filter: BookingFilterDto = {
-                Status: statusFilter !== 'ALL' ? statusFilter : undefined,
+                UserEmail: userEmail || undefined,
+                SessionId: sessionId || undefined,
                 SessionFromDate: sessionFrom || undefined,
                 SessionToDate: sessionTo || undefined,
                 BookingFromDate: bookingFrom || undefined,
                 BookingToDate: bookingTo || undefined,
-                UserEmail: userEmail || undefined,
                 SearchQuery: searchQuery || undefined,
+                GroupBy: grouping
             };
             const data = await BookingService.getStats(filter);
             setStats(data);
         } finally {
             setStatsLoading(false);
         }
-    }, [bookingFrom, bookingTo, searchQuery, sessionFrom, sessionTo, statusFilter, userEmail]);
+    }, [userEmail, sessionId, bookingFrom, bookingTo, sessionFrom, sessionTo, searchQuery, grouping]);
 
     useEffect(() => {
         void loadStats();
-    }, [statusFilter, sessionFrom, sessionTo, bookingFrom, bookingTo, userEmail, searchQuery, loadStats]);
+    }, [status, sessionId, sessionFrom, sessionTo, bookingFrom, bookingTo, userEmail, searchQuery, loadStats]);
 
     useEffect(() => {
         const fetchDetails = async () => {
@@ -127,7 +166,6 @@ const AdminBookingsPage = () => {
         void fetchDetails();
     }, [selectedBooking?.id, ticketPage]);
 
-    // Use pagination hook
     const {
         items: bookings,
         totalCount,
@@ -140,14 +178,13 @@ const AdminBookingsPage = () => {
     } = UsePagination(
         fetchBookings,
         [
-            statusFilter, sessionFrom, sessionTo, bookingFrom,
-            bookingTo, userEmail, searchQuery, sortBy, isDesc,
+            status, userEmail, sessionId, sessionFrom, sessionTo,
+            bookingFrom, bookingTo, searchQuery, sortBy, isDesc,
             refreshTrigger
         ],
         { pageSize: 6 }
     );
 
-    // Sort handler
     const handleSort = (sortKey: string) => {
         if (sortBy === sortKey) {
             setIsDesc(!isDesc);
@@ -206,16 +243,44 @@ const AdminBookingsPage = () => {
         }
     };
 
-    const hasActiveFilters = statusFilter !== 'ALL' || sessionFrom || sessionTo || bookingFrom || bookingTo || userEmail;
+    const hasActiveFilters = status !== 'ALL' || sessionFrom || sessionTo || bookingFrom || bookingTo || userEmail || sessionId;
+
+    const updateFilters = (newParams: Record<string, string | undefined>) => {
+        const params = new URLSearchParams(searchParams);
+
+        Object.entries(newParams).forEach(([key, value]) => {
+            if (value && value !== 'ALL') {
+                params.set(key, value);
+            } else {
+                params.delete(key);
+            }
+        });
+
+        params.set('Page', '1');
+        setSearchParams(params);
+    };
 
     const resetAllFilters = () => {
-        setStatusFilter('ALL');
-        setSessionFrom('');
-        setSessionTo('');
-        setBookingFrom('');
-        setBookingTo('');
-        setUserEmail('');
-        setSearchQuery('');
+        setSearchParams({});
+    };
+
+    const determineActivePreset = (): TimePreset => {
+        const from = searchParams.get('bookingFrom');
+        const to = searchParams.get('bookingTo');
+        const groupBy = searchParams.get('groupBy');
+
+        if (!from || !to || !groupBy) return 'Місяць';
+
+        const diffDays = Math.ceil(
+            (new Date(to).getTime() - new Date(from).getTime()) / (1000 * 60 * 60 * 24)
+        );
+
+        if (groupBy === 'Hour') return 'День';
+        if (diffDays <= 8 && groupBy === 'Day') return 'Тиждень';
+        if (diffDays <= 32 && groupBy === 'Day') return 'Місяць';
+        if (groupBy === 'Month') return 'Рік';
+
+        return 'Місяць';
     };
 
     const columns: Column<AdminBookingDto>[] = [
@@ -361,7 +426,12 @@ const AdminBookingsPage = () => {
                         <div className={`flex flex-col gap-6 transition-all duration-300 ${statsLoading ? 'opacity-30 blur-[2px]' : 'opacity-100'}`}>
                             <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
                                 <div className="lg:col-span-3 min-w-0">
-                                    <RevenueChart data={stats.revenuePoints} />
+                                    <RevenueChart
+                                        data={stats?.revenuePoints || []}
+                                        grouping={(searchParams.get('groupBy') as GroupByPeriod) || 'Day'}
+                                        activePreset={determineActivePreset()}
+                                        onPresetClick={handlePresetChange}
+                                    />
                                 </div>
 
                                 <div className="flex flex-col gap-6">
@@ -471,8 +541,12 @@ const AdminBookingsPage = () => {
                 {filtersOpen && (
                     <div className="bg-[#1a1d26] border border-gray-800 rounded-2xl p-5 animate-[fadeDown_0.2s_ease]">
                         <BookingFilters
+                            status={status}
+                            setStatus={setStatus}
                             userEmail={userEmail}
                             setUserEmail={setUserEmail}
+                            sessionId={sessionId}
+                            setSessionId={setSessionId}
                             sessionFrom={sessionFrom}
                             setSessionFrom={setSessionFrom}
                             sessionTo={sessionTo}
