@@ -1,9 +1,9 @@
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { LogOut, ShieldCheck, User as UserIcon } from 'lucide-react';
-import { useAuthStore } from '../store/useAuthStore';
-import { API_CONFIG } from "../../config.ts";
+import { useAuthStore } from '../../store/useAuthStore.ts';
+import { API_CONFIG } from "../../../config.ts";
 import { useEffect, useState } from "react";
-import logoImg from '../assets/logo.png';
+import logoImg from '../../assets/logo.png';
 
 const Navbar = () => {
     const { user, logout } = useAuthStore();

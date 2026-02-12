@@ -215,7 +215,7 @@ public class MovieService : IMovieService
             if (filter.SelectionType == SelectionType.NowPlaying)
                 query = query.Where(m => (m.StartDate != null && m.EndDate != null && m.StartDate <= today && m.EndDate >= today) || (m.StartDate == null && m.ReleaseDate <= today));
             else if (filter.SelectionType == SelectionType.Upcoming)
-                query = query.Where(m => m.ReleaseDate > today);
+                query = query.Where(m => (m.StartDate != null && m.StartDate >= today));
         }
         
         if (filter.AgeRestrictions.Any())

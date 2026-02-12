@@ -1,4 +1,4 @@
-import {getAgeRestrictionText} from "../utils/formatAgeRestriction.ts";
+import {getAgeRestrictionText} from "../../utils/formatAgeRestriction.ts";
 
 interface Props {
     restriction?: string;

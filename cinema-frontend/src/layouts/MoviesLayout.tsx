@@ -6,8 +6,8 @@ import {MovieService} from "../services/movie.service.ts";
 import {GenreService} from "../services/genre.service.ts";
 import type {GenreDto} from "../types/genre.ts";
 import {UsePagination} from "../hooks/UsePagination.ts";
-import {Pagination} from "../components/Pagination.tsx";
-import {PaginationInfo} from "../components/PaginationInfo.tsx";
+import {Pagination} from "../components/ui/Pagination.tsx";
+import {PaginationInfo} from "../components/ui/PaginationInfo.tsx";
 
 interface Props {
     title: string;

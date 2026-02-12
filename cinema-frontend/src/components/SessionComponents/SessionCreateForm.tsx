@@ -199,7 +199,7 @@ export const SessionCreateForm = ({ movie, halls, languages, initialData, onSubm
             <div className="flex items-center justify-between mb-6">
                 <h2 className="text-xl font-black uppercase tracking-tighter flex items-center gap-2 text-white">
                     {initialData ? (
-                        <><Save className="text-amber-500" /> Редагувати сеанс</>
+                        <><Save className="text-amber-500" /> Редагувати сеанс №{initialData.id} </>
                     ) : (
                         <><Calendar className="text-red-600" /> Додати сеанс: <span className="text-red-500">{movie.title}</span></>
                     )}
