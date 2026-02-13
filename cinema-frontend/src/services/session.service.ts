@@ -19,6 +19,12 @@ export const SessionService = {
         return response.data;
     },
 
+    async createBatch(dataList: CreateSessionDto[]) {
+        // Відправляємо масив на новий ендпоінт
+        const response = await axiosInstance.post("/sessions/batch", dataList);
+        return response.data;
+    },
+
     // Деталі конкретного сеансу
     async getById(id: number) {
         const response = await axiosInstance.get<SessionDto>(`/sessions/${id}`);
