@@ -86,71 +86,7 @@ public class HallService : IHallService
         await _context.SaveChangesAsync();
         return true;
     }
-
-    public async Task<int> GenerateStandardSeatsAsync(GenerateStandardSeatsDto dto)
-    {
-        var hall = await _context.Halls.FindAsync(dto.HallId);
-        if (hall == null) return 0;
-        
-        var oldSeats = _context.Seats.Where(s => s.HallId == dto.HallId);
-        _context.Seats.RemoveRange(oldSeats);
-
-        var seatsToCreate = new List<Seat>();
-
-        for (short r = 1; r <= dto.RowCount; r++)
-        {
-            for (short s = 1; s <= dto.SeatsPerRow; s++)
-            {
-                seatsToCreate.Add(new Seat
-                {
-                    HallId = dto.HallId,
-                    RowNumber = r,
-                    SeatNumber = s,
-                    PriceModifier = dto.Type == SeatType.VIP ? 1.5m : 1.0m,
-                    SeatType = dto.Type,
-                });
-            }
-        }
-
-        await _context.Seats.AddRangeAsync(seatsToCreate);
-        await _context.SaveChangesAsync();
-        return seatsToCreate.Count;
-    }
-
-    public async Task<int> GenerateFlexibleSeatsAsync(GenerateFlexibleSeatsDto dto)
-    {
-        // Перевірка на наявність проданих квитків перед зміною схеми
-        var hasTickets = await _context.Tickets.AnyAsync(t => t.Seat.HallId == dto.HallId);
     
-        if (hasTickets)
-        {
-            throw new InvalidOperationException("Неможливо змінити схему залу: на існуючі місця вже продано квитки.");
-        }
-        
-        var oldSeats = _context.Seats.Where(s => s.HallId == dto.HallId);
-        _context.Seats.RemoveRange(oldSeats);
-
-        var seatsToCreate = new List<Seat>();
-
-        foreach (var rowConfig in dto.Rows)
-        {
-            for (short s = 1; s <= rowConfig.SeatCount; s++)
-            {
-                seatsToCreate.Add(new Seat
-                {
-                    HallId = dto.HallId,
-                    RowNumber = rowConfig.RowNumber,
-                    SeatNumber = s,
-                    PriceModifier = rowConfig.Type == SeatType.VIP ? 1.5m : 1.0m,
-                    SeatType = rowConfig.Type,
-                });
-            }
-        }
-
-        await _context.Seats.AddRangeAsync(seatsToCreate);
-        await _context.SaveChangesAsync();
-        return seatsToCreate.Count;
-    }
 
     public async Task<object> AddRowToHallAsync(int hallId, RowConfigDto rowConfig)
     {

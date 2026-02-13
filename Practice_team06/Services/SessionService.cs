@@ -143,4 +143,60 @@ public class SessionService : ISessionService
             await _context.SaveChangesAsync();
         }
     }
+    
+    public async Task CreateBatchAsync(List<CreateSessionDto> dtos)
+{
+    if (dtos == null || !dtos.Any()) return;
+
+    using var transaction = await _context.Database.BeginTransactionAsync();
+
+    try
+    {
+        foreach (var dto in dtos)
+        {
+            var movie = await _context.Movies.FindAsync(dto.MovieId);
+            if (movie == null) throw new Exception($"Фільм з ID {dto.MovieId} не знайдено");
+
+            var duration = movie.DurationMin ?? 120;
+            var newStart = dto.StartTime;
+            var newEnd = newStart.AddMinutes(duration + 15); 
+            
+            var conflictingSession = await _context.Sessions
+                .Include(s => s.Movie) 
+                .AsNoTracking()
+                .Where(s => s.HallId == dto.HallId)
+                .Where(s => s.StartTime < newEnd && s.StartTime.AddMinutes((s.Movie.DurationMin ?? 120) + 15) > newStart)
+                .FirstOrDefaultAsync();
+
+            if (conflictingSession != null) 
+            {
+                var conflictEnd = conflictingSession.StartTime.AddMinutes((conflictingSession.Movie.DurationMin ?? 120) + 15);
+                
+                throw new InvalidOperationException(
+                    $"Неможливо додати сеанс на {newStart:HH:mm}. " +
+                    $"Зал зайнятий фільмом '{conflictingSession.Movie.Title}' " +
+                    $"({conflictingSession.StartTime:HH:mm} - {conflictEnd:HH:mm})."
+                );
+            }
+
+            var session = new Session
+            {
+                MovieId = dto.MovieId,
+                HallId = dto.HallId,
+                LanguageId = dto.LanguageId,
+                StartTime = dto.StartTime
+            };
+
+            _context.Sessions.Add(session);
+            await _context.SaveChangesAsync(); 
+        }
+
+        await transaction.CommitAsync();
+    }
+    catch (Exception)
+    {
+        await transaction.RollbackAsync();
+        throw; 
+    }
+}
 }
