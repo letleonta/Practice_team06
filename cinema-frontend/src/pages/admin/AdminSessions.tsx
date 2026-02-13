@@ -1,68 +1,62 @@
 import { useEffect, useState, useCallback } from 'react';
+import { Film, PlayCircle, Archive } from 'lucide-react';
+
 import { SessionService } from '../../services/session.service';
+import { HallService } from "../../services/hall.service";
+import { LanguageService } from "../../services/language.service";
+
 import type { CreateSessionDto, SessionDto, SessionFilterDto } from '../../types/session';
 import type { MovieDto } from '../../types/movie';
 import type { HallDto } from "../../types/hall";
 import type { LanguageDto } from "../../types/language";
-import { HallService } from "../../services/hall.service";
-import { LanguageService } from "../../services/language.service";
+import type { PagedResult } from "../../types/common";
+
 import { ConfirmModal } from "../../components/ui/ConfirmModal";
 import { notify } from "../../utils/toast";
-import { Film, PlayCircle, Archive } from 'lucide-react';
 import { MovieListSidebar } from '../../components/SessionComponents/MovieListSidebar';
 import { SessionList } from '../../components/SessionComponents/SessionList';
 import { SessionCreateForm } from '../../components/SessionComponents/SessionCreateForm';
-import type { PagedResult } from "../../types/common.ts";
 
 const AdminSessions = () => {
     const [halls, setHalls] = useState<HallDto[]>([]);
     const [languages, setLanguages] = useState<LanguageDto[]>([]);
-
     const [selectedMovie, setSelectedMovie] = useState<MovieDto | null>(null);
     const [loadingSessions, setLoadingSessions] = useState(false);
-    const [deleteModal, setDeleteModal] = useState({ isOpen: false });
 
-    // --- СЕРВЕРНА ПАГІНАЦІЯ ТА ДАНІ ---
     const [pagedResult, setPagedResult] = useState<PagedResult<SessionDto>>({
-        items: [],
-        totalCount: 0,
-        page: 1,
-        pageSize: 9,
-        totalPages: 0,
-        hasPreviousPage: false,
-        hasNextPage: false
+        items: [], totalCount: 0, page: 1, pageSize: 6, totalPages: 0,
+        hasPreviousPage: false, hasNextPage: false
     });
 
-    const [selectedIds, setSelectedIds] = useState<number[]>([]);
-    const [sessionToEdit, setSessionToEdit] = useState<SessionDto | null>(null);
-
-    // Вкладки: 'active' | 'past'
     const [activeTab, setActiveTab] = useState<'active' | 'past'>('active');
-
-    // Фільтри
     const [currentPage, setCurrentPage] = useState(1);
-    const PAGE_SIZE = 6;
     const [filterDates, setFilterDates] = useState<{ from: string, to: string, weekdays: number[] }>({
         from: '', to: '', weekdays: []
     });
+    const [selectedIds, setSelectedIds] = useState<number[]>([]);
 
-    // Завантаження довідників
+    const [sessionToEdit, setSessionToEdit] = useState<SessionDto | null>(null);
+    const [deleteModal, setDeleteModal] = useState({ isOpen: false });
+
+    const PAGE_SIZE = 6;
+
     useEffect(() => {
         const loadDicts = async () => {
             try {
-                const [hRes, lRes] = await Promise.all([HallService.getAll(), LanguageService.getAll()]);
-                const hallsData = Array.isArray(hRes) ? hRes : (hRes as any).items;
-                const langsData = Array.isArray(lRes) ? lRes : (lRes as any).items;
-                setHalls(hallsData);
-                setLanguages(langsData);
+                const [hRes, lRes] = await Promise.all([
+                    HallService.getAll(1, 100, ""),
+                    LanguageService.getAll({ Page: 1, PageSize: 100 })
+                ]);
+                setHalls(hRes.items || []);
+                setLanguages(lRes.items || []);
             } catch (err) {
+                console.error(err);
                 notify.error("Не вдалося завантажити довідники");
             }
         };
         void loadDicts();
     }, []);
 
-    // --- ГОЛОВНА ФУНКЦІЯ ЗАВАНТАЖЕННЯ (СЕРВЕРНА) ---
     const fetchSessions = useCallback(async () => {
         if (!selectedMovie) return;
         setLoadingSessions(true);
@@ -77,7 +71,6 @@ const AdminSessions = () => {
 
             const result = await SessionService.getByMovieId(selectedMovie.id, filter);
             setPagedResult(result);
-            setSelectedIds([]);
         } catch (e) {
             console.error(e);
             notify.error("Помилка завантаження розкладу");
@@ -86,12 +79,10 @@ const AdminSessions = () => {
         }
     }, [selectedMovie, currentPage, activeTab, filterDates]);
 
-    // Викликаємо завантаження при зміні будь-якого фільтра
     useEffect(() => {
         void fetchSessions();
     }, [fetchSessions]);
 
-    // --- HANDLERS ---
     const handleToggleSelect = (id: number) => {
         setSelectedIds(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]);
     };
@@ -99,11 +90,14 @@ const AdminSessions = () => {
     const handleToggleSelectAll = () => {
         const pageIds = pagedResult.items.map(s => s.id);
         const allSelected = pageIds.every(id => selectedIds.includes(id));
+
         if (allSelected) {
             setSelectedIds(prev => prev.filter(id => !pageIds.includes(id)));
         } else {
             const newIds = [...selectedIds];
-            pageIds.forEach(id => { if (!newIds.includes(id)) newIds.push(id); });
+            pageIds.forEach(id => {
+                if (!newIds.includes(id)) newIds.push(id);
+            });
             setSelectedIds(newIds);
         }
     };
@@ -111,16 +105,20 @@ const AdminSessions = () => {
     const handleCreateSessions = async (dataList: CreateSessionDto[]) => {
         if (!selectedMovie) return;
         try {
-            await Promise.all(dataList.map(item => SessionService.create({
+            const dtos = dataList.map(item => ({
                 ...item,
                 movieId: selectedMovie.id,
                 hallId: Number(item.hallId),
                 languageId: Number(item.languageId)
-            })));
+            }));
+
+            await SessionService.createBatch(dtos);
             notify.success(`Створено сеансів: ${dataList.length}`);
             await fetchSessions();
-        } catch (err) {
-            notify.error('Помилка при створенні (можливо, накладання часу)');
+        } catch (err: any) {
+            console.error(err);
+            const msg = err.response?.data?.message || 'Помилка при створенні';
+            notify.error(msg);
         }
     };
 
@@ -137,6 +135,7 @@ const AdminSessions = () => {
             setSessionToEdit(null);
             await fetchSessions();
         } catch (err) {
+            console.error(err);
             notify.error("Не вдалося оновити сеанс");
         }
     };
@@ -149,20 +148,30 @@ const AdminSessions = () => {
             setSelectedIds([]);
             await fetchSessions();
         } catch (err) {
+            console.error(err);
             notify.error("Помилка при видаленні.");
         } finally {
             setDeleteModal({ isOpen: false });
         }
     };
 
+    const onSelectMovie = (movie: MovieDto) => {
+        setSelectedMovie(movie);
+        setCurrentPage(1);
+        setSelectedIds([]);
+    };
+
+    const onChangeTab = (tab: 'active' | 'past') => {
+        setActiveTab(tab);
+        setCurrentPage(1);
+        setSelectedIds([]);
+    };
+
     return (
         <div className="flex flex-col lg:flex-row gap-8 text-white h-[calc(100vh-140px)] animate-fade-in">
             <MovieListSidebar
                 selectedMovieId={selectedMovie?.id}
-                onSelectMovie={(movie) => {
-                    setSelectedMovie(movie);
-                    setCurrentPage(1); // Скидаємо сторінку при зміні фільму
-                }}
+                onSelectMovie={onSelectMovie}
             />
 
             <div className="w-full lg:w-2/3 flex flex-col gap-6">
@@ -178,10 +187,9 @@ const AdminSessions = () => {
                             onCancelEdit={() => setSessionToEdit(null)}
                         />
 
-                        {/* ВКЛАДКИ */}
                         <div className="flex bg-[#1a1d26] p-1 rounded-2xl w-fit border border-gray-800">
                             <button
-                                onClick={() => { setActiveTab('active'); setCurrentPage(1); }}
+                                onClick={() => onChangeTab('active')}
                                 className={`flex items-center gap-2 px-6 py-2.5 rounded-xl text-sm font-bold transition-all ${
                                     activeTab === 'active'
                                         ? 'bg-emerald-600 text-white shadow-lg'
@@ -191,7 +199,7 @@ const AdminSessions = () => {
                                 <PlayCircle size={16} /> Активні
                             </button>
                             <button
-                                onClick={() => { setActiveTab('past'); setCurrentPage(1); }}
+                                onClick={() => onChangeTab('past')}
                                 className={`flex items-center gap-2 px-6 py-2.5 rounded-xl text-sm font-bold transition-all ${
                                     activeTab === 'past'
                                         ? 'bg-gray-700 text-white shadow-lg'
@@ -206,6 +214,13 @@ const AdminSessions = () => {
                             sessions={pagedResult.items}
                             loading={loadingSessions}
                             selectedIds={selectedIds}
+
+                            currentPage={pagedResult.page}
+                            totalPages={pagedResult.totalPages}
+                            pageSize={pagedResult.pageSize}
+                            totalCount={pagedResult.totalCount}
+                            onPageChange={(p) => setCurrentPage(p)}
+
                             onToggleSelect={handleToggleSelect}
                             onToggleSelectAll={handleToggleSelectAll}
                             onDeleteClick={() => setDeleteModal({ isOpen: true })}
@@ -213,13 +228,6 @@ const AdminSessions = () => {
                                 setSessionToEdit(session);
                                 window.scrollTo({ top: 0, behavior: 'smooth' });
                             }}
-
-                            // Використовуємо дані з PagedResult
-                            totalCount={pagedResult.totalCount}
-                            currentPage={pagedResult.page}
-                            totalPages={pagedResult.totalPages}
-                            pageSize={PAGE_SIZE}
-                            onPageChange={(p) => setCurrentPage(p)}
                             onFilterChange={(from, to, weekdays) => {
                                 setFilterDates({ from, to, weekdays });
                                 setCurrentPage(1);

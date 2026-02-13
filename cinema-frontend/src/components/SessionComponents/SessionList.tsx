@@ -157,14 +157,14 @@ export const SessionList = ({
                 </div>
             </div>
 
-            <div className="overflow-y-auto flex-1 p-4 custom-scrollbar">
+            <div className="flex-1 p-4">
                 {loading ? (
-                    <div className="flex flex-col items-center justify-center h-full text-gray-500">
+                    <div className="flex flex-col items-center justify-center py-20 text-gray-500">
                         <Loader2 className="animate-spin mb-2 text-red-600" size={24} />
                         <p className="text-xs">Завантаження розкладу...</p>
                     </div>
                 ) : sessions.length === 0 ? (
-                    <div className="flex flex-col items-center justify-center h-full text-gray-500 py-10 opacity-50">
+                    <div className="flex flex-col items-center justify-center py-20 text-gray-500 opacity-50">
                         <Calendar size={40} className="mb-2" />
                         <p className="text-sm">
                             {(dateFrom || selectedWeekdays.length > 0)

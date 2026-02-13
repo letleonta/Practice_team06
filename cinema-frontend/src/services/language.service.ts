@@ -20,11 +20,6 @@ export const LanguageService = {
         return response.data;
     },
 
-    async createRange(data: CreateLanguageDto[]) {
-        const response = await axiosInstance.post<LanguageDto[]>("/languages/range", data);
-        return response.data;
-    },
-
     async update(id: number, data: CreateLanguageDto) {
         await axiosInstance.put(`/languages/${id}`, data);
     },

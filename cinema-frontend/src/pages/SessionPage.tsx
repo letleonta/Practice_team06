@@ -59,7 +59,6 @@ const SessionPage = () => {
     useEffect(() => { fetchData(); }, [fetchData]);
 
     const toggleSeat = (seat: SessionSeatDto) => {
-        // Забороняємо вибір місць для адміна
         if (user?.role === 'Admin' || user?.role === 'Manager') return;
         if (!seat.isAvailable) return;
         setSelectedSeats((prev) =>
@@ -150,13 +149,11 @@ const SessionPage = () => {
     return (
         <div className="min-h-screen bg-[#0f1117] text-white font-sans">
             <div className="max-w-7xl mx-auto px-4 py-8">
-                {/* ── Back ──────────────────────────────────── */}
                 <Link to="/" className="inline-flex items-center gap-2 text-gray-400 hover:text-red-600 mb-6 transition-colors group">
                     <ArrowLeft size={20} className="group-hover:-translate-x-1 transition-transform" />
                     Назад до фільмів
                 </Link>
 
-                {/* ── Session Header ─────────────────────────── */}
                 <div className="bg-[#1a1d26] rounded-2xl border border-gray-800 p-6 mb-8">
                     <h1 className="text-3xl font-black mb-4">{session.movieTitle}</h1>
                     <div className="flex flex-wrap gap-5 text-sm text-gray-400">
@@ -181,7 +178,6 @@ const SessionPage = () => {
                 </div>
 
                 <div className="flex flex-col xl:flex-row gap-8">
-                    {/* ── Hall Scheme ────────────────────────── */}
                     <div className="flex-1 bg-[#1a1d26] rounded-2xl border border-gray-800 p-6 overflow-x-auto">
                         <div className="mb-8 flex flex-col items-center">
                             <div className="w-3/4 max-w-md h-1.5 bg-gradient-to-r from-transparent via-white/50 to-transparent rounded-full shadow-lg shadow-white/20" />
@@ -230,9 +226,7 @@ const SessionPage = () => {
                         </div>
                     </div>
 
-                    {/* ── Checkout Panel ─────────────────────── */}
                     <div className="xl:w-96 flex-shrink-0">
-                        {/* Додаємо умову для Manager */}
                         {user?.role === 'Admin' || user?.role === 'Manager' ? (
                             <div className="bg-amber-500/5 border border-amber-500/20 rounded-2xl p-8 text-center sticky top-24">
                                 <div className="w-16 h-16 bg-amber-500/10 rounded-full flex items-center justify-center mx-auto mb-4">

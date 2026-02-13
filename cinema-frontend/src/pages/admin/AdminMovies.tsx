@@ -11,6 +11,12 @@ import { PaginationInfo } from "../../components/ui/PaginationInfo.tsx";
 import { DataTable, type Column } from "../../components/ui/DataTable.tsx";
 import { MovieForm } from '../../components/AMoviesComponents/MovieForm';
 import { QuickCreateModal } from '../../components/AMoviesComponents/QuickCreateModal.tsx';
+import axios from "axios";
+
+interface LegacyActor {
+    id: number;
+    roleName?: string;
+}
 
 const ageMap: Record<string, number> = { "ZeroPlus": 0, "TwelvePlus": 1, "SixteenPlus": 2, "EighteenPlus": 3 };
 
@@ -49,10 +55,13 @@ const AdminMovies = () => {
                     roleName: ma.roleName || ''
                 }));
             } else if (movie.actors && movie.actors.length > 0) {
-                preparedMovieActors = movie.actors.map(a => ({
-                    actorId: a.id,
-                    roleName: (a as any).roleName || ''
-                }));
+                preparedMovieActors = movie.actors.map(a => {
+                    const legacy = a as unknown as LegacyActor;
+                    return {
+                        actorId: legacy.id,
+                        roleName: legacy.roleName || ''
+                    };
+                });
             }
 
             formMethods.reset({
@@ -170,8 +179,15 @@ const AdminMovies = () => {
             await refresh();
             setDeleteConfirm({ isOpen: false, movieId: null, movieTitle: '' });
             notify.success("Фільм видалено");
-        } catch (e: any) {
-            const errorMsg = e.response?.data?.message || e.message || 'Помилка при видаленні';
+        } catch (e: unknown) {
+            let errorMsg = 'Помилка при видаленні';
+
+            if (axios.isAxiosError(e)) {
+                errorMsg = e.response?.data?.message || e.message;
+            } else if (e instanceof Error) {
+                errorMsg = e.message;
+            }
+
             notify.error(errorMsg);
         }
     };

@@ -27,10 +27,8 @@ import {API_CONFIG} from "../../../config.ts";
 const AdminDashboard = () => {
     const location = useLocation();
     const { user } = useAuthStore();
-    // Захист від null (якщо юзер ще вантажиться)
     const userRole = user?.role || 'Guest';
 
-    // Перевірка активного посилання (includes дозволяє підсвічувати батьківський розділ)
     const isActive = (path: string) => location.pathname.includes(path);
 
     const navItemClass = (path: string) => `
@@ -42,7 +40,6 @@ const AdminDashboard = () => {
 
     return (
         <div className="flex min-h-screen bg-[#0f1117] text-white font-sans">
-            {/* --- MAIN CONTENT AREA --- */}
             <aside className="w-72 bg-[#1a1d26] border-r border-gray-800 p-6 flex flex-col shadow-2xl z-20 sticky top-0 h-screen">
                 <div className="mb-10">
                     <div className="flex items-center gap-4 bg-[#0f1117]/50 hover:bg-[#0f1117] p-1.5 pr-6 rounded-full border border-gray-800 transition-all group shadow-2xl shadow-black/20">
@@ -70,7 +67,6 @@ const AdminDashboard = () => {
                 </div>
 
                 <nav className="flex-1 space-y-8 overflow-y-auto custom-scrollbar pr-2">
-                    {/* ГРУПА: КОНТЕНТ */}
                     <div>
                         <p className="text-[10px] font-black text-gray-600 uppercase tracking-[0.2em] mb-4 px-2">Контент</p>
                         <div className="space-y-1">
@@ -97,7 +93,6 @@ const AdminDashboard = () => {
                         </div>
                     </div>
 
-                    {/* ГРУПА: ЗАЛИ ТА ПРОДАЖІ */}
                     <div>
                         <p className="text-[10px] font-black text-gray-600 uppercase tracking-[0.2em] mb-4 px-2">Кінотеатр</p>
                         <div className="space-y-1">
@@ -136,7 +131,6 @@ const AdminDashboard = () => {
                 </div>
             </aside>
             <main className="flex-1 flex flex-col h-screen overflow-hidden">
-                {/* Scrollable Content */}
                 <div className="flex-1 overflow-y-auto p-10 bg-[#0b0d12] custom-scrollbar">
                     <Routes>
                         <Route path="/" element={

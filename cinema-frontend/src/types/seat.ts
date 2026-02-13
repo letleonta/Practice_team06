@@ -20,7 +20,7 @@ export interface SessionSeatDto {
     seatNumber: number;
     type: SeatType;
     isAvailable: boolean;
-    price: number; // decimal -> number
+    price: number;
 }
 
 export interface UpdateSeatDto {

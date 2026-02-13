@@ -21,7 +21,7 @@ export interface CreateSessionDto {
 export interface SessionFilterDto extends BaseFilterDto {
     movieId?: number;
     hallId?: number;
-    dateFrom?: string; // ISO date string
-    dateTo?: string; // ISO date string
+    dateFrom?: string;
+    dateTo?: string;
     isActive?: boolean;
 }

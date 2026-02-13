@@ -37,11 +37,9 @@ export const SessionItem = ({ session, onClick, onEdit, variant = 'admin' }: Ses
     }
 
     // ВАРІАНТ ДЛЯ АДМІНА
-    // Отримання дат початку та кінця
     const startDate = new Date(session.startTime);
     const endDate = new Date(session.endTime);
 
-    // Форматування дати: "21.02.2026"
     const dateString = startDate.toLocaleDateString('uk-UA', {
         day: '2-digit',
         month: '2-digit',

@@ -2,8 +2,7 @@ import { axiosInstance } from "../api/axiosInstance";
 import type {
     HallDto,
     CreateHallDto,
-    GenerateFlexibleSeatsDto,
-    SeatDto, RowConfigDto
+    AddRowDto
 } from "../types/hall";
 import type {PagedResult} from "../types/common.ts";
 
@@ -21,10 +20,6 @@ export const HallService = {
         return response.data;
     },
 
-    async getHallSeats(hallId: number) {
-        const response = await axiosInstance.get<SeatDto[]>(`/halls/${hallId}/seats`);
-        return response.data;
-    },
 
     async create(data: CreateHallDto) {
         const response = await axiosInstance.post<HallDto>("/halls", data);
@@ -35,14 +30,8 @@ export const HallService = {
         await axiosInstance.delete(`/halls/${id}`);
     },
 
-    async generateFlexibleSeats(data: GenerateFlexibleSeatsDto) {
-        const response = await axiosInstance.post<{ message: string }>("/halls/generate-flexible-seats", data);
-        return response.data;
-    },
-
-    async addRow(hallId: number, rowConfig: RowConfigDto) {
-        const response = await axiosInstance.post(`/halls/${hallId}/add-row`, rowConfig);
-        return response.data;
+    async addRow(hallId: number, data: AddRowDto): Promise<void> {
+        await axiosInstance.post(`/halls/${hallId}/rows`, data);
     },
 
     async addSeatToRow(hallId: number, rowNumber: number) {

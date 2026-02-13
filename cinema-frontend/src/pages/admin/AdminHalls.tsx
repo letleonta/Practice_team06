@@ -11,6 +11,7 @@ import type { HallDto } from '../../types/hall';
 import { Trash2, Search, Plus, FileText, DollarSign, Pencil, AlertCircle } from 'lucide-react';
 import { ConfirmModal } from "../../components/ui/ConfirmModal.tsx";
 import axios from 'axios';
+import {notify} from "../../utils/toast.ts";
 
 const AdminHalls = () => {
     const [searchTerm, setSearchTerm] = useState('');
@@ -19,15 +20,19 @@ const AdminHalls = () => {
     const [isSchemeOpen, setIsSchemeOpen] = useState(false);
     const [createLoading, setCreateLoading] = useState(false);
 
-    // Стейт для видалення
     const [hallToDelete, setHallToDelete] = useState<{ id: number; name: string } | null>(null);
     const [isDeleting, setIsDeleting] = useState(false);
 
-    // НОВИЙ СТЕЙТ: Модалка помилки
     const [errorModal, setErrorModal] = useState<{ isOpen: boolean; message: string }>({
         isOpen: false,
         message: ''
     });
+
+    interface CreateHallForm {
+        name: string;
+        priceModifier: string | number;
+        description?: string;
+    }
 
     const {
         items: halls, totalCount, currentPage, totalPages, pageSize, loading, error, goToPage, refresh,
@@ -55,13 +60,18 @@ const AdminHalls = () => {
         { name: 'priceModifier', label: 'Коефіцієнт ціни', type: 'number', placeholder: '1.0', icon: DollarSign }
     ];
 
-    const handleCreateHall = async (data: any) => {
+    const handleCreateHall = async (data: CreateHallForm) => {
         setCreateLoading(true);
         try {
-            await HallService.create({ ...data, priceModifier: Number(data.priceModifier) });
+            await HallService.create({
+                ...data,
+                priceModifier: Number(data.priceModifier)
+            });
             refresh();
-        } catch (err: any) {
-            console.error(err);
+            notify.success("Зал створено");
+        } catch (err) {
+            console.error("Помилка створення:", err);
+            notify.error("Не вдалося створити зал");
         } finally {
             setCreateLoading(false);
         }
