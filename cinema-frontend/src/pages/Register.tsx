@@ -57,7 +57,7 @@ const Register = () => {
         <div className="min-h-screen flex items-center justify-center bg-[#0f1117] px-4 font-sans text-white">
             <div className="max-w-md w-full bg-[#1a1d26] p-8 rounded-[2.5rem] shadow-2xl border border-gray-800 transition-all duration-300">
                 <div className="text-center mb-8">
-                    <h1 className="text-3xl font-black text-red-600 tracking-tighter mb-2">CINEMA</h1>
+                    <h1 className="text-3xl font-black text-red-600 tracking-tighter mb-2">АСТЕРОЇД КІНО</h1>
                     <p className="text-gray-400 text-sm font-medium">Створіть акаунт для доступу до бронювання</p>
                 </div>
 

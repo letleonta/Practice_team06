@@ -75,7 +75,7 @@ const Login = () => {
             <div className="max-w-md w-full bg-[#1a1d26] p-8 rounded-[2.5rem] shadow-2xl border border-gray-800">
 
                 <div className="text-center mb-8">
-                    <h1 className="text-4xl font-black text-red-600 tracking-tighter mb-2">CINEMA</h1>
+                    <h1 className="text-4xl font-black text-red-600 tracking-tighter mb-2">АСТЕРОЇД КІНО</h1>
                     <p className="text-gray-400 text-sm font-medium">Авторизація користувача</p>
                 </div>
 
